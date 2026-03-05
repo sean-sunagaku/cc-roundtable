@@ -1,0 +1,4 @@
+.claude/agent-teams-log/
+.claude/meeting-room/*.log
+.claude/meeting-room/*.jsonl
+.cursor/debug-*.log
