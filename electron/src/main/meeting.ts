@@ -99,6 +99,10 @@ export class MeetingService {
       "Meeting Room 起動指示:",
       "- いまから Agent Teams 会議を開始してください。",
       "- 最初の相談内容（議題）をもとに、必要な Team 編成を最初に提案・確定してください。",
+      "- サブエージェントを起動する場合は general-purpose タイプのみを使ってください。Plan タイプの起動は禁止です。",
+      "- 理由: Plan タイプはこの会議フローで必要な SendMessage / shutdown_response を扱えず、不整合の原因になります。",
+      "- もし誤って Plan タイプを起動した場合、そのまま進行せず、結果共有や shutdown 応答を待たずに破棄し、general-purpose タイプで起動し直してください。",
+      "- Team 編成や再編成の際も同じです。常に broadcast 可能な general-purpose タイプだけで構成してください。",
       "- 会議中の SendMessage は必ず type: \"broadcast\" のみを使ってください。directed は禁止です。",
       "- すべての重要な検討結果は、チャット欄に表示されるよう broadcast で共有してください。",
       "- 返答は『結論 / 根拠 / 次アクション』の順で簡潔に整理してください。",
@@ -110,8 +114,9 @@ export class MeetingService {
       "",
       "最初に実行すること:",
       "1. 相談内容から Team 構成案を作る",
-      "2. Team 構成と進め方を broadcast で共有する",
+      "2. Team 構成は general-purpose タイプのみで確定し、その方針を broadcast で共有する",
       "3. 初期分析を broadcast で共有し、必要ならユーザーへの確認事項を出す",
+      "4. broadcast ができないエージェント種別は採用しない。必要なら general-purpose で再作成する",
       "",
       `可能であれば /${requestedSkill} で開始してください。`
     ].join("\n");
