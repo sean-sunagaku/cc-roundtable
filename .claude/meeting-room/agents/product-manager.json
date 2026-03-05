@@ -1,0 +1,6 @@
+{
+  "id": "product-manager",
+  "name": "Product Manager",
+  "description": "課題を要件に変換し、優先順位と意思決定の軸を整理する",
+  "enabledByDefault": true
+}

@@ -1,0 +1,9 @@
+appId: com.ccroundtable.meetingroom
+productName: Meeting Room
+directories:
+  output: release
+files:
+  - dist/**
+  - package.json
+mac:
+  target: dmg

@@ -1,0 +1,196 @@
+{
+  "generatedAt": "2026-03-05T10:32:35.679Z",
+  "renderer": {
+    "files": [
+      "electron/src/renderer/App.tsx",
+      "electron/src/renderer/components/ChatView.tsx",
+      "electron/src/renderer/components/ConnectionStatus.tsx",
+      "electron/src/renderer/components/InputBar.tsx",
+      "electron/src/renderer/components/MessageBubble.tsx",
+      "electron/src/renderer/components/TerminalPane.tsx",
+      "electron/src/renderer/global.d.ts",
+      "electron/src/renderer/main.tsx",
+      "electron/src/renderer/screens/MeetingScreen.tsx",
+      "electron/src/renderer/screens/SessionDebugWindow.tsx",
+      "electron/src/renderer/screens/SetupScreen.tsx"
+    ],
+    "imports": {
+      "electron/src/renderer/App.tsx": [
+        "react",
+        "@shared/types",
+        "./screens/SetupScreen",
+        "./screens/MeetingScreen",
+        "./screens/SessionDebugWindow"
+      ],
+      "electron/src/renderer/components/ChatView.tsx": [
+        "@shared/types",
+        "./MessageBubble"
+      ],
+      "electron/src/renderer/components/ConnectionStatus.tsx": [],
+      "electron/src/renderer/components/InputBar.tsx": [
+        "react"
+      ],
+      "electron/src/renderer/components/MessageBubble.tsx": [
+        "react",
+        "marked",
+        "@shared/types"
+      ],
+      "electron/src/renderer/components/TerminalPane.tsx": [
+        "react",
+        "@xterm/xterm",
+        "@xterm/addon-fit"
+      ],
+      "electron/src/renderer/global.d.ts": [
+        "../main/preload"
+      ],
+      "electron/src/renderer/main.tsx": [
+        "react",
+        "react-dom/client",
+        "./App"
+      ],
+      "electron/src/renderer/screens/MeetingScreen.tsx": [
+        "react",
+        "@shared/types",
+        "../components/ChatView",
+        "../components/ConnectionStatus",
+        "../components/InputBar",
+        "../components/TerminalPane"
+      ],
+      "electron/src/renderer/screens/SessionDebugWindow.tsx": [
+        "react",
+        "@shared/types"
+      ],
+      "electron/src/renderer/screens/SetupScreen.tsx": [
+        "react",
+        "@shared/types"
+      ]
+    }
+  },
+  "main": {
+    "files": [
+      "electron/src/main/index.ts",
+      "electron/src/main/meeting.ts",
+      "electron/src/main/preload.ts",
+      "electron/src/main/pty-manager.ts",
+      "electron/src/main/ws-server.ts"
+    ],
+    "imports": {
+      "electron/src/main/index.ts": [
+        "node:path",
+        "node:fs",
+        "electron",
+        "./pty-manager",
+        "./ws-server",
+        "./meeting",
+        "@shared/types"
+      ],
+      "electron/src/main/meeting.ts": [
+        "node:fs",
+        "node:path",
+        "node:os",
+        "electron",
+        "@shared/types",
+        "./pty-manager"
+      ],
+      "electron/src/main/preload.ts": [
+        "electron",
+        "@shared/types"
+      ],
+      "electron/src/main/pty-manager.ts": [
+        "node:os",
+        "node:path",
+        "node:events",
+        "node-pty"
+      ],
+      "electron/src/main/ws-server.ts": [
+        "ws",
+        "@shared/types"
+      ]
+    }
+  },
+  "shared": {
+    "files": [
+      "electron/src/shared/types.ts"
+    ],
+    "types": [
+      "MessageStatus",
+      "ChatMessage",
+      "AgentMessagePayload",
+      "MeetingConfig",
+      "MeetingTab",
+      "SkillOption",
+      "AgentProfile",
+      "AgentProfileInput",
+      "SessionSnapshot",
+      "MeetingSummaryPayload",
+      "RuntimeEvent",
+      "ConversationHealth",
+      "ClaudeSessionDebug"
+    ]
+  },
+  "hooks": {
+    "files": [
+      "hooks/enforce-broadcast.py",
+      "hooks/subagent-status-relay.py",
+      "hooks/ws-relay.py"
+    ]
+  },
+  "ipcChannels": [
+    "app:open-devtools",
+    "meeting:",
+    "meeting:agent-message",
+    "meeting:control-message",
+    "meeting:default-project-dir",
+    "meeting:end",
+    "meeting:get-session-debug",
+    "meeting:human-message",
+    "meeting:list-agents",
+    "meeting:list-skills",
+    "meeting:list-tabs",
+    "meeting:open-session-debug-window",
+    "meeting:resize-terminal",
+    "meeting:retry-mcp",
+    "meeting:runtime-event",
+    "meeting:save-agent",
+    "meeting:save-summary",
+    "meeting:start",
+    "meeting:tabs",
+    "terminal:",
+    "terminal:data"
+  ],
+  "hookConfig": {
+    "hooks": {
+      "PreToolUse": [
+        {
+          "matcher": "SendMessage",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$PWD/hooks/enforce-broadcast.py\""
+            }
+          ]
+        }
+      ],
+      "PostToolUse": [
+        {
+          "matcher": "SendMessage",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$PWD/hooks/ws-relay.py\""
+            }
+          ]
+        },
+        {
+          "matcher": "SubagentStop",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "python3 \"$PWD/hooks/subagent-status-relay.py\""
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

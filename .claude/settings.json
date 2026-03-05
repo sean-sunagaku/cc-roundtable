@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$PWD/hooks/enforce-broadcast.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$PWD/hooks/ws-relay.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "SubagentStop",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$PWD/hooks/subagent-status-relay.py\""
+          }
+        ]
+      }
+    ]
+  }
+}

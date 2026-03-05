@@ -1,0 +1,6 @@
+{
+  "id": "researcher",
+  "name": "Researcher",
+  "description": "ユーザー調査と仮説検証を担当する",
+  "enabledByDefault": true
+}

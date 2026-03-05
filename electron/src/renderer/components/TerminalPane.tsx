@@ -1,0 +1,87 @@
+import { useEffect, useRef } from "react";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+
+interface Props {
+  meetingId: string;
+  onResize: (meetingId: string, cols: number, rows: number) => Promise<void>;
+  subscribeData: (handler: (meetingId: string, chunk: string) => void) => () => void;
+  initialContent?: string;
+}
+
+export function TerminalPane({ meetingId, onResize, subscribeData, initialContent }: Props): JSX.Element {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const terminalRef = useRef<Terminal | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
+  const seededRef = useRef(false);
+
+  useEffect(() => {
+    seededRef.current = false;
+    const term = new Terminal({
+      cursorBlink: true,
+      theme: {
+        background: "#071019",
+        foreground: "#d6ecff"
+      }
+    });
+    const fit = new FitAddon();
+    term.loadAddon(fit);
+    terminalRef.current = term;
+    fitRef.current = fit;
+
+    if (containerRef.current) {
+      term.open(containerRef.current);
+      fit.fit();
+      term.focus();
+      void onResize(meetingId, term.cols, term.rows);
+    }
+
+    const unsub = subscribeData((incomingId, chunk) => {
+      if (incomingId !== meetingId) return;
+      term.write(chunk);
+    });
+
+    const dataListener = term.onData((data) => {
+      void window.meetingRoom.writeTerminal(meetingId, data);
+    });
+
+    const observer = new ResizeObserver(() => {
+      fit.fit();
+      void onResize(meetingId, term.cols, term.rows);
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+
+    return () => {
+      dataListener.dispose();
+      observer.disconnect();
+      unsub();
+      term.dispose();
+      terminalRef.current = null;
+      seededRef.current = false;
+    };
+  }, [meetingId, onResize, subscribeData]);
+
+  useEffect(() => {
+    if (seededRef.current) return;
+    const term = terminalRef.current;
+    if (!term) return;
+    if (!initialContent || !initialContent.trim()) return;
+    term.write(`${initialContent}\r\n`);
+    seededRef.current = true;
+  }, [initialContent, meetingId]);
+
+  const handleContainerClick = () => {
+    terminalRef.current?.focus();
+  };
+
+  return (
+    <div
+      className="terminal-pane"
+      ref={containerRef}
+      onClick={handleContainerClick}
+      onFocus={() => terminalRef.current?.focus()}
+      tabIndex={0}
+      role="application"
+    />
+  );
+}

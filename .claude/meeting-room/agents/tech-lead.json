@@ -1,0 +1,6 @@
+{
+  "id": "tech-lead",
+  "name": "Tech Lead",
+  "description": "実装コスト、技術負債、運用性を考慮して実装案に落とす",
+  "enabledByDefault": true
+}
