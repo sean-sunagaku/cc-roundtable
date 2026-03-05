@@ -11,6 +11,7 @@ import type {
   MeetingTab,
   SkillOption
 } from "@shared/types";
+import type { BroadcastToRenderer, MeetingControlMode } from "@shared/ipc";
 import { PtyManager } from "./pty-manager";
 
 interface AgentProfileFile {
@@ -55,7 +56,7 @@ export class MeetingService {
 
   constructor(
     private readonly ptyManager: PtyManager,
-    private readonly broadcast: (channel: string, payload: unknown) => void
+    private readonly broadcast: BroadcastToRenderer
   ) {
     this.activeFlagPath = path.resolve(process.cwd(), "..", ".claude/meeting-room/.active");
     this.summaryDirPath = path.resolve(process.cwd(), "..", ".claude/meeting-room/summaries");
@@ -100,7 +101,7 @@ export class MeetingService {
     return this.submitPrompt(meetingId, normalizedInput);
   }
 
-  sendControlPrompt(meetingId: string, mode: "pause" | "resume" | "end" | "settings", extra?: string): void {
+  sendControlPrompt(meetingId: string, mode: MeetingControlMode, extra?: string): void {
     const promptMap = {
       pause: "会議を一時停止し、現時点の要点を短くまとめてください。",
       resume: "会議を再開してください。直前の要点を確認して続行してください。",

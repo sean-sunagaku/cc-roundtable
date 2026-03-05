@@ -1,16 +1,11 @@
 import path from "node:path";
 import fs from "node:fs";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow } from "electron";
+import type { MainInvokeArgs, MainInvokeChannel, MainInvokeResult } from "@shared/ipc";
 import { PtyManager } from "./pty-manager";
+import { MainIpcRouter } from "./ipc-router";
 import { RelayServer } from "./ws-server";
 import { MeetingService } from "./meeting";
-import type {
-  AgentMessagePayload,
-  AgentProfileInput,
-  ClaudeSessionDebug,
-  MeetingConfig,
-  MeetingSummaryPayload
-} from "@shared/types";
 
 let mainWindow: BrowserWindow | null = null;
 let sessionDebugWindow: BrowserWindow | null = null;
@@ -21,10 +16,9 @@ const fallbackRelayByMeeting = new Map<string, string>();
 const ptyTailMaxLines = 120;
 const ptyManager = new PtyManager();
 const relayServer = new RelayServer();
-const meetingService = new MeetingService(ptyManager, (channel, payload) => {
-  if (mainWindow) {
-    mainWindow.webContents.send(channel, payload);
-  }
+const ipcRouter = new MainIpcRouter(() => mainWindow);
+const meetingService = new MeetingService(ptyManager, (channel, ...args) => {
+  ipcRouter.send(channel, ...args);
 });
 
 function createWindow(): void {
@@ -51,41 +45,45 @@ function createWindow(): void {
   meetingService.attachWindow(mainWindow);
 }
 
+type MaybePromise<T> = T | Promise<T>;
+
+function handleIpc<C extends MainInvokeChannel>(
+  channel: C,
+  handler: (...args: MainInvokeArgs<C>) => MaybePromise<MainInvokeResult<C>>
+): void {
+  ipcRouter.handle(channel, handler);
+}
+
 function registerIpc(): void {
-  ipcMain.handle("meeting:start", (_event, config: MeetingConfig) => meetingService.startMeeting(config));
-  ipcMain.handle("meeting:end", (_event, meetingId: string) => {
+  handleIpc("meeting:start", (config) => meetingService.startMeeting(config));
+  handleIpc("meeting:end", (meetingId) => {
     meetingService.endMeeting(meetingId);
   });
-  ipcMain.handle("meeting:human-message", (_event, meetingId: string, message: string) => {
+  handleIpc("meeting:human-message", (meetingId, message) => {
     return meetingService.sendHumanMessage(meetingId, message);
   });
-  ipcMain.handle(
-    "meeting:control-message",
-    (_event, meetingId: string, mode: "pause" | "resume" | "end" | "settings", extra?: string) => {
-      if (mode === "end") {
-        meetingService.sendControlPrompt(meetingId, "end");
-        meetingService.endMeeting(meetingId);
-        return;
-      }
-      meetingService.sendControlPrompt(meetingId, mode, extra);
+  handleIpc("meeting:control-message", (meetingId, mode, extra) => {
+    if (mode === "end") {
+      meetingService.sendControlPrompt(meetingId, "end");
+      meetingService.endMeeting(meetingId);
+      return;
     }
-  );
-  ipcMain.handle("meeting:list-skills", () => meetingService.listSkills());
-  ipcMain.handle("meeting:list-agents", () => meetingService.listAgentProfiles());
-  ipcMain.handle("meeting:save-agent", (_event, input: AgentProfileInput) => meetingService.saveAgentProfile(input));
-  ipcMain.handle("meeting:list-tabs", () => meetingService.listTabs());
-  ipcMain.handle("meeting:default-project-dir", () => meetingService.defaultProjectDir());
-  ipcMain.handle("meeting:save-summary", (_event, payload: MeetingSummaryPayload) =>
-    meetingService.saveMeetingSummary(payload)
-  );
-  ipcMain.handle("meeting:retry-mcp", (_event, meetingId: string) => meetingService.retryMcp(meetingId));
-  ipcMain.handle("meeting:resize-terminal", (_event, meetingId: string, cols: number, rows: number) => {
+    meetingService.sendControlPrompt(meetingId, mode, extra);
+  });
+  handleIpc("meeting:list-skills", () => meetingService.listSkills());
+  handleIpc("meeting:list-agents", () => meetingService.listAgentProfiles());
+  handleIpc("meeting:save-agent", (input) => meetingService.saveAgentProfile(input));
+  handleIpc("meeting:list-tabs", () => meetingService.listTabs());
+  handleIpc("meeting:default-project-dir", () => meetingService.defaultProjectDir());
+  handleIpc("meeting:save-summary", (payload) => meetingService.saveMeetingSummary(payload));
+  handleIpc("meeting:retry-mcp", (meetingId) => meetingService.retryMcp(meetingId));
+  handleIpc("meeting:resize-terminal", (meetingId, cols, rows) => {
     ptyManager.resize(meetingId, cols, rows);
   });
-  ipcMain.handle("meeting:terminal-write", (_event, meetingId: string, data: string) => {
+  handleIpc("meeting:terminal-write", (meetingId, data) => {
     return ptyManager.write(meetingId, data);
   });
-  ipcMain.handle("meeting:get-session-debug", (_event, meetingId: string): ClaudeSessionDebug => {
+  handleIpc("meeting:get-session-debug", (meetingId) => {
     const tail = ptyTailByMeeting.get(meetingId) ?? [];
     const joined = tail.join("\n");
     return {
@@ -96,7 +94,7 @@ function registerIpc(): void {
       lastUpdatedAt: tail.length > 0 ? new Date().toISOString() : undefined
     };
   });
-  ipcMain.handle("app:open-devtools", () => {
+  handleIpc("app:open-devtools", () => {
     if (!mainWindow) return false;
     if (!mainWindow.webContents.isDevToolsOpened()) {
       mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -105,7 +103,7 @@ function registerIpc(): void {
     }
     return true;
   });
-  ipcMain.handle("meeting:open-session-debug-window", (_event, meetingId: string) => {
+  handleIpc("meeting:open-session-debug-window", (meetingId) => {
     const devUrl = process.env.VITE_DEV_SERVER_URL;
     if (sessionDebugWindow && !sessionDebugWindow.isDestroyed()) {
       sessionDebugWindow.close();
@@ -251,14 +249,13 @@ function extractClaudeResponsesFromChunk(cleaned: string): string[] {
 }
 
 function emitRuntimeEvent(meetingId: string, type: "usage_limit" | "mcp_error" | "mcp_info", message: string): void {
-  if (!mainWindow) return;
   const key = `${meetingId}:${type}:${message}`;
   const now = Date.now();
   const last = runtimeEventDebounce.get(key) ?? 0;
   if (now - last < 10_000) return;
   runtimeEventDebounce.set(key, now);
 
-  mainWindow.webContents.send("meeting:runtime-event", {
+  ipcRouter.send("meeting:runtime-event", {
     meetingId,
     type,
     message,
@@ -274,7 +271,7 @@ app.whenReady().then(() => {
   relayServer.onRelay((payload) => meetingService.relayAgentMessage(payload));
   ptyManager.on("data", (meetingId: string, data: string) => {
     if (!mainWindow) return;
-    mainWindow.webContents.send("terminal:data", meetingId, data);
+    ipcRouter.send("terminal:data", meetingId, data);
     const cleaned = stripAnsi(data).replace(/\u0007/g, "");
     const lines = collectTailLines(meetingId, data);
     const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
@@ -327,7 +324,7 @@ app.whenReady().then(() => {
     if (!mainWindow) return;
     ptyLineBufferByMeeting.delete(meetingId);
     fallbackRelayByMeeting.delete(meetingId);
-    mainWindow.webContents.send("terminal:data", meetingId, `\n[pty exited: ${exitCode}]\n`);
+    ipcRouter.send("terminal:data", meetingId, `\n[pty exited: ${exitCode}]\n`);
   });
 });
 

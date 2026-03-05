@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ChatMessage, ClaudeSessionDebug, ConversationHealth, MeetingTab, RuntimeEvent } from "@shared/types";
+import type { MeetingUiControlMode } from "@shared/ipc";
 import { ChatView } from "../components/ChatView";
 import { ConnectionStatus } from "../components/ConnectionStatus";
 import { InputBar } from "../components/InputBar";
@@ -13,7 +14,7 @@ interface Props {
   onSwitchTab: (tabId: string) => void;
   onSend: (message: string) => Promise<void>;
   onEnd: () => Promise<void>;
-  onControl: (mode: "pause" | "resume" | "settings", extra?: string) => Promise<void>;
+  onControl: (mode: MeetingUiControlMode, extra?: string) => Promise<void>;
   subscribeTerminal: (handler: (meetingId: string, chunk: string) => void) => () => void;
   onResizeTerminal: (meetingId: string, cols: number, rows: number) => Promise<void>;
   agentStatuses: Record<string, "active" | "completed">;

@@ -13,6 +13,7 @@ import type {
   SessionSnapshot,
   SkillOption
 } from "@shared/types";
+import type { MeetingUiControlMode } from "@shared/ipc";
 import { SetupScreen } from "./screens/SetupScreen";
 import { MeetingScreen } from "./screens/MeetingScreen";
 import { SessionDebugWindow } from "./screens/SessionDebugWindow";
@@ -112,8 +113,7 @@ export function App(): JSX.Element {
       if (dir) setDefaultProjectDir(dir);
     });
 
-    const unsubRelay = window.meetingRoom.onRelayMessage((payload) => {
-      const incoming = payload as AgentMessagePayload;
+    const unsubRelay = window.meetingRoom.onRelayMessage((incoming) => {
       if (incoming.type === "agent_status") {
         setAgentStatuses((prev) => ({
           ...prev,
@@ -257,7 +257,7 @@ export function App(): JSX.Element {
     }
   };
 
-  const handleControl = async (mode: "pause" | "resume" | "settings", extra?: string) => {
+  const handleControl = async (mode: MeetingUiControlMode, extra?: string) => {
     if (!currentTabId) return;
     await window.meetingRoom.sendControlMessage(currentTabId, mode, extra);
   };

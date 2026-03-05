@@ -3643,7 +3643,7 @@ var require_websocket_server = __commonJS({
 // src/main/index.ts
 var import_node_path3 = __toESM(require("node:path"));
 var import_node_fs2 = __toESM(require("node:fs"));
-var import_electron = require("electron");
+var import_electron2 = require("electron");
 
 // src/main/pty-manager.ts
 var import_node_os = __toESM(require("node:os"));
@@ -3715,6 +3715,22 @@ var PtyManager = class extends import_node_events.EventEmitter {
       HOME: process.env.HOME || import_node_os.default.homedir(),
       PATH: process.env.PATH || "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     };
+  }
+};
+
+// src/main/ipc-router.ts
+var import_electron = require("electron");
+var MainIpcRouter = class {
+  constructor(getMainWindow) {
+    this.getMainWindow = getMainWindow;
+  }
+  handle(channel, handler) {
+    import_electron.ipcMain.handle(channel, (_event, ...args) => handler(...args));
+  }
+  send(channel, ...args) {
+    const mainWindow2 = this.getMainWindow();
+    if (!mainWindow2) return;
+    mainWindow2.webContents.send(channel, ...args);
   }
 };
 
@@ -4058,13 +4074,12 @@ var fallbackRelayByMeeting = /* @__PURE__ */ new Map();
 var ptyTailMaxLines = 120;
 var ptyManager = new PtyManager();
 var relayServer = new RelayServer();
-var meetingService = new MeetingService(ptyManager, (channel, payload) => {
-  if (mainWindow) {
-    mainWindow.webContents.send(channel, payload);
-  }
+var ipcRouter = new MainIpcRouter(() => mainWindow);
+var meetingService = new MeetingService(ptyManager, (channel, ...args) => {
+  ipcRouter.send(channel, ...args);
 });
 function createWindow() {
-  mainWindow = new import_electron.BrowserWindow({
+  mainWindow = new import_electron2.BrowserWindow({
     width: 1280,
     height: 900,
     minWidth: 1e3,
@@ -4084,42 +4099,39 @@ function createWindow() {
   }
   meetingService.attachWindow(mainWindow);
 }
+function handleIpc(channel, handler) {
+  ipcRouter.handle(channel, handler);
+}
 function registerIpc() {
-  import_electron.ipcMain.handle("meeting:start", (_event, config) => meetingService.startMeeting(config));
-  import_electron.ipcMain.handle("meeting:end", (_event, meetingId) => {
+  handleIpc("meeting:start", (config) => meetingService.startMeeting(config));
+  handleIpc("meeting:end", (meetingId) => {
     meetingService.endMeeting(meetingId);
   });
-  import_electron.ipcMain.handle("meeting:human-message", (_event, meetingId, message) => {
+  handleIpc("meeting:human-message", (meetingId, message) => {
     return meetingService.sendHumanMessage(meetingId, message);
   });
-  import_electron.ipcMain.handle(
-    "meeting:control-message",
-    (_event, meetingId, mode, extra) => {
-      if (mode === "end") {
-        meetingService.sendControlPrompt(meetingId, "end");
-        meetingService.endMeeting(meetingId);
-        return;
-      }
-      meetingService.sendControlPrompt(meetingId, mode, extra);
+  handleIpc("meeting:control-message", (meetingId, mode, extra) => {
+    if (mode === "end") {
+      meetingService.sendControlPrompt(meetingId, "end");
+      meetingService.endMeeting(meetingId);
+      return;
     }
-  );
-  import_electron.ipcMain.handle("meeting:list-skills", () => meetingService.listSkills());
-  import_electron.ipcMain.handle("meeting:list-agents", () => meetingService.listAgentProfiles());
-  import_electron.ipcMain.handle("meeting:save-agent", (_event, input) => meetingService.saveAgentProfile(input));
-  import_electron.ipcMain.handle("meeting:list-tabs", () => meetingService.listTabs());
-  import_electron.ipcMain.handle("meeting:default-project-dir", () => meetingService.defaultProjectDir());
-  import_electron.ipcMain.handle(
-    "meeting:save-summary",
-    (_event, payload) => meetingService.saveMeetingSummary(payload)
-  );
-  import_electron.ipcMain.handle("meeting:retry-mcp", (_event, meetingId) => meetingService.retryMcp(meetingId));
-  import_electron.ipcMain.handle("meeting:resize-terminal", (_event, meetingId, cols, rows) => {
+    meetingService.sendControlPrompt(meetingId, mode, extra);
+  });
+  handleIpc("meeting:list-skills", () => meetingService.listSkills());
+  handleIpc("meeting:list-agents", () => meetingService.listAgentProfiles());
+  handleIpc("meeting:save-agent", (input) => meetingService.saveAgentProfile(input));
+  handleIpc("meeting:list-tabs", () => meetingService.listTabs());
+  handleIpc("meeting:default-project-dir", () => meetingService.defaultProjectDir());
+  handleIpc("meeting:save-summary", (payload) => meetingService.saveMeetingSummary(payload));
+  handleIpc("meeting:retry-mcp", (meetingId) => meetingService.retryMcp(meetingId));
+  handleIpc("meeting:resize-terminal", (meetingId, cols, rows) => {
     ptyManager.resize(meetingId, cols, rows);
   });
-  import_electron.ipcMain.handle("meeting:terminal-write", (_event, meetingId, data) => {
+  handleIpc("meeting:terminal-write", (meetingId, data) => {
     return ptyManager.write(meetingId, data);
   });
-  import_electron.ipcMain.handle("meeting:get-session-debug", (_event, meetingId) => {
+  handleIpc("meeting:get-session-debug", (meetingId) => {
     const tail = ptyTailByMeeting.get(meetingId) ?? [];
     const joined = tail.join("\n");
     return {
@@ -4130,7 +4142,7 @@ function registerIpc() {
       lastUpdatedAt: tail.length > 0 ? (/* @__PURE__ */ new Date()).toISOString() : void 0
     };
   });
-  import_electron.ipcMain.handle("app:open-devtools", () => {
+  handleIpc("app:open-devtools", () => {
     if (!mainWindow) return false;
     if (!mainWindow.webContents.isDevToolsOpened()) {
       mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -4139,12 +4151,12 @@ function registerIpc() {
     }
     return true;
   });
-  import_electron.ipcMain.handle("meeting:open-session-debug-window", (_event, meetingId) => {
+  handleIpc("meeting:open-session-debug-window", (meetingId) => {
     const devUrl = process.env.VITE_DEV_SERVER_URL;
     if (sessionDebugWindow && !sessionDebugWindow.isDestroyed()) {
       sessionDebugWindow.close();
     }
-    sessionDebugWindow = new import_electron.BrowserWindow({
+    sessionDebugWindow = new import_electron2.BrowserWindow({
       width: 900,
       height: 680,
       minWidth: 700,
@@ -4269,27 +4281,26 @@ function extractClaudeResponsesFromChunk(cleaned) {
   return results;
 }
 function emitRuntimeEvent(meetingId, type, message) {
-  if (!mainWindow) return;
   const key = `${meetingId}:${type}:${message}`;
   const now = Date.now();
   const last = runtimeEventDebounce.get(key) ?? 0;
   if (now - last < 1e4) return;
   runtimeEventDebounce.set(key, now);
-  mainWindow.webContents.send("meeting:runtime-event", {
+  ipcRouter.send("meeting:runtime-event", {
     meetingId,
     type,
     message,
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 }
-import_electron.app.whenReady().then(() => {
+import_electron2.app.whenReady().then(() => {
   createWindow();
   registerIpc();
   relayServer.start(9999);
   relayServer.onRelay((payload) => meetingService.relayAgentMessage(payload));
   ptyManager.on("data", (meetingId, data) => {
     if (!mainWindow) return;
-    mainWindow.webContents.send("terminal:data", meetingId, data);
+    ipcRouter.send("terminal:data", meetingId, data);
     const cleaned = stripAnsi(data).replace(/\u0007/g, "");
     const lines = collectTailLines(meetingId, data);
     const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
@@ -4341,19 +4352,19 @@ import_electron.app.whenReady().then(() => {
     if (!mainWindow) return;
     ptyLineBufferByMeeting.delete(meetingId);
     fallbackRelayByMeeting.delete(meetingId);
-    mainWindow.webContents.send("terminal:data", meetingId, `
+    ipcRouter.send("terminal:data", meetingId, `
 [pty exited: ${exitCode}]
 `);
   });
 });
-import_electron.app.on("window-all-closed", () => {
+import_electron2.app.on("window-all-closed", () => {
   ptyManager.stopAll();
   relayServer.close();
   if (sessionDebugWindow && !sessionDebugWindow.isDestroyed()) {
     sessionDebugWindow.close();
   }
   if (process.platform !== "darwin") {
-    import_electron.app.quit();
+    import_electron2.app.quit();
   }
 });
 //# sourceMappingURL=index.js.map
