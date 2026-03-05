@@ -20,6 +20,7 @@ import { SessionDebugWindow } from "./screens/SessionDebugWindow";
 
 const SESSION_KEY = "meeting-room:sessions";
 const DEFAULT_PROJECT_DIR = "/";
+type AgentRunStatus = "active" | "completed";
 
 function toChatMessage(payload: AgentMessagePayload): ChatMessage {
   return {
@@ -90,7 +91,7 @@ export function App(): JSX.Element {
   const [currentTabId, setCurrentTabId] = useState<string>("");
   const [defaultProjectDir, setDefaultProjectDir] = useState<string>(DEFAULT_PROJECT_DIR);
   const [messagesByMeeting, setMessagesByMeeting] = useState<Record<string, ChatMessage[]>>(() => loadSnapshots());
-  const [agentStatuses, setAgentStatuses] = useState<Record<string, "active" | "completed">>({});
+  const [agentStatusesByMeeting, setAgentStatusesByMeeting] = useState<Record<string, Record<string, AgentRunStatus>>>({});
   const [runtimeEventsByMeeting, setRuntimeEventsByMeeting] = useState<Record<string, RuntimeEvent[]>>({});
   const [healthByMeeting, setHealthByMeeting] = useState<Record<string, ConversationHealth>>({});
   const [sessionDebug, setSessionDebug] = useState<ClaudeSessionDebug | null>(null);
@@ -115,9 +116,14 @@ export function App(): JSX.Element {
 
     const unsubRelay = window.meetingRoom.onRelayMessage((incoming) => {
       if (incoming.type === "agent_status") {
-        setAgentStatuses((prev) => ({
+        const meetingId = incoming.meetingId || currentTabId || tabs[0]?.id;
+        if (!meetingId) return;
+        setAgentStatusesByMeeting((prev) => ({
           ...prev,
-          [incoming.sender]: incoming.status ?? "completed"
+          [meetingId]: {
+            ...(prev[meetingId] ?? {}),
+            [incoming.sender]: incoming.status ?? "completed"
+          }
         }));
         return;
       }
@@ -192,6 +198,43 @@ export function App(): JSX.Element {
     const tab = await window.meetingRoom.startMeeting(config);
     setTabs((prev) => [...prev, tab]);
     setCurrentTabId(tab.id);
+
+    if (config.members.length > 0) {
+      setAgentStatusesByMeeting((prev) => {
+        const seeded: Record<string, AgentRunStatus> = {};
+        for (const memberId of config.members) {
+          seeded[memberId] = "active";
+        }
+        return {
+          ...prev,
+          [tab.id]: {
+            ...seeded,
+            ...(prev[tab.id] ?? {})
+          }
+        };
+      });
+
+      const profileById = new Map(agents.map((agent) => [agent.id, agent]));
+      const teamLines = config.members.map((memberId) => {
+        const profile = profileById.get(memberId);
+        if (!profile) return `- ${memberId}`;
+        return `- ${profile.id} (${profile.name})`;
+      });
+      const teamMessage: ChatMessage = {
+        id: `team_${Date.now()}`,
+        sender: "system",
+        content: ["### Team 編成", ...teamLines].join("\n"),
+        timestamp: new Date().toISOString(),
+        source: "agent",
+        status: "confirmed",
+        team: tab.config.skill
+      };
+      setMessagesByMeeting((prev) => {
+        const next = { ...prev, [tab.id]: [...(prev[tab.id] ?? []), teamMessage] };
+        saveSnapshots(next);
+        return next;
+      });
+    }
   };
 
   const handleSaveAgent = async (input: AgentProfileInput): Promise<AgentProfile> => {
@@ -317,7 +360,7 @@ export function App(): JSX.Element {
       onControl={handleControl}
       subscribeTerminal={window.meetingRoom.onTerminalData}
       onResizeTerminal={window.meetingRoom.resizeTerminal}
-      agentStatuses={agentStatuses}
+      agentStatuses={agentStatusesByMeeting[currentTabId] ?? {}}
       ending={ending}
       health={healthByMeeting[currentTabId] ?? {}}
       runtimeEvents={runtimeEventsByMeeting[currentTabId] ?? []}

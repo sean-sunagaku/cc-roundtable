@@ -1,6 +1,22 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+// #region agent log
+function _dbg(msg: string, data: Record<string, unknown>, hyp: string): void {
+  fetch("http://127.0.0.1:7575/ingest/4b7c5fce-7a91-463a-ba06-c308da61067f", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a3767" },
+    body: JSON.stringify({
+      sessionId: "8a3767",
+      location: "meeting.ts",
+      message: msg,
+      data,
+      hypothesisId: hyp,
+      timestamp: Date.now()
+    })
+  }).catch(() => {});
+}
+// #endregion
 import type { BrowserWindow } from "electron";
 import type {
   AgentProfile,
@@ -50,6 +66,8 @@ const DEFAULT_AGENT_PROFILES: Array<Omit<AgentProfile, "source">> = [
 
 export class MeetingService {
   private tabs = new Map<string, MeetingTab>();
+  private pendingInitPrompts = new Map<string, string>();
+  private initPromptTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly activeFlagPath: string;
   private readonly summaryDirPath: string;
   private readonly agentDirPath: string;
@@ -72,10 +90,31 @@ export class MeetingService {
     return this.ptyManager.defaultProjectDir();
   }
 
-  buildInitPrompt(_config: MeetingConfig): string {
-    // 通常対話モードでは起動直後にプロンプトを送らず、
-    // ユーザーの最初の入力をそのままClaudeに渡す。
-    return "";
+  buildInitPrompt(config: MeetingConfig): string {
+    const topic = config.topic.trim();
+    const memberLines = this.resolveMemberLines(config.members).map((line) => `- ${line}`);
+    const requestedSkill = config.skill?.trim() || "feature-discussion";
+
+    return [
+      "Meeting Room 起動指示:",
+      "- いまから Agent Teams 会議を開始してください。",
+      "- 最初の相談内容（議題）をもとに、必要な Team 編成を最初に提案・確定してください。",
+      "- 会議中の SendMessage は必ず type: \"broadcast\" のみを使ってください。directed は禁止です。",
+      "- すべての重要な検討結果は、チャット欄に表示されるよう broadcast で共有してください。",
+      "- 返答は『結論 / 根拠 / 次アクション』の順で簡潔に整理してください。",
+      "",
+      `議題: ${topic || "(未指定)"}`,
+      `希望スキル: ${requestedSkill}`,
+      "参加メンバー:",
+      ...memberLines,
+      "",
+      "最初に実行すること:",
+      "1. 相談内容から Team 構成案を作る",
+      "2. Team 構成と進め方を broadcast で共有する",
+      "3. 初期分析を broadcast で共有し、必要ならユーザーへの確認事項を出す",
+      "",
+      `可能であれば /${requestedSkill} で開始してください。`
+    ].join("\n");
   }
 
   startMeeting(config: MeetingConfig): MeetingTab {
@@ -99,7 +138,8 @@ export class MeetingService {
       MEETING_ROOM_FALLBACK_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "discussion.log.jsonl"),
       MEETING_ROOM_STOP_DEBUG_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "stop-hook.log.jsonl")
     });
-    this.ptyManager.runClaude(config.id, this.buildInitPrompt(config));
+    this.ptyManager.runClaude(config.id);
+    this.queueInitPrompt(config.id, this.buildInitPrompt(config));
     this.broadcast("meeting:tabs", this.listTabs());
     return tab;
   }
@@ -107,7 +147,14 @@ export class MeetingService {
   sendHumanMessage(meetingId: string, input: string): boolean {
     const normalizedInput = input.replace(/\s+/g, " ").trim();
     if (!normalizedInput) return false;
-    return this.submitPrompt(meetingId, normalizedInput);
+    const prompt = [
+      "人間参加者からの入力です。内容を必ずチーム全体へ broadcast してください。",
+      "そのうえで、必要な検討と提案を続けてください。",
+      "",
+      "[Human Input]",
+      normalizedInput
+    ].join("\n");
+    return this.submitPrompt(meetingId, prompt);
   }
 
   sendControlPrompt(meetingId: string, mode: MeetingControlMode, extra?: string): void {
@@ -129,6 +176,7 @@ export class MeetingService {
     if (!tab) return;
     this.ptyManager.stop(meetingId);
     this.tabs.delete(meetingId);
+    this.clearPendingInitPrompt(meetingId);
     if (this.tabs.size === 0) {
       this.clearMeetingFlag();
     }
@@ -180,6 +228,14 @@ export class MeetingService {
 
   relayAgentMessage(payload: AgentMessagePayload): void {
     this.broadcast("meeting:agent-message", payload);
+  }
+
+  hasPendingInitPrompt(meetingId: string): boolean {
+    return this.pendingInitPrompts.has(meetingId);
+  }
+
+  onClaudeReady(meetingId: string): boolean {
+    return this.flushPendingInitPrompt(meetingId);
   }
 
   listSkills(): SkillOption[] {
@@ -302,10 +358,58 @@ export class MeetingService {
     }
   }
 
+  private queueInitPrompt(meetingId: string, prompt: string): void {
+    const normalized = prompt.replace(/\r/g, "").trim();
+    if (!normalized) return;
+    // #region agent log
+    _dbg("queueInitPrompt", { meetingId, len: normalized.length, hasNewlines: /\n/.test(normalized) }, "H5");
+    // #endregion
+
+    this.clearPendingInitPrompt(meetingId);
+    this.pendingInitPrompts.set(meetingId, normalized);
+
+    // ready 検出で即送る + 8秒フォールバック
+    const timer = setTimeout(() => {
+      // #region agent log
+      _dbg("timer fired", { meetingId }, "H1");
+      // #endregion
+      this.flushPendingInitPrompt(meetingId);
+    }, 8000);
+    this.initPromptTimers.set(meetingId, timer);
+  }
+
+  private clearPendingInitPrompt(meetingId: string): void {
+    this.pendingInitPrompts.delete(meetingId);
+    const timer = this.initPromptTimers.get(meetingId);
+    if (timer) {
+      clearTimeout(timer);
+      this.initPromptTimers.delete(meetingId);
+    }
+  }
+
+  private flushPendingInitPrompt(meetingId: string): boolean {
+    const pending = this.pendingInitPrompts.get(meetingId);
+    // #region agent log
+    _dbg("flushPendingInitPrompt", { meetingId, hasPending: !!pending }, "H5");
+    // #endregion
+    if (!pending) return false;
+    const ok = this.ptyManager.write(meetingId, pending);
+    if (!ok) return false;
+    this.clearPendingInitPrompt(meetingId);
+    // 入力は即反映、Enter だけ遅延（TUI が改行を処理するまで待つ）
+    setTimeout(() => {
+      this.ptyManager.write(meetingId, "\r");
+    }, 600);
+    return true;
+  }
+
   private submitPrompt(meetingId: string, prompt: string): boolean {
     const content = prompt.replace(/\r/g, "").trim();
     if (!content) return false;
     const ok = this.ptyManager.write(meetingId, content);
+    // #region agent log
+    _dbg("submitPrompt", { meetingId, contentLen: content.length, ok }, "H2");
+    // #endregion
     if (!ok) return false;
     this.ptyManager.write(meetingId, "\r");
     return true;

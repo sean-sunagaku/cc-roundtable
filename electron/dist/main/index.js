@@ -3671,7 +3671,7 @@ var PtyManager = class extends import_node_events.EventEmitter {
     proc.onData((data) => this.emit("data", meetingId, data));
     proc.onExit(({ exitCode }) => this.emit("exit", meetingId, exitCode ?? 0));
   }
-  runClaude(meetingId, initialPrompt) {
+  runClaude(meetingId) {
     const session = this.sessions.get(meetingId);
     if (!session) return;
     const { process: proc, env: sessionEnv } = session;
@@ -3681,12 +3681,6 @@ var PtyManager = class extends import_node_events.EventEmitter {
     const settingsArg = import_node_fs.default.existsSync(settingsPath) && !hasSettingsArg ? ` --settings ${this.shellQuote(settingsPath)} --setting-sources user,project,local` : "";
     proc.write(`${baseCommand}${settingsArg}
 `);
-    setTimeout(() => {
-      if (initialPrompt.trim()) {
-        proc.write(`${initialPrompt}
-`);
-      }
-    }, 250);
   }
   write(meetingId, data) {
     const proc = this.sessions.get(meetingId)?.process;
@@ -3806,6 +3800,21 @@ var RelayServer = class {
 var import_node_fs2 = __toESM(require("node:fs"));
 var import_node_path2 = __toESM(require("node:path"));
 var import_node_os2 = __toESM(require("node:os"));
+function _dbg(msg, data, hyp) {
+  fetch("http://127.0.0.1:7575/ingest/4b7c5fce-7a91-463a-ba06-c308da61067f", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a3767" },
+    body: JSON.stringify({
+      sessionId: "8a3767",
+      location: "meeting.ts",
+      message: msg,
+      data,
+      hypothesisId: hyp,
+      timestamp: Date.now()
+    })
+  }).catch(() => {
+  });
+}
 var DEFAULT_AGENT_PROFILES = [
   {
     id: "product-manager",
@@ -3842,6 +3851,8 @@ var MeetingService = class {
     this.ensureDefaultAgentProfiles();
   }
   tabs = /* @__PURE__ */ new Map();
+  pendingInitPrompts = /* @__PURE__ */ new Map();
+  initPromptTimers = /* @__PURE__ */ new Map();
   activeFlagPath;
   summaryDirPath;
   agentDirPath;
@@ -3851,8 +3862,30 @@ var MeetingService = class {
   defaultProjectDir() {
     return this.ptyManager.defaultProjectDir();
   }
-  buildInitPrompt(_config) {
-    return "";
+  buildInitPrompt(config) {
+    const topic = config.topic.trim();
+    const memberLines = this.resolveMemberLines(config.members).map((line) => `- ${line}`);
+    const requestedSkill = config.skill?.trim() || "feature-discussion";
+    return [
+      "Meeting Room \u8D77\u52D5\u6307\u793A:",
+      "- \u3044\u307E\u304B\u3089 Agent Teams \u4F1A\u8B70\u3092\u958B\u59CB\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+      "- \u6700\u521D\u306E\u76F8\u8AC7\u5185\u5BB9\uFF08\u8B70\u984C\uFF09\u3092\u3082\u3068\u306B\u3001\u5FC5\u8981\u306A Team \u7DE8\u6210\u3092\u6700\u521D\u306B\u63D0\u6848\u30FB\u78BA\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+      '- \u4F1A\u8B70\u4E2D\u306E SendMessage \u306F\u5FC5\u305A type: "broadcast" \u306E\u307F\u3092\u4F7F\u3063\u3066\u304F\u3060\u3055\u3044\u3002directed \u306F\u7981\u6B62\u3067\u3059\u3002',
+      "- \u3059\u3079\u3066\u306E\u91CD\u8981\u306A\u691C\u8A0E\u7D50\u679C\u306F\u3001\u30C1\u30E3\u30C3\u30C8\u6B04\u306B\u8868\u793A\u3055\u308C\u308B\u3088\u3046 broadcast \u3067\u5171\u6709\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+      "- \u8FD4\u7B54\u306F\u300E\u7D50\u8AD6 / \u6839\u62E0 / \u6B21\u30A2\u30AF\u30B7\u30E7\u30F3\u300F\u306E\u9806\u3067\u7C21\u6F54\u306B\u6574\u7406\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+      "",
+      `\u8B70\u984C: ${topic || "(\u672A\u6307\u5B9A)"}`,
+      `\u5E0C\u671B\u30B9\u30AD\u30EB: ${requestedSkill}`,
+      "\u53C2\u52A0\u30E1\u30F3\u30D0\u30FC:",
+      ...memberLines,
+      "",
+      "\u6700\u521D\u306B\u5B9F\u884C\u3059\u308B\u3053\u3068:",
+      "1. \u76F8\u8AC7\u5185\u5BB9\u304B\u3089 Team \u69CB\u6210\u6848\u3092\u4F5C\u308B",
+      "2. Team \u69CB\u6210\u3068\u9032\u3081\u65B9\u3092 broadcast \u3067\u5171\u6709\u3059\u308B",
+      "3. \u521D\u671F\u5206\u6790\u3092 broadcast \u3067\u5171\u6709\u3057\u3001\u5FC5\u8981\u306A\u3089\u30E6\u30FC\u30B6\u30FC\u3078\u306E\u78BA\u8A8D\u4E8B\u9805\u3092\u51FA\u3059",
+      "",
+      `\u53EF\u80FD\u3067\u3042\u308C\u3070 /${requestedSkill} \u3067\u958B\u59CB\u3057\u3066\u304F\u3060\u3055\u3044\u3002`
+    ].join("\n");
   }
   startMeeting(config) {
     this.ensureMeetingFlag();
@@ -3874,14 +3907,22 @@ var MeetingService = class {
       MEETING_ROOM_FALLBACK_LOG: import_node_path2.default.resolve(process.cwd(), "..", ".claude", "meeting-room", "discussion.log.jsonl"),
       MEETING_ROOM_STOP_DEBUG_LOG: import_node_path2.default.resolve(process.cwd(), "..", ".claude", "meeting-room", "stop-hook.log.jsonl")
     });
-    this.ptyManager.runClaude(config.id, this.buildInitPrompt(config));
+    this.ptyManager.runClaude(config.id);
+    this.queueInitPrompt(config.id, this.buildInitPrompt(config));
     this.broadcast("meeting:tabs", this.listTabs());
     return tab;
   }
   sendHumanMessage(meetingId, input) {
     const normalizedInput = input.replace(/\s+/g, " ").trim();
     if (!normalizedInput) return false;
-    return this.submitPrompt(meetingId, normalizedInput);
+    const prompt = [
+      "\u4EBA\u9593\u53C2\u52A0\u8005\u304B\u3089\u306E\u5165\u529B\u3067\u3059\u3002\u5185\u5BB9\u3092\u5FC5\u305A\u30C1\u30FC\u30E0\u5168\u4F53\u3078 broadcast \u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+      "\u305D\u306E\u3046\u3048\u3067\u3001\u5FC5\u8981\u306A\u691C\u8A0E\u3068\u63D0\u6848\u3092\u7D9A\u3051\u3066\u304F\u3060\u3055\u3044\u3002",
+      "",
+      "[Human Input]",
+      normalizedInput
+    ].join("\n");
+    return this.submitPrompt(meetingId, prompt);
   }
   sendControlPrompt(meetingId, mode, extra) {
     const promptMap = {
@@ -3901,6 +3942,7 @@ ${extra ?? "(no details)"}`
     if (!tab) return;
     this.ptyManager.stop(meetingId);
     this.tabs.delete(meetingId);
+    this.clearPendingInitPrompt(meetingId);
     if (this.tabs.size === 0) {
       this.clearMeetingFlag();
     }
@@ -3944,6 +3986,12 @@ ${extra ?? "(no details)"}`
   }
   relayAgentMessage(payload) {
     this.broadcast("meeting:agent-message", payload);
+  }
+  hasPendingInitPrompt(meetingId) {
+    return this.pendingInitPrompts.has(meetingId);
+  }
+  onClaudeReady(meetingId) {
+    return this.flushPendingInitPrompt(meetingId);
   }
   listSkills() {
     const home = import_node_os2.default.homedir();
@@ -4049,10 +4097,43 @@ ${extra ?? "(no details)"}`
       import_node_fs2.default.rmSync(this.activeFlagPath);
     }
   }
+  queueInitPrompt(meetingId, prompt) {
+    const normalized = prompt.replace(/\r/g, "").trim();
+    if (!normalized) return;
+    _dbg("queueInitPrompt", { meetingId, len: normalized.length, hasNewlines: /\n/.test(normalized) }, "H5");
+    this.clearPendingInitPrompt(meetingId);
+    this.pendingInitPrompts.set(meetingId, normalized);
+    const timer = setTimeout(() => {
+      _dbg("timer fired", { meetingId }, "H1");
+      this.flushPendingInitPrompt(meetingId);
+    }, 8e3);
+    this.initPromptTimers.set(meetingId, timer);
+  }
+  clearPendingInitPrompt(meetingId) {
+    this.pendingInitPrompts.delete(meetingId);
+    const timer = this.initPromptTimers.get(meetingId);
+    if (timer) {
+      clearTimeout(timer);
+      this.initPromptTimers.delete(meetingId);
+    }
+  }
+  flushPendingInitPrompt(meetingId) {
+    const pending = this.pendingInitPrompts.get(meetingId);
+    _dbg("flushPendingInitPrompt", { meetingId, hasPending: !!pending }, "H5");
+    if (!pending) return false;
+    const ok = this.ptyManager.write(meetingId, pending);
+    if (!ok) return false;
+    this.clearPendingInitPrompt(meetingId);
+    setTimeout(() => {
+      this.ptyManager.write(meetingId, "\r");
+    }, 600);
+    return true;
+  }
   submitPrompt(meetingId, prompt) {
     const content = prompt.replace(/\r/g, "").trim();
     if (!content) return false;
     const ok = this.ptyManager.write(meetingId, content);
+    _dbg("submitPrompt", { meetingId, contentLen: content.length, ok }, "H2");
     if (!ok) return false;
     this.ptyManager.write(meetingId, "\r");
     return true;
@@ -4133,6 +4214,21 @@ ${extra ?? "(no details)"}`
 };
 
 // src/main/index.ts
+function _dbg2(msg, data, hyp) {
+  fetch("http://127.0.0.1:7575/ingest/4b7c5fce-7a91-463a-ba06-c308da61067f", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a3767" },
+    body: JSON.stringify({
+      sessionId: "8a3767",
+      location: "index.ts",
+      message: msg,
+      data,
+      hypothesisId: hyp,
+      timestamp: Date.now()
+    })
+  }).catch(() => {
+  });
+}
 var mainWindow = null;
 var sessionDebugWindow = null;
 var runtimeEventDebounce = /* @__PURE__ */ new Map();
@@ -4283,6 +4379,10 @@ function hasMcpFailureSignal(text) {
   const lines = normalized.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
   return lines.some((line) => /mcp server failed/i.test(line) && !isMcpStatusBadge(line));
 }
+function hasClaudeReadySignal(text) {
+  const normalized = stripAnsi(text).replace(/\u0007/g, "");
+  return /❯\s/.test(normalized) || /what task would you like the agent team/i.test(normalized);
+}
 function shouldKeepTailLine(line) {
   const compact = line.replace(/\s+/g, " ").trim();
   if (!compact) return false;
@@ -4372,6 +4472,14 @@ import_electron2.app.whenReady().then(() => {
     if (!mainWindow) return;
     ipcRouter.send("terminal:data", meetingId, data);
     const cleaned = stripAnsi(data).replace(/\u0007/g, "");
+    const hasPending = meetingService.hasPendingInitPrompt(meetingId);
+    const readySignal = hasClaudeReadySignal(cleaned);
+    if (hasPending && readySignal) {
+      _dbg2("hasClaudeReadySignal+onClaudeReady", { meetingId, snippet: cleaned.slice(-80) }, "H1");
+    }
+    if (hasPending && readySignal) {
+      meetingService.onClaudeReady(meetingId);
+    }
     const lines = collectTailLines(meetingId, data);
     if (lines.length > 0) {
       const prev = ptyTailByMeeting.get(meetingId) ?? [];

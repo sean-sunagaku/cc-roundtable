@@ -41,7 +41,7 @@ export class PtyManager extends EventEmitter {
     proc.onExit(({ exitCode }) => this.emit("exit", meetingId, exitCode ?? 0));
   }
 
-  runClaude(meetingId: string, initialPrompt: string): void {
+  runClaude(meetingId: string): void {
     const session = this.sessions.get(meetingId);
     if (!session) return;
     const { process: proc, env: sessionEnv } = session;
@@ -55,11 +55,6 @@ export class PtyManager extends EventEmitter {
       : "";
 
     proc.write(`${baseCommand}${settingsArg}\n`);
-    setTimeout(() => {
-      if (initialPrompt.trim()) {
-        proc.write(`${initialPrompt}\n`);
-      }
-    }, 250);
   }
 
   write(meetingId: string, data: string): boolean {

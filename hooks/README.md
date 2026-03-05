@@ -2,6 +2,7 @@
 
 ## Files
 - `enforce-broadcast.py`: PreToolUse hook to block directed `SendMessage`.
+- `team-event-relay.py`: PostToolUse hook to relay `TeamCreate`/`Task` events to chat.
 - `ws-relay.py`: PostToolUse hook to relay `SendMessage` payloads over WebSocket.
 - `subagent-status-relay.py`: PostToolUse hook to relay `SubagentStop` status events.
 - `stop-relay.py`: Stop hook to relay the latest assistant response over WebSocket.

@@ -1,6 +1,22 @@
 import path from "node:path";
 import fs from "node:fs";
 import { app, BrowserWindow } from "electron";
+// #region agent log
+function _dbg(msg: string, data: Record<string, unknown>, hyp: string): void {
+  fetch("http://127.0.0.1:7575/ingest/4b7c5fce-7a91-463a-ba06-c308da61067f", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "8a3767" },
+    body: JSON.stringify({
+      sessionId: "8a3767",
+      location: "index.ts",
+      message: msg,
+      data,
+      hypothesisId: hyp,
+      timestamp: Date.now()
+    })
+  }).catch(() => {});
+}
+// #endregion
 import type { MainInvokeArgs, MainInvokeChannel, MainInvokeResult } from "@shared/ipc";
 import { PtyManager } from "./pty-manager";
 import { MainIpcRouter } from "./ipc-router";
@@ -176,6 +192,11 @@ function hasMcpFailureSignal(text: string): boolean {
   return lines.some((line) => /mcp server failed/i.test(line) && !isMcpStatusBadge(line));
 }
 
+function hasClaudeReadySignal(text: string): boolean {
+  const normalized = stripAnsi(text).replace(/\u0007/g, "");
+  return /❯\s/.test(normalized) || /what task would you like the agent team/i.test(normalized);
+}
+
 function shouldKeepTailLine(line: string): boolean {
   const compact = line.replace(/\s+/g, " ").trim();
   if (!compact) return false;
@@ -275,6 +296,16 @@ app.whenReady().then(() => {
     if (!mainWindow) return;
     ipcRouter.send("terminal:data", meetingId, data);
     const cleaned = stripAnsi(data).replace(/\u0007/g, "");
+    const hasPending = meetingService.hasPendingInitPrompt(meetingId);
+    const readySignal = hasClaudeReadySignal(cleaned);
+    // #region agent log
+    if (hasPending && readySignal) {
+      _dbg("hasClaudeReadySignal+onClaudeReady", { meetingId, snippet: cleaned.slice(-80) }, "H1");
+    }
+    // #endregion
+    if (hasPending && readySignal) {
+      meetingService.onClaudeReady(meetingId);
+    }
     const lines = collectTailLines(meetingId, data);
     if (lines.length > 0) {
       const prev = ptyTailByMeeting.get(meetingId) ?? [];

@@ -13,6 +13,24 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "TeamCreate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/team-event-relay.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/team-event-relay.py\""
+          }
+        ]
+      },
+      {
         "matcher": "SendMessage",
         "hooks": [
           {
