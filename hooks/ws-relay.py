@@ -65,11 +65,12 @@ def _extract_dict(payload: dict[str, Any], key: str) -> dict[str, Any]:
 def build_message(payload: dict[str, Any]) -> dict[str, Any]:
     tool_input = _extract_dict(payload, "tool_input")
     response = _extract_dict(payload, "tool_response")
+    metadata = _extract_dict(payload, "metadata")
 
     sender = (
         os.environ.get("CLAUDE_SUBAGENT_NAME")
         or os.environ.get("CLAUDE_AGENT_NAME")
-        or _extract_dict(payload, "metadata").get("agent")
+        or metadata.get("agent")
         or "leader"
     )
     if not isinstance(sender, str):
@@ -82,12 +83,18 @@ def build_message(payload: dict[str, Any]) -> dict[str, Any]:
         content = ""
 
     team = (
-        _extract_dict(payload, "metadata").get("team")
+        metadata.get("team")
         or os.environ.get("CLAUDE_TEAM_NAME")
         or "unknown"
     )
     if not isinstance(team, str):
         team = "unknown"
+
+    meeting_id = metadata.get("meetingId") or os.environ.get("MEETING_ROOM_MEETING_ID")
+    if not isinstance(meeting_id, str) or not meeting_id.strip():
+        meeting_id = None
+    else:
+        meeting_id = meeting_id.strip()
 
     timestamp = datetime.now(timezone.utc).isoformat()
     msg_id = f"msg_{int(datetime.now(tz=timezone.utc).timestamp())}_{sender.replace(' ', '_')}"
@@ -99,6 +106,7 @@ def build_message(payload: dict[str, Any]) -> dict[str, Any]:
         "content": content,
         "timestamp": timestamp,
         "team": team,
+        "meetingId": meeting_id,
         "rawType": tool_input.get("type"),
     }
 

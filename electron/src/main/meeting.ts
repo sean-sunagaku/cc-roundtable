@@ -80,6 +80,7 @@ export class MeetingService {
 
   startMeeting(config: MeetingConfig): MeetingTab {
     this.ensureMeetingFlag();
+    this.ensureWorkspaceTrustAccepted(config.projectDir);
     const tab: MeetingTab = {
       id: config.id,
       title: config.topic,
@@ -89,7 +90,15 @@ export class MeetingService {
     };
     this.tabs.set(config.id, tab);
 
-    this.ptyManager.start(config.id, config.projectDir, this.ptyManager.defaultEnv());
+    this.ptyManager.start(config.id, config.projectDir, {
+      ...this.ptyManager.defaultEnv(),
+      MEETING_ROOM_MEETING_ID: config.id,
+      MEETING_ROOM_ACTIVE_FILE: this.activeFlagPath,
+      MEETING_ROOM_SETTINGS_FILE: path.resolve(process.cwd(), "..", ".claude", "settings.json"),
+      MEETING_ROOM_HOOKS_DIR: path.resolve(process.cwd(), "..", "hooks"),
+      MEETING_ROOM_FALLBACK_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "discussion.log.jsonl"),
+      MEETING_ROOM_STOP_DEBUG_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "stop-hook.log.jsonl")
+    });
     this.ptyManager.runClaude(config.id, this.buildInitPrompt(config));
     this.broadcast("meeting:tabs", this.listTabs());
     return tab;
@@ -248,6 +257,43 @@ export class MeetingService {
   private ensureMeetingFlag(): void {
     fs.mkdirSync(path.dirname(this.activeFlagPath), { recursive: true });
     fs.writeFileSync(this.activeFlagPath, "", "utf-8");
+  }
+
+  private ensureWorkspaceTrustAccepted(projectDir: string): void {
+    const claudeConfigPath = path.join(os.homedir(), ".claude.json");
+    if (!fs.existsSync(claudeConfigPath)) {
+      return;
+    }
+
+    try {
+      const raw = fs.readFileSync(claudeConfigPath, "utf-8");
+      const parsed = JSON.parse(raw) as {
+        projects?: Record<string, Record<string, unknown>>;
+      };
+      const projects = parsed.projects ?? {};
+
+      const normalized = path.resolve(projectDir);
+      const realpath = fs.existsSync(normalized) ? fs.realpathSync(normalized) : normalized;
+      const keys = [projectDir, normalized, realpath].filter(Boolean);
+      const existingKey = keys.find((candidate) => typeof projects[candidate] === "object");
+      const targetKey = existingKey ?? realpath;
+
+      const existing = projects[targetKey] ?? {};
+      if (existing.hasTrustDialogAccepted === true) {
+        return;
+      }
+
+      parsed.projects = {
+        ...projects,
+        [targetKey]: {
+          ...existing,
+          hasTrustDialogAccepted: true
+        }
+      };
+      fs.writeFileSync(claudeConfigPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf-8");
+    } catch {
+      // No-op: trust bootstrap failure should not block meeting startup.
+    }
   }
 
   private clearMeetingFlag(): void {

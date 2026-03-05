@@ -14,6 +14,8 @@ const ptyTailByMeeting = new Map<string, string[]>();
 const ptyLineBufferByMeeting = new Map<string, string>();
 const fallbackRelayByMeeting = new Map<string, string>();
 const ptyTailMaxLines = 120;
+const relayMode = process.env.MEETING_ROOM_RELAY_MODE ?? "hook_only";
+const enableTerminalFallbackRelay = relayMode === "mixed" || relayMode === "terminal_only";
 const ptyManager = new PtyManager();
 const relayServer = new RelayServer();
 const ipcRouter = new MainIpcRouter(() => mainWindow);
@@ -274,28 +276,31 @@ app.whenReady().then(() => {
     ipcRouter.send("terminal:data", meetingId, data);
     const cleaned = stripAnsi(data).replace(/\u0007/g, "");
     const lines = collectTailLines(meetingId, data);
-    const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
-    const relayFallback = (compact: string): void => {
-      const lastRelayed = fallbackRelayByMeeting.get(meetingId);
-      if (lastRelayed === compact) return;
-      fallbackRelayByMeeting.set(meetingId, compact);
-      meetingService.relayAgentMessage({
-        type: "agent_message",
-        id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        sender: "leader",
-        content: compact,
-        timestamp: new Date().toISOString(),
-        team: meetingTab?.config.skill ?? "terminal-fallback",
-        meetingId
-      });
-    };
-    for (const content of extractClaudeResponsesFromChunk(cleaned)) {
-      relayFallback(content);
-    }
     if (lines.length > 0) {
       const prev = ptyTailByMeeting.get(meetingId) ?? [];
       const next = [...prev, ...lines].slice(-ptyTailMaxLines);
       ptyTailByMeeting.set(meetingId, next);
+    }
+
+    if (enableTerminalFallbackRelay) {
+      const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
+      const relayFallback = (compact: string): void => {
+        const lastRelayed = fallbackRelayByMeeting.get(meetingId);
+        if (lastRelayed === compact) return;
+        fallbackRelayByMeeting.set(meetingId, compact);
+        meetingService.relayAgentMessage({
+          type: "agent_message",
+          id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          sender: "leader",
+          content: compact,
+          timestamp: new Date().toISOString(),
+          team: meetingTab?.config.skill ?? "terminal-fallback",
+          meetingId
+        });
+      };
+      for (const content of extractClaudeResponsesFromChunk(cleaned)) {
+        relayFallback(content);
+      }
       for (const line of lines) {
         if (!isFallbackAgentLine(line)) continue;
         const compact = line.replace(/\s+/g, " ").trim();

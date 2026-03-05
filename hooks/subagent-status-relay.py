@@ -93,6 +93,11 @@ def main() -> int:
     if not payload:
         return 0
     sender = os.environ.get("CLAUDE_SUBAGENT_NAME") or os.environ.get("CLAUDE_AGENT_NAME") or "agent"
+    meeting_id = os.environ.get("MEETING_ROOM_MEETING_ID")
+    if not isinstance(meeting_id, str) or not meeting_id.strip():
+        meeting_id = None
+    else:
+        meeting_id = meeting_id.strip()
     event = {
         "type": "agent_status",
         "id": f"status_{int(datetime.now(tz=timezone.utc).timestamp())}_{sender}",
@@ -100,6 +105,7 @@ def main() -> int:
         "content": "completed",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "team": os.environ.get("CLAUDE_TEAM_NAME", "unknown"),
+        "meetingId": meeting_id,
         "status": "completed"
     }
     try:

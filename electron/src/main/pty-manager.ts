@@ -1,11 +1,13 @@
 import os from "node:os";
 import path from "node:path";
+import fs from "node:fs";
 import { EventEmitter } from "node:events";
 import * as pty from "node-pty";
 
 interface PtySession {
   process: pty.IPty;
   cwd: string;
+  env: NodeJS.ProcessEnv;
 }
 
 export interface PtyEvents {
@@ -15,6 +17,10 @@ export interface PtyEvents {
 
 export class PtyManager extends EventEmitter {
   private sessions = new Map<string, PtySession>();
+
+  private shellQuote(value: string): string {
+    return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+  }
 
   start(meetingId: string, cwd: string, env: NodeJS.ProcessEnv): void {
     this.stop(meetingId);
@@ -30,17 +36,25 @@ export class PtyManager extends EventEmitter {
       env
     });
 
-    this.sessions.set(meetingId, { process: proc, cwd });
+    this.sessions.set(meetingId, { process: proc, cwd, env });
     proc.onData((data) => this.emit("data", meetingId, data));
     proc.onExit(({ exitCode }) => this.emit("exit", meetingId, exitCode ?? 0));
   }
 
   runClaude(meetingId: string, initialPrompt: string): void {
-    const proc = this.sessions.get(meetingId)?.process;
-    if (!proc) return;
+    const session = this.sessions.get(meetingId);
+    if (!session) return;
+    const { process: proc, env: sessionEnv } = session;
 
-    const claudeCommand = process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
-    proc.write(`${claudeCommand}\n`);
+    const baseCommand = sessionEnv.MEETING_ROOM_CLAUDE_CMD || process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
+    const settingsPath =
+      sessionEnv.MEETING_ROOM_SETTINGS_FILE || process.env.MEETING_ROOM_SETTINGS_FILE || path.resolve(process.cwd(), "..", ".claude", "settings.json");
+    const hasSettingsArg = /(^|\s)--settings(\s|=)/.test(baseCommand);
+    const settingsArg = fs.existsSync(settingsPath) && !hasSettingsArg
+      ? ` --settings ${this.shellQuote(settingsPath)} --setting-sources user,project,local`
+      : "";
+
+    proc.write(`${baseCommand}${settingsArg}\n`);
     setTimeout(() => {
       if (initialPrompt.trim()) {
         proc.write(`${initialPrompt}\n`);

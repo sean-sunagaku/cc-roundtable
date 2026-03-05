@@ -29,6 +29,7 @@ export function SetupScreen({
   const [skillTouched, setSkillTouched] = useState(false);
   const [topic, setTopic] = useState("タスク優先順位の再設計");
   const [projectDir, setProjectDir] = useState(defaultProjectDir);
+  const [projectDirTouched, setProjectDirTouched] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [savingAgent, setSavingAgent] = useState(false);
@@ -43,6 +44,12 @@ export function SetupScreen({
     if (skillTouched) return;
     setSelectedSkill(pickDefaultSkill(skills));
   }, [skills, skillTouched]);
+
+  useEffect(() => {
+    if (projectDirTouched) return;
+    if (!defaultProjectDir) return;
+    setProjectDir(defaultProjectDir);
+  }, [defaultProjectDir, projectDirTouched]);
 
   const defaultMemberIds = useMemo(() => {
     const enabled = agents.filter((agent) => agent.enabledByDefault).map((agent) => agent.id);
@@ -165,7 +172,14 @@ export function SetupScreen({
 
           <label>
             プロジェクト
-            <input value={projectDir} onChange={(event) => setProjectDir(event.target.value)} required />
+            <input
+              value={projectDir}
+              onChange={(event) => {
+                setProjectDirTouched(true);
+                setProjectDir(event.target.value);
+              }}
+              required
+            />
           </label>
         </div>
 

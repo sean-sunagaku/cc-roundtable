@@ -3642,16 +3642,20 @@ var require_websocket_server = __commonJS({
 
 // src/main/index.ts
 var import_node_path3 = __toESM(require("node:path"));
-var import_node_fs2 = __toESM(require("node:fs"));
+var import_node_fs3 = __toESM(require("node:fs"));
 var import_electron2 = require("electron");
 
 // src/main/pty-manager.ts
 var import_node_os = __toESM(require("node:os"));
 var import_node_path = __toESM(require("node:path"));
+var import_node_fs = __toESM(require("node:fs"));
 var import_node_events = require("node:events");
 var pty = __toESM(require("node-pty"));
 var PtyManager = class extends import_node_events.EventEmitter {
   sessions = /* @__PURE__ */ new Map();
+  shellQuote(value) {
+    return `'${value.replace(/'/g, `'"'"'`)}'`;
+  }
   start(meetingId, cwd, env) {
     this.stop(meetingId);
     const shell = process.platform === "win32" ? "powershell.exe" : "/bin/zsh";
@@ -3663,15 +3667,19 @@ var PtyManager = class extends import_node_events.EventEmitter {
       cwd,
       env
     });
-    this.sessions.set(meetingId, { process: proc, cwd });
+    this.sessions.set(meetingId, { process: proc, cwd, env });
     proc.onData((data) => this.emit("data", meetingId, data));
     proc.onExit(({ exitCode }) => this.emit("exit", meetingId, exitCode ?? 0));
   }
   runClaude(meetingId, initialPrompt) {
-    const proc = this.sessions.get(meetingId)?.process;
-    if (!proc) return;
-    const claudeCommand = process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
-    proc.write(`${claudeCommand}
+    const session = this.sessions.get(meetingId);
+    if (!session) return;
+    const { process: proc, env: sessionEnv } = session;
+    const baseCommand = sessionEnv.MEETING_ROOM_CLAUDE_CMD || process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
+    const settingsPath = sessionEnv.MEETING_ROOM_SETTINGS_FILE || process.env.MEETING_ROOM_SETTINGS_FILE || import_node_path.default.resolve(process.cwd(), "..", ".claude", "settings.json");
+    const hasSettingsArg = /(^|\s)--settings(\s|=)/.test(baseCommand);
+    const settingsArg = import_node_fs.default.existsSync(settingsPath) && !hasSettingsArg ? ` --settings ${this.shellQuote(settingsPath)} --setting-sources user,project,local` : "";
+    proc.write(`${baseCommand}${settingsArg}
 `);
     setTimeout(() => {
       if (initialPrompt.trim()) {
@@ -3742,6 +3750,16 @@ var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 
 // src/main/ws-server.ts
+var RESPONSE_MARKER_START = "[[[MEETING_ROOM_RESPONSE_START]]]";
+var RESPONSE_MARKER_END = "[[[MEETING_ROOM_RESPONSE_END]]]";
+function extractMarkedContent(content) {
+  const start = content.indexOf(RESPONSE_MARKER_START);
+  if (start < 0) return content;
+  const bodyStart = start + RESPONSE_MARKER_START.length;
+  const end = content.indexOf(RESPONSE_MARKER_END, bodyStart);
+  if (end < 0) return content;
+  return content.slice(bodyStart, end).trim();
+}
 var RelayServer = class {
   wss = null;
   handlers = /* @__PURE__ */ new Set();
@@ -3751,8 +3769,19 @@ var RelayServer = class {
     this.wss.on("connection", (socket) => {
       socket.on("message", (buffer) => {
         try {
-          const payload = JSON.parse(buffer.toString());
-          if (payload && (payload.type === "agent_message" || payload.type === "agent_status")) {
+          const parsed = JSON.parse(buffer.toString());
+          if (!parsed) return;
+          let payload = parsed;
+          if (payload.type === "agent_message" && typeof payload.content === "string") {
+            payload = {
+              ...payload,
+              content: extractMarkedContent(payload.content)
+            };
+            if (!payload.content.trim()) {
+              return;
+            }
+          }
+          if (payload.type === "agent_message" || payload.type === "agent_status") {
             for (const handler of this.handlers) {
               handler(payload);
             }
@@ -3774,7 +3803,7 @@ var RelayServer = class {
 };
 
 // src/main/meeting.ts
-var import_node_fs = __toESM(require("node:fs"));
+var import_node_fs2 = __toESM(require("node:fs"));
 var import_node_path2 = __toESM(require("node:path"));
 var import_node_os2 = __toESM(require("node:os"));
 var DEFAULT_AGENT_PROFILES = [
@@ -3827,6 +3856,7 @@ var MeetingService = class {
   }
   startMeeting(config) {
     this.ensureMeetingFlag();
+    this.ensureWorkspaceTrustAccepted(config.projectDir);
     const tab = {
       id: config.id,
       title: config.topic,
@@ -3835,7 +3865,15 @@ var MeetingService = class {
       status: "running"
     };
     this.tabs.set(config.id, tab);
-    this.ptyManager.start(config.id, config.projectDir, this.ptyManager.defaultEnv());
+    this.ptyManager.start(config.id, config.projectDir, {
+      ...this.ptyManager.defaultEnv(),
+      MEETING_ROOM_MEETING_ID: config.id,
+      MEETING_ROOM_ACTIVE_FILE: this.activeFlagPath,
+      MEETING_ROOM_SETTINGS_FILE: import_node_path2.default.resolve(process.cwd(), "..", ".claude", "settings.json"),
+      MEETING_ROOM_HOOKS_DIR: import_node_path2.default.resolve(process.cwd(), "..", "hooks"),
+      MEETING_ROOM_FALLBACK_LOG: import_node_path2.default.resolve(process.cwd(), "..", ".claude", "meeting-room", "discussion.log.jsonl"),
+      MEETING_ROOM_STOP_DEBUG_LOG: import_node_path2.default.resolve(process.cwd(), "..", ".claude", "meeting-room", "stop-hook.log.jsonl")
+    });
     this.ptyManager.runClaude(config.id, this.buildInitPrompt(config));
     this.broadcast("meeting:tabs", this.listTabs());
     return tab;
@@ -3869,7 +3907,7 @@ ${extra ?? "(no details)"}`
     this.broadcast("meeting:tabs", this.listTabs());
   }
   saveMeetingSummary(payload) {
-    import_node_fs.default.mkdirSync(this.summaryDirPath, { recursive: true });
+    import_node_fs2.default.mkdirSync(this.summaryDirPath, { recursive: true });
     const now = /* @__PURE__ */ new Date();
     const stamp = now.toISOString().replace(/[:.]/g, "-");
     const safeMeetingId = payload.meetingId.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -3899,7 +3937,7 @@ ${extra ?? "(no details)"}`
       "- This summary is generated automatically at meeting end.",
       "- For full context, see session history in app storage."
     ].join("\n");
-    import_node_fs.default.writeFileSync(filePath, content, "utf-8");
+    import_node_fs2.default.writeFileSync(filePath, content, "utf-8");
     return filePath;
   }
   attachWindow(_window) {
@@ -3917,8 +3955,8 @@ ${extra ?? "(no details)"}`
     ];
     const result = /* @__PURE__ */ new Map();
     for (const root of candidates) {
-      if (!import_node_fs.default.existsSync(root)) continue;
-      const entries = import_node_fs.default.readdirSync(root, { withFileTypes: true });
+      if (!import_node_fs2.default.existsSync(root)) continue;
+      const entries = import_node_fs2.default.readdirSync(root, { withFileTypes: true });
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
         const name = entry.name;
@@ -3935,7 +3973,7 @@ ${extra ?? "(no details)"}`
   listAgentProfiles() {
     this.ensureDefaultAgentProfiles();
     const result = /* @__PURE__ */ new Map();
-    const entries = import_node_fs.default.readdirSync(this.agentDirPath, { withFileTypes: true });
+    const entries = import_node_fs2.default.readdirSync(this.agentDirPath, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
       const filePath = import_node_path2.default.join(this.agentDirPath, entry.name);
@@ -3965,7 +4003,7 @@ ${extra ?? "(no details)"}`
       description: normalized.description,
       enabledByDefault: normalized.enabledByDefault
     };
-    import_node_fs.default.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}
+    import_node_fs2.default.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}
 `, "utf-8");
     return {
       ...normalized,
@@ -3973,12 +4011,42 @@ ${extra ?? "(no details)"}`
     };
   }
   ensureMeetingFlag() {
-    import_node_fs.default.mkdirSync(import_node_path2.default.dirname(this.activeFlagPath), { recursive: true });
-    import_node_fs.default.writeFileSync(this.activeFlagPath, "", "utf-8");
+    import_node_fs2.default.mkdirSync(import_node_path2.default.dirname(this.activeFlagPath), { recursive: true });
+    import_node_fs2.default.writeFileSync(this.activeFlagPath, "", "utf-8");
+  }
+  ensureWorkspaceTrustAccepted(projectDir) {
+    const claudeConfigPath = import_node_path2.default.join(import_node_os2.default.homedir(), ".claude.json");
+    if (!import_node_fs2.default.existsSync(claudeConfigPath)) {
+      return;
+    }
+    try {
+      const raw = import_node_fs2.default.readFileSync(claudeConfigPath, "utf-8");
+      const parsed = JSON.parse(raw);
+      const projects = parsed.projects ?? {};
+      const normalized = import_node_path2.default.resolve(projectDir);
+      const realpath = import_node_fs2.default.existsSync(normalized) ? import_node_fs2.default.realpathSync(normalized) : normalized;
+      const keys = [projectDir, normalized, realpath].filter(Boolean);
+      const existingKey = keys.find((candidate) => typeof projects[candidate] === "object");
+      const targetKey = existingKey ?? realpath;
+      const existing = projects[targetKey] ?? {};
+      if (existing.hasTrustDialogAccepted === true) {
+        return;
+      }
+      parsed.projects = {
+        ...projects,
+        [targetKey]: {
+          ...existing,
+          hasTrustDialogAccepted: true
+        }
+      };
+      import_node_fs2.default.writeFileSync(claudeConfigPath, `${JSON.stringify(parsed, null, 2)}
+`, "utf-8");
+    } catch {
+    }
   }
   clearMeetingFlag() {
-    if (import_node_fs.default.existsSync(this.activeFlagPath)) {
-      import_node_fs.default.rmSync(this.activeFlagPath);
+    if (import_node_fs2.default.existsSync(this.activeFlagPath)) {
+      import_node_fs2.default.rmSync(this.activeFlagPath);
     }
   }
   submitPrompt(meetingId, prompt) {
@@ -4007,23 +4075,23 @@ ${extra ?? "(no details)"}`
     return lines.length > 0 ? lines : ["(\u672A\u6307\u5B9A)"];
   }
   ensureDefaultAgentProfiles() {
-    import_node_fs.default.mkdirSync(this.agentDirPath, { recursive: true });
+    import_node_fs2.default.mkdirSync(this.agentDirPath, { recursive: true });
     for (const profile of DEFAULT_AGENT_PROFILES) {
       const filePath = import_node_path2.default.join(this.agentDirPath, `${profile.id}.json`);
-      if (import_node_fs.default.existsSync(filePath)) continue;
+      if (import_node_fs2.default.existsSync(filePath)) continue;
       const payload = {
         id: profile.id,
         name: profile.name,
         description: profile.description,
         enabledByDefault: profile.enabledByDefault
       };
-      import_node_fs.default.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}
+      import_node_fs2.default.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}
 `, "utf-8");
     }
   }
   readAgentProfileFile(filePath) {
     try {
-      const raw = import_node_fs.default.readFileSync(filePath, "utf-8");
+      const raw = import_node_fs2.default.readFileSync(filePath, "utf-8");
       const parsed = JSON.parse(raw);
       const name = typeof parsed.name === "string" ? parsed.name.trim() : "";
       if (!name) return null;
@@ -4072,6 +4140,8 @@ var ptyTailByMeeting = /* @__PURE__ */ new Map();
 var ptyLineBufferByMeeting = /* @__PURE__ */ new Map();
 var fallbackRelayByMeeting = /* @__PURE__ */ new Map();
 var ptyTailMaxLines = 120;
+var relayMode = process.env.MEETING_ROOM_RELAY_MODE ?? "hook_only";
+var enableTerminalFallbackRelay = relayMode === "mixed" || relayMode === "terminal_only";
 var ptyManager = new PtyManager();
 var relayServer = new RelayServer();
 var ipcRouter = new MainIpcRouter(() => mainWindow);
@@ -4303,28 +4373,30 @@ import_electron2.app.whenReady().then(() => {
     ipcRouter.send("terminal:data", meetingId, data);
     const cleaned = stripAnsi(data).replace(/\u0007/g, "");
     const lines = collectTailLines(meetingId, data);
-    const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
-    const relayFallback = (compact) => {
-      const lastRelayed = fallbackRelayByMeeting.get(meetingId);
-      if (lastRelayed === compact) return;
-      fallbackRelayByMeeting.set(meetingId, compact);
-      meetingService.relayAgentMessage({
-        type: "agent_message",
-        id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        sender: "leader",
-        content: compact,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        team: meetingTab?.config.skill ?? "terminal-fallback",
-        meetingId
-      });
-    };
-    for (const content of extractClaudeResponsesFromChunk(cleaned)) {
-      relayFallback(content);
-    }
     if (lines.length > 0) {
       const prev = ptyTailByMeeting.get(meetingId) ?? [];
       const next = [...prev, ...lines].slice(-ptyTailMaxLines);
       ptyTailByMeeting.set(meetingId, next);
+    }
+    if (enableTerminalFallbackRelay) {
+      const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
+      const relayFallback = (compact) => {
+        const lastRelayed = fallbackRelayByMeeting.get(meetingId);
+        if (lastRelayed === compact) return;
+        fallbackRelayByMeeting.set(meetingId, compact);
+        meetingService.relayAgentMessage({
+          type: "agent_message",
+          id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          sender: "leader",
+          content: compact,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          team: meetingTab?.config.skill ?? "terminal-fallback",
+          meetingId
+        });
+      };
+      for (const content of extractClaudeResponsesFromChunk(cleaned)) {
+        relayFallback(content);
+      }
       for (const line of lines) {
         if (!isFallbackAgentLine(line)) continue;
         const compact = line.replace(/\s+/g, " ").trim();
@@ -4343,8 +4415,8 @@ import_electron2.app.whenReady().then(() => {
     }
     try {
       const logPath = import_node_path3.default.resolve(process.cwd(), "..", ".claude/meeting-room/pty.log");
-      import_node_fs2.default.mkdirSync(import_node_path3.default.dirname(logPath), { recursive: true });
-      import_node_fs2.default.appendFileSync(logPath, `[${(/* @__PURE__ */ new Date()).toISOString()}][${meetingId}] ${data}`, "utf-8");
+      import_node_fs3.default.mkdirSync(import_node_path3.default.dirname(logPath), { recursive: true });
+      import_node_fs3.default.appendFileSync(logPath, `[${(/* @__PURE__ */ new Date()).toISOString()}][${meetingId}] ${data}`, "utf-8");
     } catch {
     }
   });
