@@ -22,9 +22,41 @@ npm --prefix electron install
 npm --prefix electron run dev
 ```
 
+## Web アプリを起動する
+
+ブラウザ版 Meeting Room は、`meeting-room-daemon` が `/web/index.html` を配信する形で起動します。  
+つまり、**Web アプリを使う時は先に daemon を起動**します。
+
+### 最短手順
+
+1. daemon を起動する
+
+```bash
+npm --prefix electron run daemon:start
+```
+
+2. ブラウザで次の URL を開く
+
+```text
+http://127.0.0.1:4417/web/index.html
+```
+
+3. `MEETING_ROOM_DAEMON_TOKEN` を設定している場合だけ、画面上の token 欄に同じ値を入力する
+
+### 開発中に watch 付きで起動する
+
+```bash
+npm --prefix electron run daemon:start:dev
+```
+
+- daemon の TypeScript を watch build
+- Web client も watch build
+- ビルド成功ごとに daemon を自動再起動
+- ブラウザは同じく `http://127.0.0.1:4417/web/index.html` を開けばよい
+
 ## Node バックエンドだけ起動する
 
-`meeting-room-daemon` を単体で起動して、ブラウザ UI から触りたい時の導線です。
+`meeting-room-daemon` を単体で起動して、Web アプリを配信したい時の詳細です。
 
 ### 1. 1 回ビルドして起動
 
@@ -44,10 +76,8 @@ npm --prefix electron run daemon:start
 npm --prefix electron run daemon:start:dev
 ```
 
-- daemon の TypeScript を watch build
-- Web client も watch build
-- ビルド成功ごとに daemon を自動再起動
-- バックエンドだけを触る時の開発向け
+- 上の「Web アプリを起動する」の watch 版と同じです
+- バックエンドだけを触る時の開発向けです
 
 ### 3. 直接スクリプトを叩く
 
