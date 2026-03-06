@@ -26,6 +26,7 @@ function toChatMessage(payload: AgentMessagePayload): ChatMessage {
   return {
     id: payload.id,
     sender: payload.sender,
+    subagent: payload.subagent,
     content: payload.content,
     timestamp: payload.timestamp,
     team: payload.team,

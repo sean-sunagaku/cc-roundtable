@@ -365,6 +365,7 @@ function toAgentMessagePayload(meetingId: string, message: ChatMessagePayload): 
     type: "agent_message",
     id: message.id,
     sender: message.sender,
+    subagent: message.subagent,
     content: message.content,
     timestamp: message.timestamp,
     team: message.team ?? "daemon",
@@ -401,6 +402,7 @@ function toChatMessage(message: ChatMessagePayload): ChatMessage {
   return {
     id: message.id,
     sender: message.sender,
+    subagent: message.subagent,
     content: message.content,
     timestamp: message.timestamp,
     team: message.team,

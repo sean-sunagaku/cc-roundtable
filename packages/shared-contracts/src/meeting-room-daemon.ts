@@ -25,6 +25,7 @@ export interface MeetingTabPayload {
 export interface ChatMessagePayload {
   id: string;
   sender: string;
+  subagent?: string;
   content: string;
   timestamp: string;
   team?: string;

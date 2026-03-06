@@ -141,7 +141,8 @@ export class MeetingService {
       MEETING_ROOM_SETTINGS_FILE: path.resolve(process.cwd(), "..", ".claude", "settings.json"),
       MEETING_ROOM_HOOKS_DIR: path.resolve(process.cwd(), "..", "hooks"),
       MEETING_ROOM_FALLBACK_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "discussion.log.jsonl"),
-      MEETING_ROOM_STOP_DEBUG_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "stop-hook.log.jsonl")
+      MEETING_ROOM_STOP_DEBUG_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "stop-hook.log.jsonl"),
+      MEETING_ROOM_WS_DEBUG_LOG: path.resolve(process.cwd(), "..", ".claude", "meeting-room", "ws-hook.log.jsonl")
     });
     this.ptyManager.runClaude(config.id);
     this.queueInitPrompt(config.id, this.buildInitPrompt(config));

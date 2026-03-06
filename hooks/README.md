@@ -24,6 +24,23 @@ EOF
 
 If Electron WebSocket is not running, `ws-relay.py` appends to `.claude/meeting-room/discussion.log.jsonl`.
 
+## Observed SendMessage Payload Shape
+
+`ws-relay.py` now resolves the sender from the actual `SendMessage` hook payload first:
+
+- `tool_response.routing.sender`
+- `tool_response.routing.target`
+- `tool_input.type`
+- `tool_input.content`
+
+This matches the Agent Teams logger hook contract under:
+
+- `~/.claude/plugins/cache/sunagaku-marketplace/agent-teams-log/.../hook.py`
+
+For debugging, `ws-relay.py` also writes normalized resolution results to:
+
+- `.claude/meeting-room/ws-hook.log.jsonl`
+
 `stop-relay.py` wraps response text with markers:
 - `[[[MEETING_ROOM_RESPONSE_START]]]`
 - `[[[MEETING_ROOM_RESPONSE_END]]]`

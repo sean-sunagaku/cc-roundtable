@@ -14,9 +14,10 @@ import os
 import secrets
 import socket
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -24,6 +25,59 @@ WS_HOST = os.environ.get("MEETING_ROOM_WS_HOST", "127.0.0.1")
 WS_PORT = int(os.environ.get("MEETING_ROOM_WS_PORT", "9999"))
 WS_PATH = os.environ.get("MEETING_ROOM_WS_PATH", "/")
 WS_TIMEOUT = float(os.environ.get("MEETING_ROOM_WS_TIMEOUT", "0.8"))
+DEFAULT_DEBUG_LOG = Path.cwd() / ".claude" / "meeting-room" / "ws-hook.log.jsonl"
+
+
+class SendMessageToolInput(TypedDict, total=False):
+    type: str
+    recipient: str
+    content: str
+    summary: str
+
+
+class SendMessageRouting(TypedDict, total=False):
+    sender: str
+    senderColor: str
+    target: str
+    targetColor: str
+    summary: str
+    content: str
+
+
+class SendMessageToolResponse(TypedDict, total=False):
+    success: bool
+    message: str
+    content: str
+    routing: SendMessageRouting
+
+
+class HookMetadata(TypedDict, total=False):
+    agent: str
+    team: str
+    meetingId: str
+    subagent: str
+
+
+class SendMessageHookPayload(TypedDict, total=False):
+    session_id: str
+    cwd: str
+    hook_event_name: str
+    tool_name: str
+    agent_id: str
+    tool_input: SendMessageToolInput
+    tool_response: SendMessageToolResponse
+    metadata: HookMetadata
+
+
+@dataclass(frozen=True)
+class ResolvedMessage:
+    sender: str
+    subagent: str | None
+    content: str
+    team: str
+    meeting_id: str | None
+    raw_type: str
+    sender_source: str
 
 
 def _candidate_active_paths() -> list[Path]:
@@ -44,7 +98,7 @@ def is_meeting_mode_active() -> bool:
     return False
 
 
-def parse_payload() -> dict[str, Any]:
+def parse_payload() -> SendMessageHookPayload:
     raw = sys.stdin.read().strip()
     if not raw:
         return {}
@@ -57,57 +111,106 @@ def parse_payload() -> dict[str, Any]:
     return {}
 
 
-def _extract_dict(payload: dict[str, Any], key: str) -> dict[str, Any]:
-    value = payload.get(key)
-    return value if isinstance(value, dict) else {}
+def _as_str(value: Any) -> str:
+    return value.strip() if isinstance(value, str) else ""
 
 
-def build_message(payload: dict[str, Any]) -> dict[str, Any]:
-    tool_input = _extract_dict(payload, "tool_input")
-    response = _extract_dict(payload, "tool_response")
-    metadata = _extract_dict(payload, "metadata")
+def _sender_from_agent_id(agent_id: str) -> str:
+    if "@" in agent_id:
+        return agent_id.split("@", 1)[0].strip()
+    return agent_id.strip()
 
-    sender = (
-        os.environ.get("CLAUDE_SUBAGENT_NAME")
-        or os.environ.get("CLAUDE_AGENT_NAME")
-        or metadata.get("agent")
-        or "leader"
+
+def _resolve_message(payload: SendMessageHookPayload) -> ResolvedMessage:
+    tool_input = payload.get("tool_input") or {}
+    response = payload.get("tool_response") or {}
+    routing = response.get("routing") or {}
+    metadata = payload.get("metadata") or {}
+
+    routing_sender = _as_str(routing.get("sender"))
+    env_subagent = _as_str(os.environ.get("CLAUDE_SUBAGENT_NAME"))
+    env_agent = _as_str(os.environ.get("CLAUDE_AGENT_NAME"))
+    metadata_subagent = _as_str(metadata.get("subagent"))
+    metadata_agent = _as_str(metadata.get("agent"))
+    agent_id_sender = _sender_from_agent_id(_as_str(payload.get("agent_id")))
+
+    subagent = routing_sender or env_subagent or metadata_subagent or agent_id_sender or None
+    sender = routing_sender
+    sender_source = "routing"
+
+    if not sender:
+        if env_subagent:
+            sender = env_subagent
+            sender_source = "env_subagent"
+        elif env_agent:
+            sender = env_agent
+            sender_source = "env_agent"
+        elif metadata_agent:
+            sender = metadata_agent
+            sender_source = "metadata_agent"
+        elif metadata_subagent:
+            sender = metadata_subagent
+            sender_source = "metadata_subagent"
+        elif agent_id_sender:
+            sender = agent_id_sender
+            sender_source = "agent_id"
+        else:
+            sender = "leader"
+            sender_source = "fallback"
+
+    content = _as_str(response.get("content")) or _as_str(routing.get("content")) or _as_str(tool_input.get("content"))
+    team = _as_str(metadata.get("team")) or _as_str(os.environ.get("CLAUDE_TEAM_NAME")) or "unknown"
+    meeting_id = _as_str(metadata.get("meetingId")) or _as_str(os.environ.get("MEETING_ROOM_MEETING_ID")) or None
+    raw_type = _as_str(tool_input.get("type")) or "message"
+
+    return ResolvedMessage(
+        sender=sender,
+        subagent=subagent,
+        content=content,
+        team=team,
+        meeting_id=meeting_id,
+        raw_type=raw_type,
+        sender_source=sender_source,
     )
-    if not isinstance(sender, str):
-        sender = "leader"
 
-    content = response.get("content")
-    if not isinstance(content, str) or not content.strip():
-        content = tool_input.get("content")
-    if not isinstance(content, str):
-        content = ""
 
-    team = (
-        metadata.get("team")
-        or os.environ.get("CLAUDE_TEAM_NAME")
-        or "unknown"
-    )
-    if not isinstance(team, str):
-        team = "unknown"
+def write_debug(payload: SendMessageHookPayload, resolved: ResolvedMessage) -> None:
+    path = os.environ.get("MEETING_ROOM_WS_DEBUG_LOG", "").strip()
+    debug_path = Path(path).expanduser() if path else DEFAULT_DEBUG_LOG
+    debug_path.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "payloadKeys": sorted(payload.keys()),
+        "toolInputKeys": sorted((payload.get("tool_input") or {}).keys()),
+        "toolResponseKeys": sorted((payload.get("tool_response") or {}).keys()),
+        "routingKeys": sorted(((payload.get("tool_response") or {}).get("routing") or {}).keys()),
+        "envSubagent": _as_str(os.environ.get("CLAUDE_SUBAGENT_NAME")),
+        "envAgent": _as_str(os.environ.get("CLAUDE_AGENT_NAME")),
+        "resolvedSender": resolved.sender,
+        "resolvedSubagent": resolved.subagent,
+        "senderSource": resolved.sender_source,
+        "meetingId": resolved.meeting_id,
+        "rawType": resolved.raw_type,
+        "contentPreview": resolved.content[:200],
+    }
+    with debug_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
-    meeting_id = metadata.get("meetingId") or os.environ.get("MEETING_ROOM_MEETING_ID")
-    if not isinstance(meeting_id, str) or not meeting_id.strip():
-        meeting_id = None
-    else:
-        meeting_id = meeting_id.strip()
 
+def build_message(resolved: ResolvedMessage) -> dict[str, Any]:
     timestamp = datetime.now(timezone.utc).isoformat()
-    msg_id = f"msg_{int(datetime.now(tz=timezone.utc).timestamp())}_{sender.replace(' ', '_')}"
+    msg_id = f"msg_{int(datetime.now(tz=timezone.utc).timestamp())}_{resolved.sender.replace(' ', '_')}"
 
     return {
         "type": "agent_message",
         "id": msg_id,
-        "sender": sender,
-        "content": content,
+        "sender": resolved.sender,
+        "subagent": resolved.subagent,
+        "content": resolved.content,
         "timestamp": timestamp,
-        "team": team,
-        "meetingId": meeting_id,
-        "rawType": tool_input.get("type"),
+        "team": resolved.team,
+        "meetingId": resolved.meeting_id,
+        "rawType": resolved.raw_type,
     }
 
 
@@ -186,7 +289,15 @@ def main() -> int:
     if not payload:
         return 0
 
-    message = build_message(payload)
+    resolved = _resolve_message(payload)
+    try:
+        write_debug(payload, resolved)
+    except Exception:
+        pass
+    if not resolved.content:
+        return 0
+
+    message = build_message(resolved)
     try:
         send_ws_json(message)
     except Exception:

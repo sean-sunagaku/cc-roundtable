@@ -5,6 +5,7 @@ export type RelayPayload = {
   type: "agent_message" | "agent_status";
   id: string;
   sender: string;
+  subagent?: string;
   content: string;
   timestamp: string;
   team: string;

@@ -360,6 +360,7 @@ export class MeetingRoomDaemonApp {
     const message: ChatMessagePayload = {
       id: payload.id,
       sender: payload.sender,
+      subagent: payload.subagent,
       content: payload.content,
       timestamp: payload.timestamp || new Date().toISOString(),
       team: payload.team,

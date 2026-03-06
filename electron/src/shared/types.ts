@@ -3,6 +3,7 @@ export type MessageStatus = "pending" | "confirmed";
 export interface ChatMessage {
   id: string;
   sender: string;
+  subagent?: string;
   content: string;
   timestamp: string;
   team?: string;
@@ -14,6 +15,7 @@ export interface AgentMessagePayload {
   type: "agent_message" | "agent_status";
   id: string;
   sender: string;
+  subagent?: string;
   content: string;
   timestamp: string;
   team: string;

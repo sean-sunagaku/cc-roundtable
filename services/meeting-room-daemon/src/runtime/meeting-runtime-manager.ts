@@ -151,6 +151,7 @@ export class MeetingRuntimeManager {
       MEETING_ROOM_HOOKS_DIR: path.resolve(this.options.repoRoot, "hooks"),
       MEETING_ROOM_FALLBACK_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/discussion.log.jsonl"),
       MEETING_ROOM_STOP_DEBUG_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/stop-hook.log.jsonl"),
+      MEETING_ROOM_WS_DEBUG_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/ws-hook.log.jsonl"),
       MEETING_ROOM_WS_PORT: `${HOOKS_WS_PORT}`
     };
   }
