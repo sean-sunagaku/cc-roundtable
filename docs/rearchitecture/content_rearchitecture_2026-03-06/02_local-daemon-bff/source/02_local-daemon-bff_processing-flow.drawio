@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="codex" modified="2026-03-06T00:00:00.000Z" type="device">
+  <diagram name="Local Daemon / BFF Processing Flow" id="02_local-daemon-bff-processing-flow">
+    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="bg-white" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1800" height="1200" as="geometry"/></mxCell>
+        <mxCell id="c100" value="Local Daemon / BFF の主要処理フロー" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="650" y="20" width="520" height="30" as="geometry"/></mxCell>
+        <mxCell id="c101" value="この案で会議開始から更新反映までをどう流すか" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="190" y="55" width="760" height="20" as="geometry"/></mxCell>
+        <mxCell id="c102" value="Client / UI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="120" y="110" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="c103" value="" style="shape=line;strokeColor=#999999;dashed=1;" vertex="1" parent="1"><mxGeometry x="218" y="180" width="2" height="760" as="geometry"/></mxCell>
+        <mxCell id="c104" value="Coordinator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1"><mxGeometry x="430" y="110" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="c105" value="" style="shape=line;strokeColor=#999999;dashed=1;" vertex="1" parent="1"><mxGeometry x="528" y="180" width="2" height="760" as="geometry"/></mxCell>
+        <mxCell id="c106" value="State / Domain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1"><mxGeometry x="740" y="110" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="c107" value="" style="shape=line;strokeColor=#999999;dashed=1;" vertex="1" parent="1"><mxGeometry x="838" y="180" width="2" height="760" as="geometry"/></mxCell>
+        <mxCell id="c108" value="Runtime / Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1050" y="110" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="c109" value="" style="shape=line;strokeColor=#999999;dashed=1;" vertex="1" parent="1"><mxGeometry x="1148" y="180" width="2" height="760" as="geometry"/></mxCell>
+        <mxCell id="c110" value="Updates / Output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1360" y="110" width="200" height="60" as="geometry"/></mxCell>
+        <mxCell id="c111" value="" style="shape=line;strokeColor=#999999;dashed=1;" vertex="1" parent="1"><mxGeometry x="1458" y="180" width="2" height="760" as="geometry"/></mxCell>
+        <mxCell id="c112" value="Renderer が command を daemon へ送る" style="endArrow=block;html=1;rounded=0;strokeWidth=2;" edge="1" source="c102" target="c104" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="220" y="220"/><mxPoint x="530" y="220"/></Array></mxGeometry></mxCell>
+        <mxCell id="c113" value="daemon が MeetingApplicationService でユースケースを処理する" style="endArrow=block;html=1;rounded=0;strokeWidth=2;" edge="1" source="c104" target="c106" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="530" y="305"/><mxPoint x="840" y="305"/></Array></mxGeometry></mxCell>
+        <mxCell id="c114" value="MeetingSession が状態遷移を管理する" style="endArrow=block;html=1;rounded=0;strokeWidth=2;" edge="1" source="c106" target="c108" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="840" y="390"/><mxPoint x="1150" y="390"/></Array></mxGeometry></mxCell>
+        <mxCell id="c115" value="ClaudeRuntimeAdapter が runtime を起動 / 監視する" style="endArrow=block;html=1;rounded=0;strokeWidth=2;" edge="1" source="c108" target="c104" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1150" y="475"/><mxPoint x="530" y="475"/></Array></mxGeometry></mxCell>
+        <mxCell id="c116" value="repository と event publisher が状態を保存 / 配信する" style="endArrow=block;html=1;rounded=0;strokeWidth=2;" edge="1" source="c104" target="c110" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="530" y="560"/><mxPoint x="1460" y="560"/></Array></mxGeometry></mxCell>
+        <mxCell id="c117" value="renderer は authoritative state を購読する" style="endArrow=block;html=1;rounded=0;strokeWidth=2;" edge="1" source="c110" target="c102" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1460" y="645"/><mxPoint x="220" y="645"/></Array></mxGeometry></mxCell>
+        <mxCell id="c118" value="この案のフロー上の注意点" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1"><mxGeometry x="250" y="900" width="1280" height="150" as="geometry"/></mxCell>
+        <mxCell id="c119" value="• MeetingSession が状態遷移を管理する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="290" y="940" width="1200" height="20" as="geometry"/></mxCell>
+        <mxCell id="c120" value="• ClaudeRuntimeAdapter が runtime を起動 / 監視する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="290" y="964" width="1200" height="20" as="geometry"/></mxCell>
+        <mxCell id="c121" value="• repository と event publisher が状態を保存 / 配信する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="290" y="988" width="1200" height="20" as="geometry"/></mxCell>
+        <mxCell id="c122" value="• renderer は authoritative state を購読する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="290" y="1012" width="1200" height="20" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Meeting Room logo concept: Relay Loop</title>
+  <desc id="desc">A relay-like circular icon made of distinct arcs around a live discussion pulse, followed by the Meeting Room wordmark.</desc>
+  <defs>
+    <radialGradient id="relayHalo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(100 96) rotate(90) scale(88)">
+      <stop offset="0" stop-color="#FFF7E8"/>
+      <stop offset="1" stop-color="#FFF7E8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(18 18)">
+    <circle cx="100" cy="96" r="88" fill="url(#relayHalo)"/>
+    <path d="M100 24A72 72 0 0 1 172 96" stroke="#14B8A6" stroke-width="22" stroke-linecap="round"/>
+    <path d="M172 96A72 72 0 0 1 100 168" stroke="#F4B63D" stroke-width="22" stroke-linecap="round"/>
+    <path d="M100 168A72 72 0 0 1 28 96" stroke="#F06A4A" stroke-width="22" stroke-linecap="round"/>
+    <path d="M28 96A72 72 0 0 1 100 24" stroke="#163847" stroke-width="22" stroke-linecap="round"/>
+    <circle cx="100" cy="96" r="30" fill="#163847"/>
+    <path d="M72 99c10-20 22-30 33-30 12 0 20 8 25 24 4 12 11 18 21 18" stroke="#FFF7E8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="170" cy="95" r="9" fill="#F4B63D"/>
+    <circle cx="100" cy="167" r="9" fill="#F06A4A"/>
+    <circle cx="29" cy="97" r="9" fill="#163847"/>
+    <circle cx="100" cy="25" r="9" fill="#14B8A6"/>
+  </g>
+  <g transform="translate(224 56)">
+    <text x="0" y="54" fill="#163847" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="46" font-weight="700" letter-spacing="-1.4">Meeting Room</text>
+    <text x="0" y="92" fill="#5F6E78" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="20" font-weight="500" letter-spacing="0.6">Relay, handoff, and visible conversation flow</text>
+    <path d="M0 122H344" stroke="#D8E2E8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M366 122h44" stroke="#14B8A6" stroke-width="7" stroke-linecap="round"/>
+  </g>
+</svg>

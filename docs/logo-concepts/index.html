@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meeting Room Logo Concepts</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #10324a;
+        --muted: #516273;
+        --line: #d9e1e8;
+        --paper: #f7f9fc;
+        --card: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+      }
+
+      main {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 56px 0 72px;
+      }
+
+      h1 {
+        margin: 0 0 14px;
+        font-size: clamp(2rem, 4vw, 3.6rem);
+        letter-spacing: -0.04em;
+      }
+
+      .lede {
+        max-width: 760px;
+        margin: 0 0 34px;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.7;
+      }
+
+      .grid {
+        display: grid;
+        gap: 22px;
+      }
+
+      .card {
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--card);
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+        margin-bottom: 12px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        letter-spacing: -0.02em;
+      }
+
+      .tag {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--ink);
+        border: 1px solid var(--line);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .preview {
+        display: grid;
+        grid-template-columns: minmax(180px, 220px) 1fr;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .panel {
+        padding: 18px;
+        border-radius: 24px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        overflow: hidden;
+      }
+
+      .panel img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .notes {
+        display: grid;
+        gap: 8px;
+      }
+
+      .notes strong {
+        font-size: 0.92rem;
+      }
+
+      code {
+        padding: 0.18em 0.42em;
+        border-radius: 0.45em;
+        background: rgba(22, 56, 71, 0.08);
+        font-size: 0.92em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Meeting Room ロゴ案</h1>
+      <p class="lede">
+        今回は「もっとシンプルに、でも実際のアプリの様子を表す」という条件に寄せて、
+        <code>MeetingScreen</code> の見た目から記号を抜き出しました。
+        具体的には、上部のステータス pills、中央のチャット bubbles、下部の入力や terminal prompt をロゴ化しています。
+        配色は、明るいベースと濃いインクの完全な 2 色に絞っています。
+      </p>
+
+      <section class="grid">
+        <article class="card">
+          <div class="meta">
+            <h2>UI Card</h2>
+            <span class="tag">一番バランスが良い</span>
+          </div>
+          <p>実際のアプリ画面を最小限まで削った案です。上部の agent/status pills、中央のメッセージ bubbles、下部の prompt bar が入っています。</p>
+          <div class="preview">
+            <div class="panel"><img src="./meeting-room-ui-card.svg" alt="UI Card logo concept" /></div>
+            <div class="notes">
+              <strong>実アプリとの対応</strong>
+              <p>上段は <code>status-row</code> と接続状態、中央は <code>ChatView</code>、下段は <code>InputBar</code> と terminal の送信感です。</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="meta">
+            <h2>Prompt Bubble</h2>
+            <span class="tag">最もシンプル</span>
+          </div>
+          <p>チャット bubble と terminal prompt をひとつに畳み込んだ記号です。アプリアイコンや小さい表示サイズで最も潰れにくいです。</p>
+          <div class="preview">
+            <div class="panel"><img src="./meeting-room-prompt-bubble.svg" alt="Prompt Bubble logo concept" /></div>
+            <div class="notes">
+              <strong>実アプリとの対応</strong>
+              <p>会議の「メッセージ送信」と Claude の「prompt 入力」を一体化した見せ方です。余計なモチーフをほぼ消しています。</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="meta">
+            <h2>Split View</h2>
+            <span class="tag">画面構成を最も忠実に反映</span>
+          </div>
+          <p>左のチャット領域と右の terminal 領域をそのまま抽象化した案です。プロダクトの構造が最も伝わりますが、少しだけ説明的です。</p>
+          <div class="preview">
+            <div class="panel"><img src="./meeting-room-split-view.svg" alt="Split View logo concept" /></div>
+            <div class="notes">
+              <strong>実アプリとの対応</strong>
+              <p><code>ChatView</code> と <code>TerminalPane</code> の共存が分かりやすいです。プロダクト説明用のロゴとしては相性が良いです。</p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

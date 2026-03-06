@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="codex" modified="2026-03-06T00:00:00.000Z" type="device">
+  <diagram name="Local Daemon / BFF Class Structure" id="02_local-daemon-bff-class-structure">
+    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="bg-white" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1"><mxGeometry x="0" y="0" width="1700" height="1100" as="geometry"/></mxCell>
+        <mxCell id="c100" value="Local Daemon / BFF の想定クラス構成" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=20;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="570" y="20" width="560" height="30" as="geometry"/></mxCell>
+        <mxCell id="c101" value="この案で実装する場合に置きやすい責務分割" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="180" y="55" width="700" height="20" as="geometry"/></mxCell>
+        <mxCell id="c102" value="RendererClient
+command 発行 / state 購読" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="110" y="160" width="240" height="110" as="geometry"/></mxCell>
+        <mxCell id="c103" value="MainBridge
+daemon 起動 / 接続" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1"><mxGeometry x="430" y="160" width="240" height="110" as="geometry"/></mxCell>
+        <mxCell id="c104" value="MeetingApplicationService
+meeting use case 実行" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1"><mxGeometry x="750" y="160" width="240" height="110" as="geometry"/></mxCell>
+        <mxCell id="c105" value="MeetingSession
+session state / prompt delivery state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1070" y="160" width="240" height="110" as="geometry"/></mxCell>
+        <mxCell id="c106" value="ClaudeRuntimeAdapter
+PTY / Claude 実行" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="270" y="360" width="240" height="110" as="geometry"/></mxCell>
+        <mxCell id="c107" value="SessionRepository
+session / summary 保存" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1"><mxGeometry x="910" y="360" width="240" height="110" as="geometry"/></mxCell>
+        <mxCell id="c108" value="depends / calls" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" source="c102" target="c103" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c109" value="depends / calls" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" source="c103" target="c104" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c110" value="depends / calls" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" source="c104" target="c105" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c111" value="depends / calls" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" source="c105" target="c106" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c112" value="" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" edge="1" source="c106" target="c107" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="c113" value="設計意図" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1"><mxGeometry x="220" y="580" width="1180" height="170" as="geometry"/></mxCell>
+        <mxCell id="c114" value="• Renderer が command を daemon へ送る" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="260" y="620" width="1100" height="22" as="geometry"/></mxCell>
+        <mxCell id="c115" value="• daemon が MeetingApplicationService でユースケースを処理する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="260" y="648" width="1100" height="22" as="geometry"/></mxCell>
+        <mxCell id="c116" value="• MeetingSession が状態遷移を管理する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="260" y="676" width="1100" height="22" as="geometry"/></mxCell>
+        <mxCell id="c117" value="• ClaudeRuntimeAdapter が runtime を起動 / 監視する" style="text;html=1;align=left;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#666;" vertex="1" parent="1"><mxGeometry x="260" y="704" width="1100" height="22" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

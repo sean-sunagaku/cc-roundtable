@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Meeting Room logo concept: Roundtable Orbit</title>
+  <desc id="desc">A roundtable-inspired icon with participant nodes and a central speech bubble, followed by the Meeting Room wordmark.</desc>
+  <defs>
+    <linearGradient id="roundtableRing" x1="24" y1="24" x2="160" y2="176" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(28 24)">
+    <circle cx="92" cy="96" r="64" stroke="url(#roundtableRing)" stroke-width="18"/>
+    <path d="M68 63h48c12.15 0 22 9.85 22 22v18c0 12.15-9.85 22-22 22H98l-18 17v-17H68c-12.15 0-22-9.85-22-22V85c0-12.15 9.85-22 22-22Z" fill="#163847"/>
+    <circle cx="92" cy="95" r="14" fill="#F4B63D"/>
+    <circle cx="92" cy="18" r="11" fill="#14B8A6"/>
+    <circle cx="170" cy="96" r="11" fill="#F06A4A"/>
+    <circle cx="92" cy="174" r="11" fill="#F4B63D"/>
+    <circle cx="14" cy="96" r="11" fill="#14B8A6"/>
+  </g>
+  <g transform="translate(224 56)">
+    <text x="0" y="54" fill="#163847" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="46" font-weight="700" letter-spacing="-1.4">Meeting Room</text>
+    <text x="0" y="92" fill="#5F6E78" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="20" font-weight="500" letter-spacing="0.6">Roundtable for live agent collaboration</text>
+    <path d="M0 122H270" stroke="#D8E2E8" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="294" cy="122" r="6" fill="#14B8A6"/>
+    <circle cx="316" cy="122" r="6" fill="#F4B63D"/>
+    <circle cx="338" cy="122" r="6" fill="#F06A4A"/>
+  </g>
+</svg>

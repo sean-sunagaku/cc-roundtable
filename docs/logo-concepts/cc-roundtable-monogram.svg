@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">cc-roundtable logo concept: Interlocking C monogram</title>
+  <desc id="desc">An interlocking double-C monogram forming a roundtable, followed by the cc-roundtable wordmark.</desc>
+  <g transform="translate(24 24)">
+    <path d="M133 33a63 63 0 1 0 0 126" stroke="#163847" stroke-width="24" stroke-linecap="round"/>
+    <path d="M67 159a63 63 0 1 0 0-126" stroke="#F4B63D" stroke-width="24" stroke-linecap="round"/>
+    <circle cx="100" cy="96" r="18" fill="#163847"/>
+    <circle cx="48" cy="96" r="8" fill="#14B8A6"/>
+    <circle cx="152" cy="96" r="8" fill="#F06A4A"/>
+    <path d="M88 141c7 7 17 11 28 11 12 0 22-4 30-12" stroke="#14B8A6" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(224 58)">
+    <text x="0" y="50" fill="#163847" font-family="'Avenir Next', 'Segoe UI', sans-serif" font-size="42" font-weight="700" letter-spacing="-1.1">cc-roundtable</text>
+    <text x="0" y="88" fill="#5F6E78" font-family="'IBM Plex Sans', 'Segoe UI', sans-serif" font-size="20" font-weight="500" letter-spacing="0.3">A compact monogram for the repo and app shell</text>
+    <path d="M0 120H310" stroke="#D8E2E8" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="334" cy="120" r="6" fill="#163847"/>
+    <circle cx="356" cy="120" r="6" fill="#F4B63D"/>
+  </g>
+</svg>

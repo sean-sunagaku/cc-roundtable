@@ -85,6 +85,56 @@ setTimeout(() => {
 
 ---
 
+### 5. draw.io を SVG 化する時は公式 Export を使う
+
+**症状**: 汎用の Draw.io → SVG 変換ライブラリで出力すると、表示はできてもレイアウトやテキストが一部崩れることがある。
+
+**原因**: draw.io 固有の `foreignObject` / text fallback / レイアウト処理の再現度が不十分な変換器がある。
+
+**方針**: `.drawio` から `.svg` を作る時は、`draw.io / diagrams.net desktop` の **公式 export 経路**を使う。  
+このリポジトリでは `electron/package.json` の devDependencies に入っている `@hhhtj/draw.io` を使う。
+
+**コマンド例**:
+
+```bash
+cd electron
+./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../docs/architecture.svg ../docs/architecture.drawio
+./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../docs/current-architecture-overview.svg ../docs/current-architecture-overview.drawio
+```
+
+**補足**:
+- 出力された SVG は `foreignObject` を含むが、公式 export は `<switch>` 内に `<text>` フォールバックも入るため、汎用変換より壊れにくい。
+- XML 妥当性は `xmllint --noout docs/*.svg` で確認できる。
+- `@markdown-viewer/drawio2svg` のような非公式変換は、このプロジェクトでは再現度不足だったため採用しない。
+
+---
+
+### 6. `docs/rearchitecture/content_rearchitecture_2026-03-06` の配置ルール
+
+**方針**: 各案ディレクトリの直下には、閲覧対象の `*.md` と `*.svg` だけを置く。  
+編集用・元データの `*.drawio` は、各ディレクトリ配下の `source/` にまとめる。
+
+**例**:
+
+```text
+01_electron-main-monolith/
+  01_electron-main-monolith.md
+  01_electron-main-monolith.svg
+  01_electron-main-monolith_class-structure.svg
+  01_electron-main-monolith_processing-flow.svg
+  source/
+    01_electron-main-monolith.drawio
+    01_electron-main-monolith_class-structure.drawio
+    01_electron-main-monolith_processing-flow.drawio
+```
+
+**運用ルール**:
+- 新しい案ディレクトリを追加する時も同じ構成にする。
+- 直下に `md/svg` 以外を増やさない。
+- `.drawio` を更新したら、対応する `.svg` を公式 export で再生成する。
+
+---
+
 ## 関連ファイル
 
 | 責務 | ファイル |
@@ -93,3 +143,7 @@ setTimeout(() => {
 | 会議ライフサイクル・submitPrompt | `electron/src/main/meeting.ts` |
 | ready 検出・flush トリガー | `electron/src/main/index.ts` (`ptyManager.on("data")`) |
 | Hook 設定 | `.claude/settings.json` |
+| draw.io 公式 export 用依存 | `electron/package.json` (`@hhhtj/draw.io`) |
+| 元図 | `docs/architecture.drawio`, `docs/current-architecture-overview.drawio` |
+| 生成 SVG | `docs/architecture.svg`, `docs/current-architecture-overview.svg` |
+| rearchitecture 文書群 | `docs/rearchitecture/content_rearchitecture_2026-03-06/` |
