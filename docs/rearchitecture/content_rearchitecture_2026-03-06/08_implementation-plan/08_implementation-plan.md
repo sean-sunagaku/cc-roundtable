@@ -48,6 +48,15 @@ renderer や Electron main にある会議状態を徐々に daemon 側へ移し
 
 CLI は前提にせず、Electron と Web が同じ command / event 契約を使えるようにします。
 
+### 6. 各 phase で実装と検証をセットにする
+
+各 phase はコードを書いて終わりではなく、実際に対象 client や接続経路を動かして確認できるところまで含めます。
+
+- daemon phase は process 起動と API 疎通を確認する
+- runtime bridge phase は Claude runtime を実際に起動して確認する
+- Electron integration phase は Electron UI を起動して確認する
+- Web readiness phase はブラウザを起動して command / event / reconnect を確認する
+
 ## 実装フェーズ
 
 ### Phase 1: Daemon Foundation
@@ -150,6 +159,7 @@ CLI は前提にせず、Electron と Web が同じ command / event 契約を使
 - [ ] Electron と Web が同じ契約を見られる
 - [ ] tunnel 越し接続前提の auth / access rule がある
 - [ ] Mac 上の daemon が session host のまま保たれる
+- [ ] browser / client を使った実動作確認の観点が phase plan に入っている
 
 ## 実装順の理由
 

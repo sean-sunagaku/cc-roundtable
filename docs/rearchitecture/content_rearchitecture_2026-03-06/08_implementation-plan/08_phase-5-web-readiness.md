@@ -56,6 +56,15 @@
 - [ ] session access の基本ルールが定義されている
 - [ ] tunnel 越し利用で必要な auth 前提が明文化されている
 
+## 動作確認
+
+- [ ] ブラウザ client を実際に起動し、daemon の command API と event stream に接続できることを確認する
+- [ ] browser から `startMeeting`、`sendHumanMessage`、`endMeeting` 相当の基本操作が問題なく流れることを確認する
+- [ ] browser で `message.received` や `agent.status_changed` を受けて表示更新できることを確認する
+- [ ] ブラウザを reload または再接続して projection 再取得から session を復元できることを確認する
+- [ ] mobile viewport でも基本フローが破綻しないことを確認する
+- [ ] tunnel 経由の接続を想定した auth 境界で、不正アクセスを防げる前提が成立することを確認する
+
 ## この段階でやらないこと
 
 - Web UI の本実装

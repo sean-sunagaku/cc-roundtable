@@ -46,6 +46,13 @@
 - [ ] event stream に接続できる
 - [ ] command / event の型定義が shared package にある
 
+## 動作確認
+
+- [ ] daemon を単独起動してログと listen port を確認する
+- [ ] `health` endpoint に実際にアクセスして正常応答を確認する
+- [ ] command API に対してサンプル request を送り、期待する response を確認する
+- [ ] event stream client を接続して、最低限の接続成立を確認する
+
 ## この段階でやらないこと
 
 - Claude 実行の本実装

@@ -47,6 +47,13 @@ Claude / PTY / Hook の詳細を daemon 内の一箇所へ集約し、meeting co
 - [ ] Hook relay と terminal fallback が同じ event モデルに変換される
 - [ ] UI 側は Claude 固有の生 payload を見なくてよい
 
+## 動作確認
+
+- [ ] daemon 経由で Claude runtime を実際に起動して ready まで到達することを確認する
+- [ ] 初回プロンプト送信フローを実行し、runtime bridge 経由で正しく配送されることを確認する
+- [ ] Hook relay を受信できるケースを作り、正規化 event が出ることを確認する
+- [ ] terminal fallback が必要なケースでも同じ event モデルへ変換されることを確認する
+
 ## この段階でやらないこと
 
 - runtime-agnostic plugin system
