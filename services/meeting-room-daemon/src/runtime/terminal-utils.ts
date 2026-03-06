@@ -48,12 +48,41 @@ export function hasMcpFailureSignal(text: string): boolean {
   return lines.some((line) => /mcp server failed/i.test(line) && !isMcpStatusBadge(line));
 }
 
+function compactWhitespace(line: string): string {
+  return line.replace(/\s+/g, " ").trim();
+}
+
+function stripDecorativePrefix(line: string): string {
+  return line.replace(/^[\s"'`>│├└╰╭╮╯•·⏺✳✶✢✻✽✿▶▸▹→←↳⎿┌┐┘└\-]+/, "").trim();
+}
+
+function isUiNoiseLine(line: string): boolean {
+  const compact = compactWhitespace(line);
+  if (!compact) return true;
+
+  const plain = stripDecorativePrefix(compact);
+  if (!plain) return true;
+
+  if (/invalid tool parameters/i.test(plain)) return true;
+  if (/bypass\s*permissions?/i.test(plain)) return true;
+  if (/^\[?human ?input\]?$/i.test(plain)) return true;
+  if (/^task would you like the agent team/i.test(plain)) return true;
+  if (/^(ctrl\+|shift\+tab|enter to send|esc to cancel)/i.test(plain)) return true;
+  if (/^[A-Za-z][A-Za-z-]*ing(?:\.\.\.|…)$/.test(plain)) return true;
+  if (/^".*\*\*\/\*.*"$/.test(plain)) return true;
+  if (/\*\*\/\*/.test(plain)) return true;
+  if (/チーム全体へ\s*broadcast\s*してください/i.test(plain)) return true;
+  if (/そのうえで、必要な検討と提案を続けてください。/.test(plain)) return true;
+  return false;
+}
+
 function shouldKeepTailLine(line: string): boolean {
-  const compact = line.replace(/\s+/g, " ").trim();
+  const compact = compactWhitespace(line);
   if (!compact) return false;
   if (/^[✢✳✶✻✽·⠂⠐⠒⠲⠴⠦⠧⠇⠋⠙⠸⏺]+$/.test(compact)) return false;
   if (/^\d+$/.test(compact)) return false;
   if (/^[a-zA-Z]$/.test(compact)) return false;
+  if (isUiNoiseLine(compact)) return false;
   return true;
 }
 
@@ -86,11 +115,36 @@ export function collectTailLines(runtime: RuntimeHandle, chunk: string): string[
 }
 
 export function collectDebugTail(existing: string[], chunk: string): string[] {
-  const lines = chunk
-    .split(/\r?\n/)
-    .map((line) => stripAnsi(line).replace(/\u0007/g, "").trimEnd())
-    .filter((line) => line.length > 0);
-  return [...existing, ...lines].slice(-120);
+  const next = [...existing];
+  for (const rawLine of chunk.split(/\r?\n/)) {
+    const line = stripAnsi(rawLine).replace(/\u0007/g, "").trimEnd();
+    if (!line.length || isUiNoiseLine(line)) {
+      continue;
+    }
+    if (next[next.length - 1] === line) {
+      continue;
+    }
+    next.push(line);
+  }
+  return next.slice(-120);
+}
+
+export function filterVisibleTailLines(lines: string[]): string[] {
+  const filtered: string[] = [];
+  for (const line of lines) {
+    if (!line.length || isUiNoiseLine(line)) {
+      continue;
+    }
+    if (filtered[filtered.length - 1] === line) {
+      continue;
+    }
+    filtered.push(line);
+  }
+  return filtered.slice(-120);
+}
+
+export function shouldDisplayAgentMessageContent(content: string): boolean {
+  return !isUiNoiseLine(content);
 }
 
 export function suppressFallback(runtime: RuntimeHandle, durationMs: number): void {
@@ -98,11 +152,12 @@ export function suppressFallback(runtime: RuntimeHandle, durationMs: number): vo
 }
 
 export function isFallbackAgentLine(line: string): boolean {
-  const compact = line.replace(/\s+/g, " ").trim();
+  const compact = compactWhitespace(line);
   if (!compact) return false;
   if (compact.length < 6) return false;
   if (/^[/\\]/.test(compact)) return false;
   if (/^chore|^scampering|^calculating/i.test(compact)) return false;
+  if (isUiNoiseLine(compact)) return false;
   if (/tokens|thinking|ctrl\+g|weekly limit|mcp server failed|use skill/i.test(compact)) return false;
   if (/チームに\s*broadcast\s*してください/i.test(compact)) return false;
   if (/bypass permissions/i.test(compact)) return false;

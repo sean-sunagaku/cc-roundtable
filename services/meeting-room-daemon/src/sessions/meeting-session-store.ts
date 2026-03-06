@@ -4,7 +4,13 @@ import type {
   MeetingTabPayload
 } from "@contracts/meeting-room-daemon";
 import { DurableEventLogStore } from "../events/durable-event-log-store";
-import { collectDebugTail, hasMcpFailureSignal, isUsageLimitReached } from "../runtime/terminal-utils";
+import {
+  collectDebugTail,
+  filterVisibleTailLines,
+  hasMcpFailureSignal,
+  isUsageLimitReached,
+  shouldDisplayAgentMessageContent
+} from "../runtime/terminal-utils";
 import type { DurableEvent } from "../types";
 import { deepClone } from "../utils";
 
@@ -39,12 +45,29 @@ export class MeetingSessionStore {
 
   getSessionView(meetingId: string): MeetingSessionViewPayload | null {
     const session = this.sessions.get(meetingId);
-    return session ? deepClone(session) : null;
+    if (!session) {
+      return null;
+    }
+    const view = deepClone(session);
+    view.messages = view.messages.filter((message) => {
+      if (message.source !== "agent") {
+        return true;
+      }
+      return shouldDisplayAgentMessageContent(message.content);
+    });
+    view.sessionDebug.tail = filterVisibleTailLines(view.sessionDebug.tail);
+    return view;
   }
 
   getSessionDebug(meetingId: string): ClaudeSessionDebugPayload | null {
     const session = this.sessions.get(meetingId);
-    return session ? deepClone(session.sessionDebug) : null;
+    if (!session) {
+      return null;
+    }
+    return {
+      ...deepClone(session.sessionDebug),
+      tail: filterVisibleTailLines(session.sessionDebug.tail)
+    };
   }
 
   getSessionStatus(meetingId: string): MeetingTabPayload["status"] | null {

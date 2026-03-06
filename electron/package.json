@@ -16,6 +16,8 @@
     "build:main": "esbuild src/main/index.ts src/main/preload.ts --bundle --platform=node --format=cjs --external:electron --external:node-pty --outdir=dist/main --sourcemap",
     "build:renderer": "vite build",
     "typecheck": "tsc -p ../services/meeting-room-daemon/tsconfig.json --noEmit && tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "e2e:gui": "node ../e2e/gui/final-verification.mjs",
+    "verify:final": "npm run typecheck && npm run build && npm run e2e:gui",
     "architecture": "node ../scripts/generate-architecture.mjs"
   },
   "dependencies": {
