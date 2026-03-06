@@ -7,10 +7,11 @@ import type {
   ClaudeSessionDebug,
   ConversationHealth,
   MeetingConfig,
-  MeetingSummaryPayload,
+  MeetingRoomDaemonMeta,
+  MeetingSessionView,
   MeetingTab,
+  MeetingSummaryPayload,
   RuntimeEvent,
-  SessionSnapshot,
   SkillOption
 } from "@shared/types";
 import type { MeetingUiControlMode } from "@shared/ipc";
@@ -18,7 +19,6 @@ import { SetupScreen } from "./screens/SetupScreen";
 import { MeetingScreen } from "./screens/MeetingScreen";
 import { SessionDebugWindow } from "./screens/SessionDebugWindow";
 
-const SESSION_KEY = "meeting-room:sessions";
 const DEFAULT_PROJECT_DIR = "/";
 type AgentRunStatus = "active" | "completed";
 
@@ -44,30 +44,6 @@ function maybeConfirmPending(existing: ChatMessage[], incoming: ChatMessage): Ch
   return [...next, incoming];
 }
 
-function loadSnapshots(): Record<string, ChatMessage[]> {
-  const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw) as SessionSnapshot[];
-    const map: Record<string, ChatMessage[]> = {};
-    for (const snapshot of parsed) {
-      map[snapshot.meetingId] = snapshot.messages;
-    }
-    return map;
-  } catch {
-    return {};
-  }
-}
-
-function saveSnapshots(byMeeting: Record<string, ChatMessage[]>): void {
-  const snapshots: SessionSnapshot[] = Object.entries(byMeeting).map(([meetingId, messages]) => ({
-    meetingId,
-    messages,
-    savedAt: new Date().toISOString()
-  }));
-  localStorage.setItem(SESSION_KEY, JSON.stringify(snapshots));
-}
-
 export function App(): JSX.Element {
   const urlParams = new URLSearchParams(window.location.search);
   const isDebugWindow = urlParams.get("debugWindow") === "1";
@@ -90,11 +66,12 @@ export function App(): JSX.Element {
   const [tabs, setTabs] = useState<MeetingTab[]>([]);
   const [currentTabId, setCurrentTabId] = useState<string>("");
   const [defaultProjectDir, setDefaultProjectDir] = useState<string>(DEFAULT_PROJECT_DIR);
-  const [messagesByMeeting, setMessagesByMeeting] = useState<Record<string, ChatMessage[]>>(() => loadSnapshots());
+  const [messagesByMeeting, setMessagesByMeeting] = useState<Record<string, ChatMessage[]>>({});
   const [agentStatusesByMeeting, setAgentStatusesByMeeting] = useState<Record<string, Record<string, AgentRunStatus>>>({});
   const [runtimeEventsByMeeting, setRuntimeEventsByMeeting] = useState<Record<string, RuntimeEvent[]>>({});
   const [healthByMeeting, setHealthByMeeting] = useState<Record<string, ConversationHealth>>({});
   const [sessionDebug, setSessionDebug] = useState<ClaudeSessionDebug | null>(null);
+  const [, setDaemonMeta] = useState<MeetingRoomDaemonMeta | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [ending, setEnding] = useState(false);
   const notifyRef = useRef<AudioContext | null>(null);
@@ -112,6 +89,9 @@ export function App(): JSX.Element {
     });
     void window.meetingRoom.defaultProjectDir().then((dir) => {
       if (dir) setDefaultProjectDir(dir);
+    });
+    void window.meetingRoom.getDaemonMeta().then((meta) => {
+      setDaemonMeta(meta);
     });
 
     const unsubRelay = window.meetingRoom.onRelayMessage((incoming) => {
@@ -135,10 +115,7 @@ export function App(): JSX.Element {
       const chat = toChatMessage(incoming);
       setMessagesByMeeting((prev) => {
         const current = prev[meetingId] ?? [];
-        const nextMessages = maybeConfirmPending(current, chat);
-        const next = { ...prev, [meetingId]: nextMessages };
-        saveSnapshots(next);
-        return next;
+        return { ...prev, [meetingId]: maybeConfirmPending(current, chat) };
       });
       setHealthByMeeting((prev) => ({
         ...prev,
@@ -177,63 +154,54 @@ export function App(): JSX.Element {
       setSessionDebug(null);
       return;
     }
-    let disposed = false;
     const load = async () => {
+      const view = await window.meetingRoom.getSessionView(currentTabId);
+      if (view) {
+        hydrateSessionView(view);
+        return;
+      }
       const debug = await window.meetingRoom.getSessionDebug(currentTabId);
-      if (!disposed) setSessionDebug(debug);
+      setSessionDebug(debug);
     };
     void load();
     const timer = window.setInterval(() => {
       void load();
     }, 2000);
     return () => {
-      disposed = true;
       window.clearInterval(timer);
     };
   }, [currentTabId]);
 
   const currentMessages = useMemo(() => messagesByMeeting[currentTabId] ?? [], [messagesByMeeting, currentTabId]);
 
+  const hydrateSessionView = (view: MeetingSessionView) => {
+    setMessagesByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.messages
+    }));
+    setAgentStatusesByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.agentStatuses
+    }));
+    setRuntimeEventsByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.runtimeEvents
+    }));
+    setHealthByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.health
+    }));
+    setSessionDebug(view.sessionDebug);
+  };
+
   const handleStart = async (config: MeetingConfig) => {
     const tab = await window.meetingRoom.startMeeting(config);
-    setTabs((prev) => [...prev, tab]);
+    const nextTabs = await window.meetingRoom.listTabs();
+    setTabs(nextTabs);
     setCurrentTabId(tab.id);
-
-    if (config.members.length > 0) {
-      setAgentStatusesByMeeting((prev) => {
-        const seeded: Record<string, AgentRunStatus> = {};
-        for (const memberId of config.members) {
-          seeded[memberId] = "active";
-        }
-        return {
-          ...prev,
-          [tab.id]: {
-            ...seeded,
-            ...(prev[tab.id] ?? {})
-          }
-        };
-      });
-
-      const profileById = new Map(agents.map((agent) => [agent.id, agent]));
-      const teamLines = config.members.map((memberId) => {
-        const profile = profileById.get(memberId);
-        if (!profile) return `- ${memberId}`;
-        return `- ${profile.id} (${profile.name})`;
-      });
-      const teamMessage: ChatMessage = {
-        id: `team_${Date.now()}`,
-        sender: "system",
-        content: ["### Team 編成", ...teamLines].join("\n"),
-        timestamp: new Date().toISOString(),
-        source: "agent",
-        status: "confirmed",
-        team: tab.config.skill
-      };
-      setMessagesByMeeting((prev) => {
-        const next = { ...prev, [tab.id]: [...(prev[tab.id] ?? []), teamMessage] };
-        saveSnapshots(next);
-        return next;
-      });
+    const view = await window.meetingRoom.getSessionView(tab.id);
+    if (view) {
+      hydrateSessionView(view);
     }
   };
 
@@ -261,9 +229,7 @@ export function App(): JSX.Element {
       status: "pending"
     };
     setMessagesByMeeting((prev) => {
-      const next = { ...prev, [currentTabId]: [...(prev[currentTabId] ?? []), optimistic] };
-      saveSnapshots(next);
-      return next;
+      return { ...prev, [currentTabId]: [...(prev[currentTabId] ?? []), optimistic] };
     });
     setHealthByMeeting((prev) => ({
       ...prev,
@@ -272,6 +238,12 @@ export function App(): JSX.Element {
         inputDeliveredAt: delivered ? new Date().toISOString() : prev[currentTabId]?.inputDeliveredAt
       }
     }));
+    if (delivered) {
+      const view = await window.meetingRoom.getSessionView(currentTabId);
+      if (view) {
+        hydrateSessionView(view);
+      }
+    }
   };
 
   const handleEnd = async () => {
@@ -295,6 +267,12 @@ export function App(): JSX.Element {
         }
         return nextTabs[0]?.id ?? "";
       });
+      if (nextTabs[0]) {
+        const view = await window.meetingRoom.getSessionView(nextTabs[0].id);
+        if (view) {
+          hydrateSessionView(view);
+        }
+      }
     } finally {
       setEnding(false);
     }
@@ -303,11 +281,19 @@ export function App(): JSX.Element {
   const handleControl = async (mode: MeetingUiControlMode, extra?: string) => {
     if (!currentTabId) return;
     await window.meetingRoom.sendControlMessage(currentTabId, mode, extra);
+    const view = await window.meetingRoom.getSessionView(currentTabId);
+    if (view) {
+      hydrateSessionView(view);
+    }
   };
 
   const handleRetryMcp = async () => {
     if (!currentTabId) return;
     await window.meetingRoom.retryMcp(currentTabId);
+    const view = await window.meetingRoom.getSessionView(currentTabId);
+    if (view) {
+      hydrateSessionView(view);
+    }
   };
 
   const handleOpenDevTools = async () => {

@@ -9,11 +9,11 @@
     "resolveJsonModule": true,
     "lib": ["ES2022"],
     "types": ["node"],
-    "baseUrl": ".",
+    "typeRoots": ["../../electron/node_modules/@types"],
+    "baseUrl": "../..",
     "paths": {
-      "@shared/*": ["src/shared/*"],
-      "@contracts/*": ["../packages/shared-contracts/src/*"]
+      "@contracts/*": ["packages/shared-contracts/src/*"]
     }
   },
-  "include": ["src/main/**/*.ts", "src/shared/**/*.ts"]
+  "include": ["src/**/*.ts", "../../packages/shared-contracts/src/**/*.ts"]
 }

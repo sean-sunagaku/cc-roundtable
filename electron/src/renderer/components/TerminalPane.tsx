@@ -15,6 +15,10 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
   const fitRef = useRef<FitAddon | null>(null);
   const seededRef = useRef(false);
 
+  const runTerminalCommand = (command: Promise<unknown>) => {
+    void command.catch(() => undefined);
+  };
+
   useEffect(() => {
     seededRef.current = false;
     const term = new Terminal({
@@ -33,7 +37,7 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
       term.open(containerRef.current);
       fit.fit();
       term.focus();
-      void onResize(meetingId, term.cols, term.rows);
+      runTerminalCommand(onResize(meetingId, term.cols, term.rows));
     }
 
     const unsub = subscribeData((incomingId, chunk) => {
@@ -42,12 +46,12 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
     });
 
     const dataListener = term.onData((data) => {
-      void window.meetingRoom.writeTerminal(meetingId, data);
+      runTerminalCommand(window.meetingRoom.writeTerminal(meetingId, data));
     });
 
     const observer = new ResizeObserver(() => {
       fit.fit();
-      void onResize(meetingId, term.cols, term.rows);
+      runTerminalCommand(onResize(meetingId, term.cols, term.rows));
     });
     if (containerRef.current) observer.observe(containerRef.current);
 

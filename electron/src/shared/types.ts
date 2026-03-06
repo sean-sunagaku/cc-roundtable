@@ -34,7 +34,7 @@ export interface MeetingTab {
   title: string;
   config: MeetingConfig;
   createdAt: string;
-  status: "running" | "paused" | "ended";
+  status: "running" | "paused" | "ended" | "recovering";
 }
 
 export interface SkillOption {
@@ -80,6 +80,9 @@ export interface RuntimeEvent {
 export interface ConversationHealth {
   inputDeliveredAt?: string;
   lastAgentReplyAt?: string;
+  claudeReadyAt?: string;
+  lastWarningAt?: string;
+  lastErrorAt?: string;
 }
 
 export interface ClaudeSessionDebug {
@@ -88,4 +91,32 @@ export interface ClaudeSessionDebug {
   hasUsageLimit: boolean;
   hasMcpError: boolean;
   lastUpdatedAt?: string;
+}
+
+export interface MeetingSessionView {
+  tab: MeetingTab;
+  messages: ChatMessage[];
+  agentStatuses: Record<string, "active" | "completed">;
+  runtimeEvents: RuntimeEvent[];
+  health: ConversationHealth;
+  sessionDebug: ClaudeSessionDebug;
+}
+
+export interface DaemonAccessPolicy {
+  sessionHost: "mac-daemon";
+  authMode: "local-open" | "token-required";
+  authHeader: "authorization";
+  tunnelReady: boolean;
+}
+
+export interface DaemonReconnectPolicy {
+  strategy: "sse-refetch";
+  backoffMs: number[];
+  snapshotRequired: true;
+}
+
+export interface MeetingRoomDaemonMeta {
+  accessPolicy: DaemonAccessPolicy;
+  reconnectPolicy: DaemonReconnectPolicy;
+  browserClientPath: string;
 }

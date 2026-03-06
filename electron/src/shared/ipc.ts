@@ -3,7 +3,9 @@ import type {
   AgentProfile,
   AgentProfileInput,
   ClaudeSessionDebug,
+  MeetingRoomDaemonMeta,
   MeetingConfig,
+  MeetingSessionView,
   MeetingSummaryPayload,
   MeetingTab,
   RuntimeEvent,
@@ -69,6 +71,14 @@ export interface MainInvokeContract {
   "meeting:get-session-debug": {
     args: [meetingId: string];
     result: ClaudeSessionDebug;
+  };
+  "meeting:get-session-view": {
+    args: [meetingId: string];
+    result: MeetingSessionView | null;
+  };
+  "meeting:get-daemon-meta": {
+    args: [];
+    result: MeetingRoomDaemonMeta;
   };
   "app:open-devtools": {
     args: [];

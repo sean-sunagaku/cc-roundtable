@@ -5,7 +5,9 @@ import type {
   AgentProfile,
   AgentProfileInput,
   ClaudeSessionDebug,
+  MeetingRoomDaemonMeta,
   MeetingConfig,
+  MeetingSessionView,
   MeetingSummaryPayload,
   MeetingTab,
   RuntimeEvent,
@@ -30,6 +32,8 @@ const api = {
   saveSummary: (payload: MeetingSummaryPayload): Promise<string> => ipc.invoke("meeting:save-summary", payload),
   retryMcp: (meetingId: string): Promise<boolean> => ipc.invoke("meeting:retry-mcp", meetingId),
   getSessionDebug: (meetingId: string): Promise<ClaudeSessionDebug> => ipc.invoke("meeting:get-session-debug", meetingId),
+  getSessionView: (meetingId: string): Promise<MeetingSessionView | null> => ipc.invoke("meeting:get-session-view", meetingId),
+  getDaemonMeta: (): Promise<MeetingRoomDaemonMeta> => ipc.invoke("meeting:get-daemon-meta"),
   openSessionDebugWindow: (meetingId: string): Promise<boolean> =>
     ipc.invoke("meeting:open-session-debug-window", meetingId),
   openDevTools: (): Promise<boolean> => ipc.invoke("app:open-devtools"),

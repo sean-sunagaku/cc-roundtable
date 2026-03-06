@@ -1,5 +1,4 @@
 import path from "node:path";
-import fs from "node:fs";
 import { app, BrowserWindow } from "electron";
 // #region agent log
 function _dbg(msg: string, data: Record<string, unknown>, hyp: string): void {
@@ -18,25 +17,49 @@ function _dbg(msg: string, data: Record<string, unknown>, hyp: string): void {
 }
 // #endregion
 import type { MainInvokeArgs, MainInvokeChannel, MainInvokeResult } from "@shared/ipc";
-import { PtyManager } from "./pty-manager";
+import type {
+  AgentMessagePayload,
+  ChatMessage,
+  ClaudeSessionDebug,
+  MeetingRoomDaemonMeta,
+  MeetingSessionView,
+  MeetingTab,
+  RuntimeEvent
+} from "@shared/types";
+import type {
+  ChatMessagePayload,
+  MeetingRoomDaemonCommand,
+  MeetingRoomDaemonMetaPayload,
+  MeetingRoomDaemonStreamFrame,
+  MeetingSessionViewPayload,
+  MeetingTabPayload
+} from "../../../packages/shared-contracts/src/meeting-room-daemon";
 import { MainIpcRouter } from "./ipc-router";
-import { RelayServer } from "./ws-server";
 import { MeetingService } from "./meeting";
+import { PtyManager } from "./pty-manager";
+import { MeetingRoomDaemonManager } from "./daemon";
 
 let mainWindow: BrowserWindow | null = null;
 let sessionDebugWindow: BrowserWindow | null = null;
-const runtimeEventDebounce = new Map<string, number>();
-const ptyTailByMeeting = new Map<string, string[]>();
-const ptyLineBufferByMeeting = new Map<string, string>();
-const fallbackRelayByMeeting = new Map<string, string>();
-const ptyTailMaxLines = 120;
-const relayMode = process.env.MEETING_ROOM_RELAY_MODE ?? "hook_only";
-const enableTerminalFallbackRelay = relayMode === "mixed" || relayMode === "terminal_only";
-const ptyManager = new PtyManager();
-const relayServer = new RelayServer();
+let daemonReadyPromise: Promise<void> | null = null;
+const helperMeetingService = new MeetingService(new PtyManager(), () => undefined);
 const ipcRouter = new MainIpcRouter(() => mainWindow);
-const meetingService = new MeetingService(ptyManager, (channel, ...args) => {
-  ipcRouter.send(channel, ...args);
+const daemonManager = new MeetingRoomDaemonManager({
+  onStdout: (chunk) => {
+    const line = chunk.trim();
+    if (line) {
+      console.info(`[meeting-room-daemon] ${line}`);
+    }
+  },
+  onStderr: (chunk) => {
+    const line = chunk.trim();
+    if (line) {
+      console.warn(`[meeting-room-daemon] ${line}`);
+    }
+  },
+  onExit: () => {
+    daemonReadyPromise = null;
+  }
 });
 
 function createWindow(): void {
@@ -55,12 +78,11 @@ function createWindow(): void {
   const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (devUrl) {
     void mainWindow.loadURL(devUrl);
-  } else {
-    const indexHtml = path.resolve(__dirname, "../renderer/index.html");
-    void mainWindow.loadFile(indexHtml);
+    return;
   }
 
-  meetingService.attachWindow(mainWindow);
+  const indexHtml = path.resolve(__dirname, "../renderer/index.html");
+  void mainWindow.loadFile(indexHtml);
 }
 
 type MaybePromise<T> = T | Promise<T>;
@@ -73,45 +95,139 @@ function handleIpc<C extends MainInvokeChannel>(
 }
 
 function registerIpc(): void {
-  handleIpc("meeting:start", (config) => meetingService.startMeeting(config));
-  handleIpc("meeting:end", (meetingId) => {
-    meetingService.endMeeting(meetingId);
-  });
-  handleIpc("meeting:human-message", (meetingId, message) => {
-    return meetingService.sendHumanMessage(meetingId, message);
-  });
-  handleIpc("meeting:control-message", (meetingId, mode, extra) => {
-    if (mode === "end") {
-      meetingService.sendControlPrompt(meetingId, "end");
-      meetingService.endMeeting(meetingId);
-      return;
-    }
-    meetingService.sendControlPrompt(meetingId, mode, extra);
-  });
-  handleIpc("meeting:list-skills", () => meetingService.listSkills());
-  handleIpc("meeting:list-agents", () => meetingService.listAgentProfiles());
-  handleIpc("meeting:save-agent", (input) => meetingService.saveAgentProfile(input));
-  handleIpc("meeting:list-tabs", () => meetingService.listTabs());
-  handleIpc("meeting:default-project-dir", () => meetingService.defaultProjectDir());
-  handleIpc("meeting:save-summary", (payload) => meetingService.saveMeetingSummary(payload));
-  handleIpc("meeting:retry-mcp", (meetingId) => meetingService.retryMcp(meetingId));
-  handleIpc("meeting:resize-terminal", (meetingId, cols, rows) => {
-    ptyManager.resize(meetingId, cols, rows);
-  });
-  handleIpc("meeting:terminal-write", (meetingId, data) => {
-    return ptyManager.write(meetingId, data);
-  });
-  handleIpc("meeting:get-session-debug", (meetingId) => {
-    const tail = ptyTailByMeeting.get(meetingId) ?? [];
-    const joined = tail.join("\n");
-    return {
-      meetingId,
-      tail,
-      hasUsageLimit: isUsageLimitReached(joined),
-      hasMcpError: hasMcpFailureSignal(joined),
-      lastUpdatedAt: tail.length > 0 ? new Date().toISOString() : undefined
+  handleIpc("meeting:start", async (config) => {
+    await dispatchDaemonCommand({
+      type: "startMeeting",
+      meetingId: config.id,
+      topic: config.topic,
+      skill: config.skill,
+      projectDir: config.projectDir,
+      members: config.members,
+      initPrompt: helperMeetingService.buildInitPrompt(config)
+    });
+
+    const view = await daemonManager.getSessionView(config.id);
+    void refreshTabsFromDaemon();
+    return view ? toMeetingTab(view.tab) : {
+      id: config.id,
+      title: config.topic,
+      config,
+      createdAt: new Date().toISOString(),
+      status: "running"
     };
   });
+
+  handleIpc("meeting:end", async (meetingId) => {
+    await dispatchDaemonCommand({
+      type: "endMeeting",
+      meetingId
+    });
+    void refreshTabsFromDaemon();
+  });
+
+  handleIpc("meeting:human-message", async (meetingId, message) => {
+    const ack = await dispatchDaemonCommand({
+      type: "sendHumanMessage",
+      meetingId,
+      message
+    });
+    return ack.accepted;
+  });
+
+  handleIpc("meeting:control-message", async (meetingId, mode, extra) => {
+    if (mode === "pause") {
+      await dispatchDaemonCommand({
+        type: "pauseMeeting",
+        meetingId
+      });
+      return;
+    }
+    if (mode === "resume") {
+      await dispatchDaemonCommand({
+        type: "resumeMeeting",
+        meetingId
+      });
+      return;
+    }
+    if (mode === "end") {
+      await dispatchDaemonCommand({
+        type: "endMeeting",
+        meetingId
+      });
+      void refreshTabsFromDaemon();
+      return;
+    }
+    await dispatchDaemonCommand({
+      type: "updateMeetingSettings",
+      meetingId,
+      extra: extra ?? ""
+    });
+  });
+
+  handleIpc("meeting:list-skills", () => helperMeetingService.listSkills());
+  handleIpc("meeting:list-agents", () => helperMeetingService.listAgentProfiles());
+  handleIpc("meeting:save-agent", (input) => helperMeetingService.saveAgentProfile(input));
+  handleIpc("meeting:list-tabs", async () => refreshTabsFromDaemon());
+  handleIpc("meeting:default-project-dir", () => helperMeetingService.defaultProjectDir());
+  handleIpc("meeting:save-summary", (payload) => helperMeetingService.saveMeetingSummary(payload));
+
+  handleIpc("meeting:retry-mcp", async (meetingId) => {
+    const ack = await dispatchDaemonCommand({
+      type: "retryMcp",
+      meetingId
+    });
+    return ack.accepted;
+  });
+
+  handleIpc("meeting:resize-terminal", async (meetingId, cols, rows) => {
+    try {
+      await dispatchDaemonCommand({
+        type: "resizeTerminal",
+        meetingId,
+        cols,
+        rows
+      });
+    } catch (error) {
+      if (!isRejectedDaemonCommandError(error)) {
+        throw error;
+      }
+    }
+  });
+
+  handleIpc("meeting:terminal-write", async (meetingId, data) => {
+    try {
+      const ack = await dispatchDaemonCommand({
+        type: "writeTerminal",
+        meetingId,
+        data
+      });
+      return ack.accepted;
+    } catch (error) {
+      if (isRejectedDaemonCommandError(error)) {
+        return false;
+      }
+      throw error;
+    }
+  });
+
+  handleIpc("meeting:get-session-debug", async (meetingId) => {
+    await ensureDaemonConnected();
+    const view = await daemonManager.getSessionView(meetingId);
+    return view ? toClaudeSessionDebug(view.sessionDebug) : emptySessionDebug(meetingId);
+  });
+
+  handleIpc("meeting:get-session-view", async (meetingId) => {
+    await ensureDaemonConnected();
+    const view = await daemonManager.getSessionView(meetingId);
+    return view ? toMeetingSessionView(view) : null;
+  });
+
+  handleIpc("meeting:get-daemon-meta", async () => {
+    await ensureDaemonConnected();
+    const meta = await daemonManager.getMeta();
+    return toMeetingRoomDaemonMeta(meta);
+  });
+
   handleIpc("app:open-devtools", () => {
     if (!mainWindow) return false;
     if (!mainWindow.webContents.isDevToolsOpened()) {
@@ -121,11 +237,13 @@ function registerIpc(): void {
     }
     return true;
   });
+
   handleIpc("meeting:open-session-debug-window", (meetingId) => {
     const devUrl = process.env.VITE_DEV_SERVER_URL;
     if (sessionDebugWindow && !sessionDebugWindow.isDestroyed()) {
       sessionDebugWindow.close();
     }
+
     sessionDebugWindow = new BrowserWindow({
       width: 900,
       height: 680,
@@ -138,235 +256,218 @@ function registerIpc(): void {
         contextIsolation: true
       }
     });
+
     if (devUrl) {
       void sessionDebugWindow.loadURL(
         `${devUrl}?debugWindow=1&meetingId=${encodeURIComponent(meetingId)}`
       );
-    } else {
-      const indexHtml = path.resolve(__dirname, "../renderer/index.html");
-      void sessionDebugWindow.loadFile(indexHtml, {
-        query: {
-          debugWindow: "1",
-          meetingId
-        }
-      });
+      return true;
     }
-    return true;
-  });
-}
 
-function stripAnsi(input: string): string {
-  return input.replace(/\u001b\[[0-9;?]*[A-Za-z]/g, "").replace(/\u001b\][^\u0007]*\u0007/g, "");
-}
-
-function extractUsagePercent(text: string): number | null {
-  const match = text.match(/used\s+(\d+)%/i);
-  if (!match) return null;
-  const percent = Number.parseInt(match[1], 10);
-  if (Number.isNaN(percent)) return null;
-  return percent;
-}
-
-function isUsageLimitReached(text: string): boolean {
-  if (/usage limit reached|weekly limit reached|limit has been reached/i.test(text)) {
-    return true;
-  }
-  const percent = extractUsagePercent(text);
-  return percent !== null && percent >= 100;
-}
-
-function isMcpStatusBadge(line: string): boolean {
-  const compact = line.replace(/\s+/g, " ").trim();
-  if (!compact) return false;
-  if (!/\bmcp server failed\b/i.test(compact)) return false;
-  if (!/\/mcp\b/i.test(compact)) return false;
-  return /[·•]/.test(compact) || /\b\d+\s+mcp server failed\b/i.test(compact) || /\bmanage mcp servers\b/i.test(compact);
-}
-
-function hasMcpFailureSignal(text: string): boolean {
-  const normalized = stripAnsi(text).replace(/\u0007/g, "");
-  const lines = normalized
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-  return lines.some((line) => /mcp server failed/i.test(line) && !isMcpStatusBadge(line));
-}
-
-function hasClaudeReadySignal(text: string): boolean {
-  const normalized = stripAnsi(text).replace(/\u0007/g, "");
-  return /❯\s/.test(normalized) || /what task would you like the agent team/i.test(normalized);
-}
-
-function shouldKeepTailLine(line: string): boolean {
-  const compact = line.replace(/\s+/g, " ").trim();
-  if (!compact) return false;
-  if (/^[✢✳✶✻✽·⠂⠐⠒⠲⠴⠦⠧⠇⠋⠙⠸⏺]+$/.test(compact)) return false;
-  if (/^\d+$/.test(compact)) return false;
-  if (/^[a-zA-Z]$/.test(compact)) return false;
-  return true;
-}
-
-function collectTailLines(meetingId: string, chunk: string): string[] {
-  const text = stripAnsi(chunk).replace(/\u0007/g, "");
-  let pending = ptyLineBufferByMeeting.get(meetingId) ?? "";
-  const lines: string[] = [];
-
-  for (const ch of text) {
-    if (ch === "\r") {
-      pending = "";
-      continue;
-    }
-    if (ch === "\n") {
-      const line = pending.trimEnd();
-      if (shouldKeepTailLine(line)) {
-        lines.push(line);
+    const indexHtml = path.resolve(__dirname, "../renderer/index.html");
+    void sessionDebugWindow.loadFile(indexHtml, {
+      query: {
+        debugWindow: "1",
+        meetingId
       }
-      pending = "";
-      continue;
-    }
-    const code = ch.charCodeAt(0);
-    if (code < 32 && ch !== "\t") {
-      continue;
-    }
-    pending += ch;
-    if (pending.length > 4000) {
-      pending = pending.slice(-4000);
-    }
-  }
-
-  ptyLineBufferByMeeting.set(meetingId, pending);
-  return lines;
-}
-
-function isFallbackAgentLine(line: string): boolean {
-  const compact = line.replace(/\s+/g, " ").trim();
-  if (!compact) return false;
-  if (compact.length < 6) return false;
-  if (/^[/\\]/.test(compact)) return false;
-  if (/^chore|^scampering|^calculating/i.test(compact)) return false;
-  if (/tokens|thinking|ctrl\+g|weekly limit|mcp server failed|use skill/i.test(compact)) return false;
-  if (/チームに\s*broadcast\s*してください/i.test(compact)) return false;
-  if (/bypass permissions/i.test(compact)) return false;
-  if (/^Pondering|^ClaudeAPI$/i.test(compact)) return false;
-  if (/^resets \d+pm|^\d+ MCP server failed/i.test(compact)) return false;
-  return true;
-}
-
-/** Extract Claude Code TUI response from chunk (responses often lack trailing newline, use cursor codes instead) */
-function extractClaudeResponsesFromChunk(cleaned: string): string[] {
-  const results: string[] = [];
-  const seen = new Set<string>();
-  const add = (s: string): void => {
-    const c = s.replace(/\s+/g, " ").trim();
-    if (c.length >= 8 && isFallbackAgentLine(c) && !seen.has(c)) {
-      seen.add(c);
-      results.push(c);
-    }
-  };
-  const markerRe = /[⏺✳✶✢✻✽✿·]\s*([^\r\n]+?)(?=[\r\n]|─{2,}|❯\s|$)/g;
-  let m: RegExpExecArray | null;
-  while ((m = markerRe.exec(cleaned)) !== null) add(m[1]);
-  const indentRe = /\s{2,}([^\r\n⏺✳✶✢✻✽✿·❯─\s][^\r\n⏺✳✶✢✻✽✿·❯─]*?)(?=[\r\n]|─{2,}|❯\s|[⏺✳✶✢✻✽✿·]|\s{4,}|$)/g;
-  while ((m = indentRe.exec(cleaned)) !== null) add(m[1]);
-  return results;
-}
-
-function emitRuntimeEvent(meetingId: string, type: "usage_limit" | "mcp_error" | "mcp_info", message: string): void {
-  const key = `${meetingId}:${type}:${message}`;
-  const now = Date.now();
-  const last = runtimeEventDebounce.get(key) ?? 0;
-  if (now - last < 10_000) return;
-  runtimeEventDebounce.set(key, now);
-
-  ipcRouter.send("meeting:runtime-event", {
-    meetingId,
-    type,
-    message,
-    timestamp: new Date().toISOString()
+    });
+    return true;
   });
+}
+
+async function ensureDaemonConnected(): Promise<void> {
+  if (!daemonReadyPromise) {
+    daemonReadyPromise = (async () => {
+      await daemonManager.start();
+      await daemonManager.subscribe((frame) => {
+        bridgeDaemonFrame(frame);
+      });
+      const tabs = await loadTabsFromDaemon();
+      ipcRouter.send("meeting:tabs", tabs);
+    })().catch((error: unknown) => {
+      daemonReadyPromise = null;
+      throw error;
+    });
+  }
+  return daemonReadyPromise;
+}
+
+async function dispatchDaemonCommand(command: MeetingRoomDaemonCommand) {
+  await ensureDaemonConnected();
+  return daemonManager.dispatch(daemonManager.createEnvelope(command));
+}
+
+function isRejectedDaemonCommandError(error: unknown): boolean {
+  return error instanceof Error && /Command request failed with 409:/.test(error.message);
+}
+
+async function refreshTabsFromDaemon(): Promise<MeetingTab[]> {
+  try {
+    await ensureDaemonConnected();
+    const tabs = await loadTabsFromDaemon();
+    ipcRouter.send("meeting:tabs", tabs);
+    return tabs;
+  } catch (error) {
+    console.warn("[meeting-room-daemon] list tabs failed", error);
+    return [];
+  }
+}
+
+async function loadTabsFromDaemon(): Promise<MeetingTab[]> {
+  return (await daemonManager.listSessions()).map(toMeetingTab);
+}
+
+function bridgeDaemonFrame(frame: MeetingRoomDaemonStreamFrame): void {
+  const event = frame.event;
+
+  switch (event.type) {
+    case "meeting.started":
+    case "meeting.ended":
+    case "session.view.updated":
+      void refreshTabsFromDaemon();
+      return;
+    case "message.received": {
+      const message = event.payload.message;
+      if (message.source !== "agent") {
+        return;
+      }
+      ipcRouter.send("meeting:agent-message", toAgentMessagePayload(event.meetingId, message));
+      return;
+    }
+    case "agent.status_changed":
+      ipcRouter.send("meeting:agent-message", {
+        type: "agent_status",
+        id: `status_${event.eventId}`,
+        sender: event.payload.sender,
+        content: "",
+        timestamp: event.emittedAt,
+        team: "daemon",
+        status: event.payload.status,
+        meetingId: event.meetingId
+      });
+      return;
+    case "runtime.warning":
+      ipcRouter.send("meeting:runtime-event", toRuntimeEvent(event.payload.runtimeEvent));
+      return;
+    case "runtime.error":
+      ipcRouter.send("meeting:runtime-event", toRuntimeEvent(event.payload.runtimeEvent));
+      return;
+    case "terminal.chunk":
+      ipcRouter.send("terminal:data", event.meetingId, event.payload.chunk);
+      return;
+    default:
+      _dbg("ignored daemon event", { type: (event as { type: string }).type }, "DAEMON_EVT");
+  }
+}
+
+function toAgentMessagePayload(meetingId: string, message: ChatMessagePayload): AgentMessagePayload {
+  return {
+    type: "agent_message",
+    id: message.id,
+    sender: message.sender,
+    content: message.content,
+    timestamp: message.timestamp,
+    team: message.team ?? "daemon",
+    meetingId
+  };
+}
+
+function toRuntimeEvent(event: RuntimeEvent): RuntimeEvent {
+  return {
+    meetingId: event.meetingId,
+    type: event.type,
+    message: event.message,
+    timestamp: event.timestamp
+  };
+}
+
+function toMeetingTab(tab: MeetingTabPayload): MeetingTab {
+  return {
+    id: tab.id,
+    title: tab.title,
+    config: {
+      id: tab.config.id,
+      skill: tab.config.skill,
+      topic: tab.config.topic,
+      projectDir: tab.config.projectDir,
+      members: [...tab.config.members]
+    },
+    createdAt: tab.createdAt,
+    status: tab.status
+  };
+}
+
+function toChatMessage(message: ChatMessagePayload): ChatMessage {
+  return {
+    id: message.id,
+    sender: message.sender,
+    content: message.content,
+    timestamp: message.timestamp,
+    team: message.team,
+    status: message.status,
+    source: message.source
+  };
+}
+
+function toClaudeSessionDebug(debug: MeetingSessionViewPayload["sessionDebug"]): ClaudeSessionDebug {
+  return {
+    meetingId: debug.meetingId,
+    tail: [...debug.tail],
+    hasUsageLimit: debug.hasUsageLimit,
+    hasMcpError: debug.hasMcpError,
+    lastUpdatedAt: debug.lastUpdatedAt
+  };
+}
+
+function toMeetingSessionView(view: MeetingSessionViewPayload): MeetingSessionView {
+  return {
+    tab: toMeetingTab(view.tab),
+    messages: view.messages.map(toChatMessage),
+    agentStatuses: { ...view.agentStatuses },
+    runtimeEvents: view.runtimeEvents.map(toRuntimeEvent),
+    health: {
+      ...view.health
+    },
+    sessionDebug: toClaudeSessionDebug(view.sessionDebug)
+  };
+}
+
+function toMeetingRoomDaemonMeta(meta: MeetingRoomDaemonMetaPayload): MeetingRoomDaemonMeta {
+  return {
+    accessPolicy: {
+      ...meta.accessPolicy
+    },
+    reconnectPolicy: {
+      strategy: meta.reconnectPolicy.strategy,
+      backoffMs: [...meta.reconnectPolicy.backoffMs],
+      snapshotRequired: meta.reconnectPolicy.snapshotRequired
+    },
+    browserClientPath: meta.browserClientPath
+  };
+}
+
+function emptySessionDebug(meetingId: string): ClaudeSessionDebug {
+  return {
+    meetingId,
+    tail: [],
+    hasUsageLimit: false,
+    hasMcpError: false,
+    lastUpdatedAt: undefined
+  };
 }
 
 app.whenReady().then(() => {
   createWindow();
   registerIpc();
-
-  relayServer.start(9999);
-  relayServer.onRelay((payload) => meetingService.relayAgentMessage(payload));
-  ptyManager.on("data", (meetingId: string, data: string) => {
-    if (!mainWindow) return;
-    ipcRouter.send("terminal:data", meetingId, data);
-    const cleaned = stripAnsi(data).replace(/\u0007/g, "");
-    const hasPending = meetingService.hasPendingInitPrompt(meetingId);
-    const readySignal = hasClaudeReadySignal(cleaned);
-    // #region agent log
-    if (hasPending && readySignal) {
-      _dbg("hasClaudeReadySignal+onClaudeReady", { meetingId, snippet: cleaned.slice(-80) }, "H1");
-    }
-    // #endregion
-    if (hasPending && readySignal) {
-      meetingService.onClaudeReady(meetingId);
-    }
-    const lines = collectTailLines(meetingId, data);
-    if (lines.length > 0) {
-      const prev = ptyTailByMeeting.get(meetingId) ?? [];
-      const next = [...prev, ...lines].slice(-ptyTailMaxLines);
-      ptyTailByMeeting.set(meetingId, next);
-    }
-
-    if (enableTerminalFallbackRelay) {
-      const meetingTab = meetingService.listTabs().find((tab) => tab.id === meetingId);
-      const relayFallback = (compact: string): void => {
-        const lastRelayed = fallbackRelayByMeeting.get(meetingId);
-        if (lastRelayed === compact) return;
-        fallbackRelayByMeeting.set(meetingId, compact);
-        meetingService.relayAgentMessage({
-          type: "agent_message",
-          id: `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          sender: "leader",
-          content: compact,
-          timestamp: new Date().toISOString(),
-          team: meetingTab?.config.skill ?? "terminal-fallback",
-          meetingId
-        });
-      };
-      for (const content of extractClaudeResponsesFromChunk(cleaned)) {
-        relayFallback(content);
-      }
-      for (const line of lines) {
-        if (!isFallbackAgentLine(line)) continue;
-        const compact = line.replace(/\s+/g, " ").trim();
-        if (!compact) continue;
-        relayFallback(compact);
-      }
-    }
-    if (isUsageLimitReached(cleaned)) {
-      emitRuntimeEvent(meetingId, "usage_limit", "Claude利用上限に到達しています。");
-    }
-    if (hasMcpFailureSignal(cleaned)) {
-      emitRuntimeEvent(meetingId, "mcp_error", "MCP server failed を検出しました。");
-    }
-    if (/\/mcp/i.test(cleaned) && /(connected|running|available|ok)/i.test(cleaned)) {
-      emitRuntimeEvent(meetingId, "mcp_info", "MCP接続が回復した可能性があります。");
-    }
-    try {
-      const logPath = path.resolve(process.cwd(), "..", ".claude/meeting-room/pty.log");
-      fs.mkdirSync(path.dirname(logPath), { recursive: true });
-      fs.appendFileSync(logPath, `[${new Date().toISOString()}][${meetingId}] ${data}`, "utf-8");
-    } catch {
-      // Best effort debug log.
-    }
-  });
-  ptyManager.on("exit", (meetingId: string, exitCode: number) => {
-    if (!mainWindow) return;
-    ptyLineBufferByMeeting.delete(meetingId);
-    fallbackRelayByMeeting.delete(meetingId);
-    ipcRouter.send("terminal:data", meetingId, `\n[pty exited: ${exitCode}]\n`);
+  void ensureDaemonConnected().catch((error) => {
+    console.warn("[meeting-room-daemon] startup failed", error);
   });
 });
 
 app.on("window-all-closed", () => {
-  ptyManager.stopAll();
-  relayServer.close();
+  void daemonManager.dispose().catch((error) => {
+    console.warn("[meeting-room-daemon] shutdown failed", error);
+  });
   if (sessionDebugWindow && !sessionDebugWindow.isDestroyed()) {
     sessionDebugWindow.close();
   }

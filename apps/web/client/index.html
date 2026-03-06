@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meeting Room Web Client</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Meeting Room</p>
+          <h1>Web Client Preview</h1>
+          <p class="lede">daemon の command API と event stream を直接叩く最小ブラウザ client です。</p>
+        </div>
+        <div class="meta" id="metaCard">meta を読込中...</div>
+      </header>
+
+      <section class="panel">
+        <h2>接続</h2>
+        <div class="row">
+          <label>
+            Base URL
+            <input id="baseUrl" value="" />
+          </label>
+          <label>
+            Bearer Token
+            <input id="token" type="password" placeholder="任意" />
+          </label>
+          <button id="connectBtn" type="button">Connect</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <h2>Start Meeting</h2>
+          <div class="form">
+            <label>Meeting ID <input id="meetingId" value="web-session" /></label>
+            <label>Topic <input id="topic" value="Web preview session" /></label>
+            <label>Skill <input id="skill" value="feature-discussion" /></label>
+            <label>Project Dir <input id="projectDir" value="/" /></label>
+            <label>Members <input id="members" value="tech-lead,ux-analyst" /></label>
+            <label>Init Prompt <textarea id="initPrompt">Web client からの起動テストです。結論と次アクションを短く共有してください。</textarea></label>
+            <button id="startBtn" type="button">Start</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Active Sessions</h2>
+          <div class="row">
+            <button id="reloadSessionsBtn" type="button">Reload</button>
+          </div>
+          <ul id="sessions"></ul>
+        </section>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <h2>Session View</h2>
+          <pre id="sessionView">(select a session)</pre>
+        </section>
+
+        <section class="panel">
+          <h2>Controls</h2>
+          <div class="form">
+            <label>Target Meeting ID <input id="targetMeetingId" value="web-session" /></label>
+            <label>Message <textarea id="message">ブラウザからの確認メッセージです。</textarea></label>
+            <div class="row">
+              <button id="sendBtn" type="button">Send</button>
+              <button id="retryBtn" type="button">Retry MCP</button>
+              <button id="pauseBtn" type="button">Pause</button>
+              <button id="resumeBtn" type="button">Resume</button>
+              <button id="endBtn" type="button" class="danger">End</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel">
+        <h2>Event Stream</h2>
+        <pre id="events"></pre>
+      </section>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
