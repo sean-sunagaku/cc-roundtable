@@ -94,5 +94,5 @@ Web UI の自動確認はこれです。
 npm --prefix electron run e2e:web
 ```
 
-- browser client を headless browser で開く
+- browser client を Chrome で開き、CDP 経由の DOM 操作で確認する
 - 新規会議開始、手動送信、一時停止 / 再開、daemon 再起動後の recovering、会議終了を確認する
