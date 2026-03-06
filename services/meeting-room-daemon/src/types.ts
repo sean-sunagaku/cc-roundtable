@@ -39,10 +39,6 @@ export interface RuntimeHandle {
   process: PtyLike;
   pendingInitPrompt?: string;
   initPromptTimer?: ReturnType<typeof setTimeout>;
-  lineBuffer: string;
-  fallbackLastMessage?: string;
-  suppressFallbackUntil?: number;
-  hasRelayTraffic?: boolean;
 }
 
 export interface SseClient {

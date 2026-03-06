@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { ACTIVE_FLAG_RELATIVE_PATH, HOOKS_WS_PORT } from "../constants";
-import { collectTailLines, suppressFallback } from "./terminal-utils";
 import type { PtyLike, RuntimeHandle } from "../types";
 import { buildClaudeLaunchArgs, requireNodePty, shellQuote } from "../utils";
 
@@ -41,7 +40,6 @@ export class MeetingRuntimeManager {
     this.stopRuntime(options.meetingId);
     const runtime = this.spawnRuntimeProcess(options.meetingId, options.projectDir);
     runtime.pendingInitPrompt = options.initPrompt;
-    suppressFallback(runtime, 10_000);
     runtime.initPromptTimer = setTimeout(() => {
       this.flushPendingInitPrompt(options.meetingId, options.onInitPromptSent);
     }, 20_000);
@@ -87,7 +85,6 @@ export class MeetingRuntimeManager {
     if (!content) {
       return false;
     }
-    suppressFallback(runtime, 5_000);
     runtime.process.write(content);
     runtime.process.write("\r");
     return true;
@@ -111,7 +108,6 @@ export class MeetingRuntimeManager {
     if (!runtime?.pendingInitPrompt) {
       return false;
     }
-    suppressFallback(runtime, 5_000);
     runtime.process.write(runtime.pendingInitPrompt);
     runtime.pendingInitPrompt = undefined;
     if (runtime.initPromptTimer) {
@@ -129,41 +125,6 @@ export class MeetingRuntimeManager {
     return true;
   }
 
-  markRelayTraffic(meetingId: string): void {
-    const runtime = this.runtimes.get(meetingId);
-    if (runtime) {
-      runtime.hasRelayTraffic = true;
-    }
-  }
-
-  shouldCaptureFallback(meetingId: string): boolean {
-    const runtime = this.runtimes.get(meetingId);
-    if (!runtime) {
-      return false;
-    }
-    return !runtime.hasRelayTraffic && Date.now() >= (runtime.suppressFallbackUntil ?? 0);
-  }
-
-  collectTailLines(meetingId: string, chunk: string): string[] {
-    const runtime = this.runtimes.get(meetingId);
-    if (!runtime) {
-      return [];
-    }
-    return collectTailLines(runtime, chunk);
-  }
-
-  rememberFallbackMessage(meetingId: string, content: string): boolean {
-    const runtime = this.runtimes.get(meetingId);
-    if (!runtime) {
-      return false;
-    }
-    if (runtime.fallbackLastMessage === content) {
-      return false;
-    }
-    runtime.fallbackLastMessage = content;
-    return true;
-  }
-
   private spawnRuntimeProcess(meetingId: string, projectDir: string): RuntimeHandle {
     const ptyModule = requireNodePty();
     const shell = process.platform === "win32" ? "powershell.exe" : "/bin/zsh";
@@ -175,10 +136,7 @@ export class MeetingRuntimeManager {
       cwd: projectDir,
       env: this.runtimeEnv(meetingId)
     }) as PtyLike;
-    return {
-      process: proc,
-      lineBuffer: ""
-    };
+    return { process: proc };
   }
 
   private runtimeEnv(meetingId: string): NodeJS.ProcessEnv {

@@ -28,10 +28,9 @@ import { ACTIVE_FLAG_RELATIVE_PATH, SESSION_VIEW_UPDATED_EVENT, WEB_ROOT_PREFIX 
 import { DaemonEventStream } from "../events/daemon-event-stream";
 import { HooksRelayReceiver } from "../relay/hooks-relay-receiver";
 import {
-  extractClaudeResponsesFromChunk,
   hasClaudeReadySignal,
   hasMcpFailureSignal,
-  isFallbackAgentLine,
+  shouldDisplayAgentMessageContent,
   isUsageLimitReached,
   stripAnsi
 } from "../runtime/terminal-utils";
@@ -329,7 +328,6 @@ export class MeetingRoomDaemonApp {
     if (!meetingId || !this.sessions.hasSession(meetingId)) {
       return;
     }
-    this.runtimes.markRelayTraffic(meetingId);
 
     if (payload.type === "agent_status") {
       this.sessions.append({
@@ -352,6 +350,10 @@ export class MeetingRoomDaemonApp {
         }
       } satisfies AgentStatusChangedEvent);
       this.emitSessionViewUpdated(meetingId);
+      return;
+    }
+
+    if (!shouldDisplayAgentMessageContent(payload.content)) {
       return;
     }
 
@@ -389,7 +391,6 @@ export class MeetingRoomDaemonApp {
       });
     }
 
-    const lines = this.runtimes.collectTailLines(meetingId, data);
     if (isUsageLimitReached(cleaned)) {
       this.pushRuntimeEvent(meetingId, "usage_limit", "Claude利用上限に到達しています。", "warning");
     }
@@ -399,35 +400,6 @@ export class MeetingRoomDaemonApp {
     if (/\/mcp/i.test(cleaned) && /(connected|running|available|ok)/i.test(cleaned)) {
       this.pushRuntimeEvent(meetingId, "mcp_info", "MCP接続が回復した可能性があります。", "warning");
     }
-
-    if (this.runtimes.shouldCaptureFallback(meetingId)) {
-      for (const content of extractClaudeResponsesFromChunk(cleaned)) {
-        this.recordFallbackAgentMessage(meetingId, content);
-      }
-      for (const line of lines) {
-        if (!isFallbackAgentLine(line)) {
-          continue;
-        }
-        this.recordFallbackAgentMessage(meetingId, line);
-      }
-    }
-  }
-
-  private recordFallbackAgentMessage(meetingId: string, content: string): void {
-    const compact = content.replace(/\s+/g, " ").trim();
-    if (!compact || !this.runtimes.rememberFallbackMessage(meetingId, compact)) {
-      return;
-    }
-    const message: ChatMessagePayload = {
-      id: createId("fallback"),
-      sender: "leader",
-      content: compact,
-      timestamp: new Date().toISOString(),
-      team: this.sessions.getSkill(meetingId) ?? "terminal-fallback",
-      source: "agent",
-      status: "confirmed"
-    };
-    this.recordAgentMessage(meetingId, message);
   }
 
   private recordAgentMessage(meetingId: string, message: ChatMessagePayload): void {

@@ -1,4 +1,3 @@
-import type { RuntimeHandle } from "../types";
 import { RESPONSE_MARKER_END, RESPONSE_MARKER_START } from "../constants";
 
 export function extractMarkedContent(content: string): string {
@@ -52,6 +51,10 @@ function compactWhitespace(line: string): string {
   return line.replace(/\s+/g, " ").trim();
 }
 
+function compactAscii(line: string): string {
+  return line.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
 function stripDecorativePrefix(line: string): string {
   return line.replace(/^[\s"'`>│├└╰╭╮╯•·⏺✳✶✢✻✽✿▶▸▹→←↳⎿┌┐┘└\-]+/, "").trim();
 }
@@ -62,56 +65,37 @@ function isUiNoiseLine(line: string): boolean {
 
   const plain = stripDecorativePrefix(compact);
   if (!plain) return true;
+  const ascii = compactAscii(plain);
 
   if (/invalid tool parameters/i.test(plain)) return true;
   if (/bypass\s*permissions?/i.test(plain)) return true;
   if (/^\[?human ?input\]?$/i.test(plain)) return true;
   if (/^task would you like the agent team/i.test(plain)) return true;
+  if (/^tool loaded\.?$/i.test(plain)) return true;
+  if (/^initiali[sz]ing(?:\.\.\.|…)?$/i.test(plain)) return true;
+  if (/^(read|searched for|recalled)\b/i.test(plain) && /(file|files|pattern|patterns|memory|memories|ctrl\+o to expand)/i.test(plain)) return true;
+  if (/^\d+\s+agents?\s+launched\b/i.test(plain)) return true;
+  if (/^beaming(?:\.\.\.|…)?(?:\s*\(.+\)|\s*\d+)?$/i.test(plain)) return true;
+  if (/^~\/|repository\/|^\[ctx:\s*\d+%]/i.test(plain)) return true;
+  if (/^@[a-z0-9._-]+(?:\s+@[a-z0-9._-]+)*\s+·\s+↓\s+to expand$/i.test(plain)) return true;
   if (/^(ctrl\+|shift\+tab|enter to send|esc to cancel)/i.test(plain)) return true;
   if (/^[A-Za-z][A-Za-z-]*ing(?:\.\.\.|…)$/.test(plain)) return true;
   if (/^".*\*\*\/\*.*"$/.test(plain)) return true;
   if (/\*\*\/\*/.test(plain)) return true;
   if (/チーム全体へ\s*broadcast\s*してください/i.test(plain)) return true;
   if (/そのうえで、必要な検討と提案を続けてください。/.test(plain)) return true;
+  if (ascii.includes("nowiunderstandtheskill")) return true;
+  if (ascii.includes("letmeloadtherequiredtoolsandstartthemeeting")) return true;
   return false;
 }
 
-function shouldKeepTailLine(line: string): boolean {
+function isSuppressedChatMessage(line: string): boolean {
   const compact = compactWhitespace(line);
-  if (!compact) return false;
-  if (/^[✢✳✶✻✽·⠂⠐⠒⠲⠴⠦⠧⠇⠋⠙⠸⏺]+$/.test(compact)) return false;
-  if (/^\d+$/.test(compact)) return false;
-  if (/^[a-zA-Z]$/.test(compact)) return false;
-  if (isUiNoiseLine(compact)) return false;
-  return true;
-}
-
-export function collectTailLines(runtime: RuntimeHandle, chunk: string): string[] {
-  const text = stripAnsi(chunk).replace(/\u0007/g, "");
-  let pending = runtime.lineBuffer;
-  const lines: string[] = [];
-  for (const ch of text) {
-    if (ch === "\r") {
-      pending = "";
-      continue;
-    }
-    if (ch === "\n") {
-      const line = pending.trimEnd();
-      if (shouldKeepTailLine(line)) {
-        lines.push(line);
-      }
-      pending = "";
-      continue;
-    }
-    const code = ch.charCodeAt(0);
-    if (code < 32 && ch !== "\t") continue;
-    pending += ch;
-    if (pending.length > 4000) {
-      pending = pending.slice(-4000);
-    }
-  }
-  runtime.lineBuffer = pending;
-  return lines;
+  if (!compact) return true;
+  if (/^#{1,6}\s*Team Event\b/i.test(compact)) return true;
+  if (/TeamCreate を実行/.test(compact)) return true;
+  if (/Task を作成/.test(compact)) return true;
+  return isUiNoiseLine(compact);
 }
 
 export function collectDebugTail(existing: string[], chunk: string): string[] {
@@ -144,46 +128,5 @@ export function filterVisibleTailLines(lines: string[]): string[] {
 }
 
 export function shouldDisplayAgentMessageContent(content: string): boolean {
-  return !isUiNoiseLine(content);
-}
-
-export function suppressFallback(runtime: RuntimeHandle, durationMs: number): void {
-  runtime.suppressFallbackUntil = Math.max(runtime.suppressFallbackUntil ?? 0, Date.now() + durationMs);
-}
-
-export function isFallbackAgentLine(line: string): boolean {
-  const compact = compactWhitespace(line);
-  if (!compact) return false;
-  if (compact.length < 6) return false;
-  if (/^[/\\]/.test(compact)) return false;
-  if (/^chore|^scampering|^calculating/i.test(compact)) return false;
-  if (isUiNoiseLine(compact)) return false;
-  if (/tokens|thinking|ctrl\+g|weekly limit|mcp server failed|use skill/i.test(compact)) return false;
-  if (/チームに\s*broadcast\s*してください/i.test(compact)) return false;
-  if (/bypass permissions/i.test(compact)) return false;
-  if (/^Pondering|^ClaudeAPI$/i.test(compact)) return false;
-  if (/^resets \d+pm|^\d+ MCP server failed/i.test(compact)) return false;
-  if (/claude\s*code|opus\s*\d|claude in chrome enabled|successfully loaded skill/i.test(compact)) return false;
-  if (/^~\/|repository\/|^\[ctx:\s*\d+%]/i.test(compact)) return false;
-  if (/^reading \d+ file|^envisioning|^nebulizing|^now let me|^invalid tool parameters/i.test(compact)) return false;
-  if (/ctrl\+o|shift\+tab|task would you like the agent team/i.test(compact)) return false;
-  return true;
-}
-
-export function extractClaudeResponsesFromChunk(cleaned: string): string[] {
-  const results: string[] = [];
-  const seen = new Set<string>();
-  const add = (value: string): void => {
-    const compact = value.replace(/\s+/g, " ").trim();
-    if (compact.length >= 8 && isFallbackAgentLine(compact) && !seen.has(compact)) {
-      seen.add(compact);
-      results.push(compact);
-    }
-  };
-  const markerRe = /[⏺✳✶✢✻✽✿·]\s*([^\r\n]+?)(?=[\r\n]|─{2,}|❯\s|$)/g;
-  let match: RegExpExecArray | null;
-  while ((match = markerRe.exec(cleaned)) !== null) add(match[1]);
-  const indentRe = /\s{2,}([^\r\n⏺✳✶✢✻✽✿·❯─\s][^\r\n⏺✳✶✢✻✽✿·❯─]*?)(?=[\r\n]|─{2,}|❯\s|[⏺✳✶✢✻✽✿·]|\s{4,}|$)/g;
-  while ((match = indentRe.exec(cleaned)) !== null) add(match[1]);
-  return results;
+  return !isSuppressedChatMessage(content);
 }

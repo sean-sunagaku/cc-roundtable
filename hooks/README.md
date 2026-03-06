@@ -32,11 +32,14 @@ Electron extracts only the marker-inside content before displaying it.
 
 ## Relay Mode (Electron)
 
-- Default: `MEETING_ROOM_RELAY_MODE=hook_only`
-  - Chat View relays only hook-originated payloads (recommended; avoids terminal TUI noise).
-- Optional fallback:
-  - `MEETING_ROOM_RELAY_MODE=mixed` enables both hook relay and terminal fallback parsing.
-  - `MEETING_ROOM_RELAY_MODE=terminal_only` uses only terminal fallback parsing.
+- Chat View relays only hook-originated payloads.
+- PTY terminal output から会話を復元する terminal fallback は廃止済み。
+- Claude TUI の進捗文 (`Tool loaded`, `Beaming…`, `Read 1 file` など) はチャットに載せない。
+
+## Chat Filtering
+
+- `TeamCreate` / `Task` の system relay は内部イベントとして扱い、通常のチャット欄には表示しない。
+- チャット欄には `SendMessage` / `Stop` / `SubagentStop` 由来の会話と状態更新を優先して表示する。
 
 ## Runtime Environment
 
