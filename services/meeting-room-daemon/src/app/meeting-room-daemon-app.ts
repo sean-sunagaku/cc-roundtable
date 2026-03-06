@@ -137,8 +137,6 @@ export class MeetingRoomDaemonApp {
         return this.ack(commandId, this.sendControlPrompt(command.meetingId, "pause"), command.meetingId);
       case "resumeMeeting":
         return this.ack(commandId, this.sendControlPrompt(command.meetingId, "resume"), command.meetingId);
-      case "updateMeetingSettings":
-        return this.ack(commandId, this.sendControlPrompt(command.meetingId, "settings", command.extra), command.meetingId);
       case "endMeeting":
         return this.ack(commandId, this.endMeeting(command.meetingId, "command"), command.meetingId);
       case "retryMcp":
@@ -257,11 +255,10 @@ export class MeetingRoomDaemonApp {
     return true;
   }
 
-  private sendControlPrompt(meetingId: string, mode: "pause" | "resume" | "settings", extra?: string): boolean {
+  private sendControlPrompt(meetingId: string, mode: "pause" | "resume"): boolean {
     const promptMap = {
       pause: "会議を一時停止し、現時点の要点を短くまとめてください。",
-      resume: "会議を再開してください。直前の要点を確認して続行してください。",
-      settings: `会議の設定変更リクエストです。以下を反映してください:\n${extra ?? "(no details)"}`
+      resume: "会議を再開してください。直前の要点を確認して続行してください。"
     };
     const ok = this.runtimes.writePrompt(meetingId, promptMap[mode]);
     if (!ok) {
@@ -498,7 +495,6 @@ export class MeetingRoomDaemonApp {
   private createTab(command: Extract<MeetingRoomDaemonCommand, { type: "startMeeting" }>): MeetingTabPayload {
     const config: MeetingConfigPayload = {
       id: command.meetingId,
-      skill: command.skill,
       topic: command.topic,
       projectDir: command.projectDir,
       members: [...command.members]

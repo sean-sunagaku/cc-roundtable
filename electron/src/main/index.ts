@@ -42,7 +42,7 @@ import { MeetingRoomDaemonManager } from "./daemon";
 let mainWindow: BrowserWindow | null = null;
 let sessionDebugWindow: BrowserWindow | null = null;
 let daemonReadyPromise: Promise<void> | null = null;
-const helperMeetingService = new MeetingService(new PtyManager(), () => undefined);
+const helperMeetingService = new MeetingService(new PtyManager());
 const ipcRouter = new MainIpcRouter(() => mainWindow);
 const daemonManager = new MeetingRoomDaemonManager({
   onStdout: (chunk) => {
@@ -100,7 +100,6 @@ function registerIpc(): void {
       type: "startMeeting",
       meetingId: config.id,
       topic: config.topic,
-      skill: config.skill,
       projectDir: config.projectDir,
       members: config.members,
       initPrompt: helperMeetingService.buildInitPrompt(config)
@@ -134,7 +133,7 @@ function registerIpc(): void {
     return ack.accepted;
   });
 
-  handleIpc("meeting:control-message", async (meetingId, mode, extra) => {
+  handleIpc("meeting:control-message", async (meetingId, mode) => {
     if (mode === "pause") {
       await dispatchDaemonCommand({
         type: "pauseMeeting",
@@ -149,22 +148,8 @@ function registerIpc(): void {
       });
       return;
     }
-    if (mode === "end") {
-      await dispatchDaemonCommand({
-        type: "endMeeting",
-        meetingId
-      });
-      void refreshTabsFromDaemon();
-      return;
-    }
-    await dispatchDaemonCommand({
-      type: "updateMeetingSettings",
-      meetingId,
-      extra: extra ?? ""
-    });
   });
 
-  handleIpc("meeting:list-skills", () => helperMeetingService.listSkills());
   handleIpc("meeting:list-agents", () => helperMeetingService.listAgentProfiles());
   handleIpc("meeting:save-agent", (input) => helperMeetingService.saveAgentProfile(input));
   handleIpc("meeting:list-tabs", async () => refreshTabsFromDaemon());
@@ -388,7 +373,6 @@ function toMeetingTab(tab: MeetingTabPayload): MeetingTab {
     title: tab.title,
     config: {
       id: tab.config.id,
-      skill: tab.config.skill,
       topic: tab.config.topic,
       projectDir: tab.config.projectDir,
       members: [...tab.config.members]

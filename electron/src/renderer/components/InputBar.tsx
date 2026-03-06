@@ -26,7 +26,7 @@ export function InputBar({ disabled, onSend }: Props): JSX.Element {
   return (
     <form className="input-bar" onSubmit={submit}>
       <textarea
-        placeholder="会議にメッセージを送信..."
+        placeholder="メッセージを入力..."
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={onKeyDown}

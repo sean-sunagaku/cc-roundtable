@@ -1,5 +1,9 @@
 import { RESPONSE_MARKER_END, RESPONSE_MARKER_START } from "../constants";
 
+const ANSI_PATTERN =
+  /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?\u0007)|(?:(?:\d{1,4}(?:[;:]\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
+const CONTROL_CHARS_PATTERN = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g;
+
 export function extractMarkedContent(content: string): string {
   const start = content.indexOf(RESPONSE_MARKER_START);
   if (start < 0) return content;
@@ -10,7 +14,7 @@ export function extractMarkedContent(content: string): string {
 }
 
 export function stripAnsi(input: string): string {
-  return input.replace(/\u001b\[[0-9;?]*[A-Za-z]/g, "").replace(/\u001b\][^\u0007]*\u0007/g, "");
+  return input.replace(ANSI_PATTERN, "").replace(CONTROL_CHARS_PATTERN, "");
 }
 
 export function hasClaudeReadySignal(text: string): boolean {
@@ -69,6 +73,11 @@ function isUiNoiseLine(line: string): boolean {
 
   if (/invalid tool parameters/i.test(plain)) return true;
   if (/bypass\s*permissions?/i.test(plain)) return true;
+  if (/press up to edit queued messages/i.test(plain)) return true;
+  if (/thinking with high effort/i.test(plain)) return true;
+  if (/claude in chrome enabled/i.test(plain)) return true;
+  if (/^clauding(?:\.\.\.|…)?/i.test(plain)) return true;
+  if (/^calling\d+\s+\w+/i.test(plain)) return true;
   if (/^\[?human ?input\]?$/i.test(plain)) return true;
   if (/^task would you like the agent team/i.test(plain)) return true;
   if (/^tool loaded\.?$/i.test(plain)) return true;
@@ -80,6 +89,8 @@ function isUiNoiseLine(line: string): boolean {
   if (/^@[a-z0-9._-]+(?:\s+@[a-z0-9._-]+)*\s+·\s+↓\s+to expand$/i.test(plain)) return true;
   if (/^(ctrl\+|shift\+tab|enter to send|esc to cancel)/i.test(plain)) return true;
   if (/^[A-Za-z][A-Za-z-]*ing(?:\.\.\.|…)$/.test(plain)) return true;
+  if (/^[─━▪•·]+$/.test(plain)) return true;
+  if (/^❯(?:\s+.+)?$/.test(plain)) return true;
   if (/^".*\*\*\/\*.*"$/.test(plain)) return true;
   if (/\*\*\/\*/.test(plain)) return true;
   if (/チーム全体へ\s*broadcast\s*してください/i.test(plain)) return true;
@@ -100,7 +111,7 @@ function isSuppressedChatMessage(line: string): boolean {
 
 export function collectDebugTail(existing: string[], chunk: string): string[] {
   const next = [...existing];
-  for (const rawLine of chunk.split(/\r?\n/)) {
+  for (const rawLine of chunk.split(/[\r\n]+/)) {
     const line = stripAnsi(rawLine).replace(/\u0007/g, "").trimEnd();
     if (!line.length || isUiNoiseLine(line)) {
       continue;

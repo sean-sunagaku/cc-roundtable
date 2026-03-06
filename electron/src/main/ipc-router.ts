@@ -22,7 +22,15 @@ export class MainIpcRouter {
 
   send<C extends RendererEventChannel>(channel: C, ...args: RendererEventArgs<C>): void {
     const mainWindow = this.getMainWindow();
-    if (!mainWindow) return;
-    mainWindow.webContents.send(channel, ...args);
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) {
+      return;
+    }
+    try {
+      mainWindow.webContents.send(channel, ...args);
+    } catch (error) {
+      if (!(error instanceof Error) || !/Object has been destroyed/.test(error.message)) {
+        throw error;
+      }
+    }
   }
 }

@@ -240,6 +240,7 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-s);
+  flex-wrap: wrap;
 }
 
 label {
@@ -335,34 +336,133 @@ button:disabled {
   padding-left: var(--space-m);
 }
 
-.agent-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.setup-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-s);
+}
+
+.setup-helper {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--type-small);
+}
+
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-s);
+}
+
+.agent-card {
+  position: relative;
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-m);
+  padding: var(--space-s);
   display: grid;
   gap: var(--space-xs);
+  background:
+    linear-gradient(180deg, rgba(61, 155, 146, 0.04), rgba(61, 155, 146, 0)),
+    var(--color-surface-base);
+  cursor: pointer;
+  transition: transform var(--duration-fast) ease,
+              border-color var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease;
 }
 
-.agent-list li {
-  border: 1px solid var(--color-surface-border);
-  border-radius: var(--radius-s);
-  padding: var(--space-xs) var(--space-s);
-  display: grid;
-  gap: var(--space-2xs);
-  background: var(--color-surface-base);
-  transition: border-color var(--duration-instant) ease-out,
-              box-shadow var(--duration-instant) ease-out;
-}
-
-.agent-list li:hover {
+.agent-card:hover {
+  transform: translateY(-1px);
   border-color: var(--color-accent-cool-muted);
   box-shadow: var(--shadow-1);
 }
 
-.agent-option {
+.agent-card.selected {
+  border-color: var(--color-accent-cool);
+  box-shadow: 0 0 0 1px rgba(61, 155, 146, 0.18), var(--shadow-2);
+  background:
+    linear-gradient(180deg, rgba(61, 155, 146, 0.12), rgba(61, 155, 146, 0.02)),
+    var(--color-surface-raised);
+}
+
+.agent-card input {
+  position: absolute;
+  top: var(--space-s);
+  right: var(--space-s);
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-accent-cool);
+}
+
+.agent-card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--space-s);
+  padding-right: 28px;
+}
+
+.agent-card-header strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--type-small);
+  letter-spacing: 0.03em;
+}
+
+.agent-card-name {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--type-small);
+}
+
+.agent-card-badge {
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  padding: 2px 10px;
+  background: var(--color-accent-warm-subtle);
+  color: var(--color-accent-warm-vivid);
+  font-family: var(--font-display);
+  font-size: var(--type-caption);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.agent-card-description {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--type-body);
+  line-height: 1.7;
+}
+
+.agent-card-state {
+  color: var(--color-accent-cool-vivid);
+  font-family: var(--font-display);
+  font-size: var(--type-caption);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.agent-builder {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: var(--space-s);
+  display: grid;
+  gap: var(--space-s);
+}
+
+.agent-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-s);
+}
+
+.agent-builder-description {
+  grid-column: 1 / -1;
 }
 
 .setup-checkbox {
@@ -502,9 +602,38 @@ button:disabled {
   50% { opacity: 0.7; }
 }
 
-/* ── Diagnostics layer (collapsible) ── */
-.diagnostics-layer {
+/* ── Debug tools area ── */
+.debug-tools {
   flex-shrink: 0;
+}
+
+.debug-toggle-row {
+  margin-top: var(--space-s);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.debug-toggle-row .terminal-toggle {
+  margin-top: 0;
+}
+
+.debug-drawer {
+  margin-top: var(--space-xs);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-l);
+  padding: var(--space-s);
+  background:
+    linear-gradient(180deg, rgba(61, 155, 146, 0.03), rgba(61, 155, 146, 0)),
+    var(--color-surface-raised);
+  box-shadow: var(--shadow-1);
+  display: grid;
+  gap: var(--space-s);
+}
+
+.debug-block {
+  display: grid;
+  gap: var(--space-xs);
 }
 
 .health-row {
@@ -546,10 +675,14 @@ button:disabled {
 }
 
 .runtime-events {
-  margin-bottom: var(--space-s);
   display: grid;
   gap: var(--space-xs);
   flex-shrink: 0;
+}
+
+.debug-panel {
+  display: grid;
+  gap: var(--space-xs);
 }
 
 .runtime-event {
@@ -603,8 +736,8 @@ button:disabled {
   padding: var(--space-s);
   background: #1A2332;
   font-family: var(--font-mono);
-  font-size: var(--type-caption);
-  line-height: 1.4;
+  font-size: var(--type-small);
+  line-height: 1.7;
   white-space: pre-wrap;
   color: #D0D8E4;
 }
@@ -845,16 +978,8 @@ button:disabled {
 
 
 /* ===================================================================
-   Settings & Terminal
+   Terminal
    =================================================================== */
-
-.settings-inline {
-  margin-top: var(--space-s);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-xs);
-  flex-shrink: 0;
-}
 
 .terminal-toggle {
   margin-top: var(--space-s);
@@ -871,6 +996,29 @@ button:disabled {
   flex-shrink: 0;
 }
 
+.terminal-preview {
+  margin-top: var(--space-xs);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-m);
+  background: #0B1A2A;
+  color: #D8E8F5;
+  box-shadow: var(--shadow-1);
+  min-height: 260px;
+  max-height: 320px;
+  overflow: auto;
+  flex-shrink: 0;
+}
+
+.terminal-preview pre {
+  margin: 0;
+  padding: var(--space-s);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono);
+  font-size: var(--type-small);
+  line-height: 1.7;
+}
+
 
 /* ===================================================================
    Three.js Observatory Background (SetupScreen)
@@ -884,4 +1032,29 @@ button:disabled {
   height: 100%;
   z-index: 0;
   pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .setup-wrap {
+    padding: var(--space-l) var(--space-s);
+  }
+
+  .setup-card {
+    padding: var(--space-m);
+  }
+
+  .setup-field-grid,
+  .agent-builder-grid,
+  .health-row,
+  .input-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .input-bar button {
+    width: 100%;
+  }
+
+  .meeting-wrap {
+    padding: var(--space-s);
+  }
 }

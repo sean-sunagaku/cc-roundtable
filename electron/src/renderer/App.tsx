@@ -11,10 +11,9 @@ import type {
   MeetingSessionView,
   MeetingTab,
   MeetingSummaryPayload,
-  RuntimeEvent,
-  SkillOption
+  RuntimeEvent
 } from "@shared/types";
-import type { MeetingUiControlMode } from "@shared/ipc";
+import type { MeetingControlMode } from "@shared/ipc";
 import { SetupScreen } from "./screens/SetupScreen";
 import { MeetingScreen } from "./screens/MeetingScreen";
 import { SessionDebugWindow } from "./screens/SessionDebugWindow";
@@ -62,7 +61,6 @@ export function App(): JSX.Element {
     return <SessionDebugWindow meetingId={debugMeetingId} />;
   }
 
-  const [skills, setSkills] = useState<SkillOption[]>([]);
   const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [tabs, setTabs] = useState<MeetingTab[]>([]);
   const [currentTabId, setCurrentTabId] = useState<string>("");
@@ -78,9 +76,6 @@ export function App(): JSX.Element {
   const notifyRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    void window.meetingRoom.listSkills().then((list) => {
-      setSkills(list);
-    });
     void window.meetingRoom.listAgents().then((list) => {
       setAgents(list);
     });
@@ -279,9 +274,9 @@ export function App(): JSX.Element {
     }
   };
 
-  const handleControl = async (mode: MeetingUiControlMode, extra?: string) => {
+  const handleControl = async (mode: MeetingControlMode) => {
     if (!currentTabId) return;
-    await window.meetingRoom.sendControlMessage(currentTabId, mode, extra);
+    await window.meetingRoom.sendControlMessage(currentTabId, mode);
     const view = await window.meetingRoom.getSessionView(currentTabId);
     if (view) {
       hydrateSessionView(view);
@@ -325,7 +320,6 @@ export function App(): JSX.Element {
   if (!currentTabId) {
     return (
       <SetupScreen
-        skills={skills}
         agents={agents}
         defaultProjectDir={defaultProjectDir}
         onStart={handleStart}
@@ -345,8 +339,6 @@ export function App(): JSX.Element {
       onSend={handleSend}
       onEnd={handleEnd}
       onControl={handleControl}
-      subscribeTerminal={window.meetingRoom.onTerminalData}
-      onResizeTerminal={window.meetingRoom.resizeTerminal}
       agentStatuses={agentStatusesByMeeting[currentTabId] ?? {}}
       ending={ending}
       health={healthByMeeting[currentTabId] ?? {}}

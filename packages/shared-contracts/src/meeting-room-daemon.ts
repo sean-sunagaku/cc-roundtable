@@ -8,7 +8,6 @@ export const MEETING_ROOM_DAEMON_META_PATH = "/api/meta";
 
 export interface MeetingConfigPayload {
   id: string;
-  skill: string;
   topic: string;
   projectDir: string;
   members: string[];
@@ -88,7 +87,6 @@ export interface StartMeetingCommand {
   type: "startMeeting";
   meetingId: string;
   topic: string;
-  skill: string;
   projectDir: string;
   members: string[];
   initPrompt: string;
@@ -108,12 +106,6 @@ export interface PauseMeetingCommand {
 export interface ResumeMeetingCommand {
   type: "resumeMeeting";
   meetingId: string;
-}
-
-export interface UpdateMeetingSettingsCommand {
-  type: "updateMeetingSettings";
-  meetingId: string;
-  extra: string;
 }
 
 export interface EndMeetingCommand {
@@ -144,7 +136,6 @@ export type MeetingRoomDaemonCommand =
   | SendHumanMessageCommand
   | PauseMeetingCommand
   | ResumeMeetingCommand
-  | UpdateMeetingSettingsCommand
   | EndMeetingCommand
   | RetryMcpCommand
   | WriteTerminalCommand

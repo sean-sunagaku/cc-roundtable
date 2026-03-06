@@ -8,12 +8,10 @@ import type {
   MeetingSessionView,
   MeetingSummaryPayload,
   MeetingTab,
-  RuntimeEvent,
-  SkillOption
+  RuntimeEvent
 } from "@shared/types";
 
-export type MeetingControlMode = "pause" | "resume" | "end" | "settings";
-export type MeetingUiControlMode = Exclude<MeetingControlMode, "end">;
+export type MeetingControlMode = "pause" | "resume";
 
 export interface MainInvokeContract {
   "meeting:start": {
@@ -29,12 +27,8 @@ export interface MainInvokeContract {
     result: boolean;
   };
   "meeting:control-message": {
-    args: [meetingId: string, mode: MeetingControlMode, extra?: string];
+    args: [meetingId: string, mode: MeetingControlMode];
     result: void;
-  };
-  "meeting:list-skills": {
-    args: [];
-    result: SkillOption[];
   };
   "meeting:list-agents": {
     args: [];

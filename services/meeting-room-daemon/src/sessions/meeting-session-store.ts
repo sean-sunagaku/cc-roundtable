@@ -79,10 +79,6 @@ export class MeetingSessionStore {
     return tab ? deepClone(tab) : null;
   }
 
-  getSkill(meetingId: string): string | null {
-    return this.sessions.get(meetingId)?.tab.config.skill ?? null;
-  }
-
   listMeetingIdsByStatus(statuses: MeetingTabPayload["status"][]): string[] {
     return [...this.sessions.values()]
       .filter((session) => statuses.includes(session.tab.status))

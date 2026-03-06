@@ -1,9 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { AgentProfile, AgentProfileInput, MeetingConfig, SkillOption } from "@shared/types";
+import type { AgentProfile, AgentProfileInput, MeetingConfig } from "@shared/types";
 import { ObservatoryBackground } from "../components/ObservatoryBackground";
 
 interface Props {
-  skills: SkillOption[];
   agents: AgentProfile[];
   defaultProjectDir: string;
   onStart: (config: MeetingConfig) => Promise<void>;
@@ -11,23 +10,13 @@ interface Props {
   onReloadAgents: () => Promise<void>;
 }
 
-function pickDefaultSkill(skills: SkillOption[]): string {
-  const names = skills.map((item) => item.name);
-  if (names.includes("agent-team")) return "agent-team";
-  if (names.includes("feature-discussion")) return "feature-discussion";
-  return skills[0]?.name ?? "feature-discussion";
-}
-
 export function SetupScreen({
-  skills,
   agents,
   defaultProjectDir,
   onStart,
   onSaveAgent,
   onReloadAgents
 }: Props): JSX.Element {
-  const [selectedSkill, setSelectedSkill] = useState(() => pickDefaultSkill(skills));
-  const [skillTouched, setSkillTouched] = useState(false);
   const [topic, setTopic] = useState("タスク優先順位の再設計");
   const [projectDir, setProjectDir] = useState(defaultProjectDir);
   const [projectDirTouched, setProjectDirTouched] = useState(false);
@@ -35,16 +24,12 @@ export function SetupScreen({
   const [submitting, setSubmitting] = useState(false);
   const [savingAgent, setSavingAgent] = useState(false);
   const [refreshingAgents, setRefreshingAgents] = useState(false);
+  const [showAddAgentForm, setShowAddAgentForm] = useState(false);
   const [newAgentName, setNewAgentName] = useState("");
   const [newAgentDescription, setNewAgentDescription] = useState("");
   const [newAgentId, setNewAgentId] = useState("");
-  const [newAgentDefault, setNewAgentDefault] = useState(true);
+  const [newAgentDefault, setNewAgentDefault] = useState(false);
   const [agentError, setAgentError] = useState("");
-
-  useEffect(() => {
-    if (skillTouched) return;
-    setSelectedSkill(pickDefaultSkill(skills));
-  }, [skills, skillTouched]);
 
   useEffect(() => {
     if (projectDirTouched) return;
@@ -67,11 +52,6 @@ export function SetupScreen({
     });
   }, [agents, defaultMemberIds]);
 
-  const selectedSkillOption = useMemo(
-    () => skills.find((candidate) => candidate.name === selectedSkill),
-    [selectedSkill, skills]
-  );
-
   const toggleMember = (memberId: string) => {
     setSelectedMembers((prev) => {
       if (prev.includes(memberId)) {
@@ -87,7 +67,6 @@ export function SetupScreen({
     try {
       await onStart({
         id: `meeting_${Date.now()}`,
-        skill: selectedSkill,
         topic,
         projectDir,
         members: selectedMembers
@@ -120,7 +99,8 @@ export function SetupScreen({
       setNewAgentName("");
       setNewAgentDescription("");
       setNewAgentId("");
-      setNewAgentDefault(true);
+      setNewAgentDefault(false);
+      setShowAddAgentForm(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Agent保存に失敗しました";
       setAgentError(message);
@@ -143,114 +123,140 @@ export function SetupScreen({
       <ObservatoryBackground />
       <div className="setup-wrap">
         <h1>Meeting Room</h1>
-        <p className="subtle">Agent Teams の会議を構成</p>
+        <p className="subtle">議題からそのまま会議を立ち上げ、必要な Agent を選んで始めます。</p>
 
         <form className="setup-card" onSubmit={submit}>
-          <div className="setup-section">
-            <label>
-              会議エンジン
-              <select
-                value={selectedSkill}
-                onChange={(event) => {
-                  setSkillTouched(true);
-                  setSelectedSkill(event.target.value);
-                }}
-                required
-              >
-                {skills.map((skill) => (
-                  <option key={skill.name} value={skill.name}>
-                    {skill.name}
-                  </option>
-                ))}
-              </select>
-              {selectedSkillOption ? <small>source: {selectedSkillOption.source}</small> : null}
-            </label>
-          </div>
+          <section className="setup-section">
+            <div className="setup-field-grid">
+              <label>
+                議題（ここを中心に議論）
+                <input
+                  value={topic}
+                  onChange={(event) => setTopic(event.target.value)}
+                  placeholder="例: タスク優先順位の再設計"
+                  required
+                />
+              </label>
 
-          <div className="setup-section">
-            <label>
-              議題
-              <input value={topic} onChange={(event) => setTopic(event.target.value)} required />
-            </label>
-
-            <label>
-              プロジェクト
-              <input
-                value={projectDir}
-                onChange={(event) => {
-                  setProjectDirTouched(true);
-                  setProjectDir(event.target.value);
-                }}
-                required
-              />
-            </label>
-          </div>
-
-          <div className="setup-section">
-            <div className="setup-inline">
-              <strong>参加 Agent</strong>
-              <button type="button" onClick={() => void reloadAgents()} disabled={refreshingAgents}>
-                {refreshingAgents ? "読み込み中..." : "再読み込み"}
-              </button>
+              <label>
+                プロジェクト
+                <input
+                  value={projectDir}
+                  onChange={(event) => {
+                    setProjectDirTouched(true);
+                    setProjectDir(event.target.value);
+                  }}
+                  required
+                />
+              </label>
             </div>
+          </section>
+
+          <section className="setup-section">
+            <div className="setup-inline">
+              <div>
+                <strong>参加 Agent</strong>
+                <p className="setup-helper">サンプル Sub Agent を選択し、必要なら新規追加できます。</p>
+              </div>
+              <div className="setup-actions">
+                <button type="button" onClick={() => void reloadAgents()} disabled={refreshingAgents}>
+                  {refreshingAgents ? "読み込み中..." : "再読み込み"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAgentError("");
+                    setShowAddAgentForm((prev) => !prev);
+                  }}
+                >
+                  {showAddAgentForm ? "追加フォームを閉じる" : "Agent 追加"}
+                </button>
+              </div>
+            </div>
+
             {agents.length === 0 ? (
-              <p className="subtle">Agent 定義がありません。下のフォームから追加できます。</p>
+              <p className="subtle">Agent 定義がありません。追加フォームから作成してください。</p>
             ) : (
-              <ul className="agent-list">
-                {agents.map((agent) => (
-                  <li key={agent.id}>
-                    <label className="agent-option">
+              <div className="agent-grid">
+                {agents.map((agent) => {
+                  const selected = selectedMembers.includes(agent.id);
+                  return (
+                    <label key={agent.id} className={`agent-card${selected ? " selected" : ""}`}>
                       <input
                         type="checkbox"
-                        checked={selectedMembers.includes(agent.id)}
+                        checked={selected}
                         onChange={() => toggleMember(agent.id)}
                       />
-                      <span>
-                        <strong>{agent.id}</strong> ({agent.name})
-                      </span>
+                      <div className="agent-card-header">
+                        <div>
+                          <strong>{agent.id}</strong>
+                          <span className="agent-card-name">{agent.name}</span>
+                        </div>
+                        {agent.enabledByDefault ? <span className="agent-card-badge">既定</span> : null}
+                      </div>
+                      <p className="agent-card-description">{agent.description}</p>
+                      <span className="agent-card-state">{selected ? "選択中" : "クリックで追加"}</span>
                     </label>
-                    <small>{agent.description}</small>
-                  </li>
-                ))}
-              </ul>
+                  );
+                })}
+              </div>
             )}
-            {selectedMembers.length === 0 ? (
-              <p className="subtle">未選択でも開始可能（通常対話モード）</p>
-            ) : null}
-          </div>
 
-          <fieldset className="setup-section">
-            <legend>Agent 追加</legend>
-            <label>
-              Agent名
-              <input value={newAgentName} onChange={(event) => setNewAgentName(event.target.value)} placeholder="researcher" />
-            </label>
-            <label>
-              Agent ID（任意）
-              <input value={newAgentId} onChange={(event) => setNewAgentId(event.target.value)} placeholder="researcher" />
-            </label>
-            <label>
-              役割説明
-              <textarea
-                value={newAgentDescription}
-                onChange={(event) => setNewAgentDescription(event.target.value)}
-                placeholder="ユーザー調査と仮説検証を担当する"
-                rows={3}
-              />
-            </label>
-            <label className="setup-checkbox">
-              <input
-                type="checkbox"
-                checked={newAgentDefault}
-                onChange={(event) => setNewAgentDefault(event.target.checked)}
-              />
-              デフォルトで選択
-            </label>
-            {agentError ? <p className="error-text">{agentError}</p> : null}
-            <button type="button" onClick={() => void submitAgent()} disabled={savingAgent}>
-              {savingAgent ? "保存中..." : "Agent を保存"}
-            </button>
-          </fieldset>
+            {selectedMembers.length === 0 ? (
+              <p className="subtle">未選択でも開始可能です。必要な役割は会議内で再編できます。</p>
+            ) : null}
+
+            {showAddAgentForm ? (
+              <div className="agent-builder">
+                <div className="agent-builder-grid">
+                  <label>
+                    Agent名
+                    <input
+                      value={newAgentName}
+                      onChange={(event) => setNewAgentName(event.target.value)}
+                      placeholder="researcher"
+                    />
+                  </label>
+
+                  <label>
+                    Agent ID（任意）
+                    <input
+                      value={newAgentId}
+                      onChange={(event) => setNewAgentId(event.target.value)}
+                      placeholder="researcher"
+                    />
+                  </label>
+
+                  <label className="agent-builder-description">
+                    役割説明
+                    <textarea
+                      value={newAgentDescription}
+                      onChange={(event) => setNewAgentDescription(event.target.value)}
+                      placeholder="ユーザー調査と仮説検証を担当する"
+                      rows={3}
+                    />
+                  </label>
+                </div>
+
+                <label className="setup-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={newAgentDefault}
+                    onChange={(event) => setNewAgentDefault(event.target.checked)}
+                  />
+                  デフォルトで選択
+                </label>
+
+                {agentError ? <p className="error-text">{agentError}</p> : null}
+
+                <div className="setup-actions">
+                  <button type="button" onClick={() => void submitAgent()} disabled={savingAgent}>
+                    {savingAgent ? "保存中..." : "Agent を保存"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
 
           <button disabled={submitting} type="submit">
             {submitting ? "開始中..." : "会議を開始"}

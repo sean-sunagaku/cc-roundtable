@@ -25,7 +25,6 @@ export interface AgentMessagePayload {
 
 export interface MeetingConfig {
   id: string;
-  skill: string;
   topic: string;
   projectDir: string;
   members: string[];
@@ -37,11 +36,6 @@ export interface MeetingTab {
   config: MeetingConfig;
   createdAt: string;
   status: "running" | "paused" | "ended" | "recovering";
-}
-
-export interface SkillOption {
-  name: string;
-  source: string;
 }
 
 export interface AgentProfile {

@@ -73,7 +73,11 @@ function isSetupScreen(text) {
 }
 
 function isMeetingScreen(text, title) {
-  return hasControl(text, "button", "一時停止") && hasControl(text, "button", title);
+  return (
+    hasControl(text, "button", "一時停止") &&
+    hasControl(text, "button", "会議終了") &&
+    text.includes('textbox "メッセージを入力..."')
+  );
 }
 
 function isAnyKnownScreen(text) {
@@ -144,6 +148,11 @@ async function launchElectron() {
   if (!fs.existsSync(electronBin)) {
     throw new Error(`Electron binary not found: ${electronBin}`);
   }
+
+  logStep(`clearing ports cdp=${cdpPort} daemon=${daemonPort}`);
+  killPortListeners(cdpPort);
+  killPortListeners(daemonPort);
+  await delay(500);
 
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;

@@ -10,8 +10,7 @@ import type {
   MeetingSessionView,
   MeetingSummaryPayload,
   MeetingTab,
-  RuntimeEvent,
-  SkillOption
+  RuntimeEvent
 } from "@shared/types";
 import type { MeetingControlMode } from "@shared/ipc";
 
@@ -22,9 +21,8 @@ const api = {
   endMeeting: (meetingId: string): Promise<void> => ipc.invoke("meeting:end", meetingId),
   sendHumanMessage: (meetingId: string, message: string): Promise<boolean> =>
     ipc.invoke("meeting:human-message", meetingId, message),
-  sendControlMessage: (meetingId: string, mode: MeetingControlMode, extra?: string): Promise<void> =>
-    ipc.invoke("meeting:control-message", meetingId, mode, extra),
-  listSkills: (): Promise<SkillOption[]> => ipc.invoke("meeting:list-skills"),
+  sendControlMessage: (meetingId: string, mode: MeetingControlMode): Promise<void> =>
+    ipc.invoke("meeting:control-message", meetingId, mode),
   listAgents: (): Promise<AgentProfile[]> => ipc.invoke("meeting:list-agents"),
   saveAgent: (input: AgentProfileInput): Promise<AgentProfile> => ipc.invoke("meeting:save-agent", input),
   listTabs: (): Promise<MeetingTab[]> => ipc.invoke("meeting:list-tabs"),
