@@ -3,6 +3,8 @@ import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
   ApprovalGatePayload,
+  AgentProfileInputPayload,
+  AgentProfilePayload,
   AgentStatusChangedEvent,
   ChatMessagePayload,
   ClaudeSessionDebugPayload,
@@ -25,6 +27,7 @@ import type {
   SessionViewUpdatedEvent,
   TerminalChunkEvent
 } from "@contracts/meeting-room-daemon";
+import { LocalMeetingRoomSupport } from "../../../../packages/meeting-room-support/src/local-meeting-room-support";
 import {
   ACTIVE_FLAG_RELATIVE_PATH,
   APPROVAL_STATE_RELATIVE_DIR,
@@ -47,8 +50,15 @@ import { createId, ensureWorkspaceTrustAccepted, resolveRepoRoot } from "../util
 
 export class MeetingRoomDaemonApp {
   private readonly repoRoot = resolveRepoRoot();
-  private readonly dataDir = path.resolve(this.repoRoot, ".claude/meeting-room/daemon");
-  private readonly approvalDir = path.resolve(this.repoRoot, APPROVAL_STATE_RELATIVE_DIR);
+  private readonly dataDir =
+    process.env.MEETING_ROOM_DAEMON_DATA_DIR?.trim() ||
+    path.resolve(this.repoRoot, ".claude/meeting-room/daemon");
+  private readonly approvalDir =
+    process.env.MEETING_ROOM_APPROVAL_DIR?.trim() ||
+    path.resolve(this.repoRoot, APPROVAL_STATE_RELATIVE_DIR);
+  private readonly activeFile =
+    process.env.MEETING_ROOM_ACTIVE_FILE?.trim() ||
+    path.resolve(this.repoRoot, ACTIVE_FLAG_RELATIVE_PATH);
   private readonly relayReceiver = new HooksRelayReceiver();
   private readonly eventStream = new DaemonEventStream();
   private readonly accessPolicy: DaemonAccessPolicyPayload;
@@ -60,13 +70,17 @@ export class MeetingRoomDaemonApp {
   private readonly authToken = process.env.MEETING_ROOM_DAEMON_TOKEN?.trim() || "";
   private readonly sessions: MeetingSessionStore;
   private readonly runtimes: MeetingRuntimeManager;
+  private readonly support: LocalMeetingRoomSupport;
 
   constructor(log: (message: string) => void) {
     this.sessions = new MeetingSessionStore(path.resolve(this.dataDir, "events"));
     this.runtimes = new MeetingRuntimeManager({
       repoRoot: this.repoRoot,
+      activeFile: this.activeFile,
+      approvalDir: this.approvalDir,
       log
     });
+    this.support = new LocalMeetingRoomSupport(this.repoRoot);
     this.accessPolicy = {
       sessionHost: "mac-daemon",
       authMode: this.authToken ? "token-required" : "local-open",
@@ -103,6 +117,18 @@ export class MeetingRoomDaemonApp {
 
   getActiveMeetingCount(): number {
     return this.sessions.getActiveMeetingCount();
+  }
+
+  defaultProjectDir(): string {
+    return this.support.defaultProjectDir();
+  }
+
+  listAgentProfiles(): AgentProfilePayload[] {
+    return this.support.listAgentProfiles();
+  }
+
+  saveAgentProfile(input: AgentProfileInputPayload): AgentProfilePayload {
+    return this.support.saveAgentProfile(input);
   }
 
   meta(): MeetingRoomDaemonMetaPayload {
@@ -185,11 +211,18 @@ export class MeetingRoomDaemonApp {
       meetingId: command.meetingId,
       payload: { tab }
     });
+    const initPrompt = command.initPrompt?.trim() || this.support.buildInitPrompt({
+      id: command.meetingId,
+      topic: command.topic,
+      projectDir: command.projectDir,
+      members: [...command.members]
+    });
+
     this.sessions.append({
       kind: "InitPromptQueued",
       at: new Date().toISOString(),
       meetingId: command.meetingId,
-      payload: { prompt: command.initPrompt }
+      payload: { prompt: initPrompt }
     });
     this.writeApprovalGate(command.meetingId, {
       mode: "open",
@@ -207,7 +240,7 @@ export class MeetingRoomDaemonApp {
     this.runtimes.startRuntime({
       meetingId: command.meetingId,
       projectDir: command.projectDir,
-      initPrompt: command.initPrompt,
+      initPrompt,
       onData: (data) => {
         this.handlePtyData(command.meetingId, data);
       },
@@ -313,9 +346,7 @@ export class MeetingRoomDaemonApp {
     if (!status || status === "ended") {
       return false;
     }
-    if (reason === "command") {
-      this.runtimes.writePrompt(meetingId, "会議を終了してください。結論・保留事項・次アクションをまとめてください。");
-    }
+    const tab = this.sessions.getTab(meetingId);
 
     this.sessions.append({
       kind: "MeetingEnded",
@@ -325,7 +356,6 @@ export class MeetingRoomDaemonApp {
     });
     this.runtimes.stopRuntime(meetingId);
 
-    const tab = this.sessions.getTab(meetingId);
     if (tab) {
       this.emitEvent({
         type: "meeting.ended",
@@ -343,7 +373,32 @@ export class MeetingRoomDaemonApp {
     this.emitTabsChanged();
     this.clearApprovalGate(meetingId);
     this.writeMeetingFlag(this.listTabs().length > 0);
+    this.persistMeetingSummary(meetingId, tab);
     return true;
+  }
+
+  private persistMeetingSummary(meetingId: string, tab: MeetingTabPayload | null): void {
+    if (!tab) {
+      return;
+    }
+    const sessionView = this.sessions.getSessionView(meetingId);
+    if (!sessionView) {
+      return;
+    }
+    try {
+      this.support.saveMeetingSummary({
+        meetingId,
+        title: tab.title,
+        topic: tab.config.topic,
+        messages: sessionView.messages
+      });
+    } catch (error) {
+      console.warn(
+        `[meeting-room-daemon] failed to persist summary for ${meetingId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
   private writeRaw(meetingId: string, data: string): boolean {
@@ -591,14 +646,13 @@ export class MeetingRoomDaemonApp {
   }
 
   private writeMeetingFlag(active: boolean): void {
-    const flagPath = path.resolve(this.repoRoot, ACTIVE_FLAG_RELATIVE_PATH);
-    fs.mkdirSync(path.dirname(flagPath), { recursive: true });
+    fs.mkdirSync(path.dirname(this.activeFile), { recursive: true });
     if (active) {
-      fs.writeFileSync(flagPath, "", "utf-8");
+      fs.writeFileSync(this.activeFile, "", "utf-8");
       return;
     }
-    if (fs.existsSync(flagPath)) {
-      fs.rmSync(flagPath);
+    if (fs.existsSync(this.activeFile)) {
+      fs.rmSync(this.activeFile);
     }
   }
 

@@ -13,10 +13,15 @@ import type {
   RuntimeEvent
 } from "@shared/types";
 import type { MeetingControlMode } from "@shared/ipc";
+import type { MeetingRoomClient } from "@shared/meeting-room-client";
 
 const ipc = new RendererIpcClient();
 
-const api = {
+export type MeetingRoomApi = MeetingRoomClient & {
+  saveSummary: (payload: MeetingSummaryPayload) => Promise<string>;
+};
+
+const api: MeetingRoomApi = {
   startMeeting: (config: MeetingConfig): Promise<MeetingTab> => ipc.invoke("meeting:start", config),
   endMeeting: (meetingId: string): Promise<void> => ipc.invoke("meeting:end", meetingId),
   sendHumanMessage: (meetingId: string, message: string): Promise<boolean> =>
@@ -48,5 +53,3 @@ const api = {
 };
 
 contextBridge.exposeInMainWorld("meetingRoom", api);
-
-export type MeetingRoomApi = typeof api;

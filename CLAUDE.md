@@ -33,7 +33,7 @@ Meeting Room は、ローカルの project directory を対象に、複数 Agent
 | Hook relay と chat 表示 | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
 | 契約型 | `packages/shared-contracts/src/meeting-room-daemon.ts`, `electron/src/shared/types.ts` |
 | Electron UI | `electron/src/renderer/screens/SetupScreen.tsx`, `electron/src/renderer/screens/MeetingScreen.tsx` |
-| Browser UI | `apps/web/client/app.js` |
+| Browser UI | `apps/web/src/WebRootApp.tsx`, `apps/web/src/browser-meeting-room-client.ts` |
 
 ## 実行コマンド
 
@@ -42,13 +42,15 @@ npm --prefix electron install
 npm --prefix electron run dev
 npm --prefix electron run daemon:start
 npm --prefix electron run daemon:start:dev
+npm --prefix electron run e2e:web
 npm --prefix electron run verify:final
 ```
 
 補足:
 
 - daemon 単体起動時の UI は `http://127.0.0.1:4417/web/index.html`
-- `/health`, `/api/meta`, `/api/events`, `/api/sessions`, `/api/commands` が主要 endpoint
+- Browser client のソースは `apps/web/src/`、配信用 build は `apps/web/client/`
+- `/health`, `/api/meta`, `/api/events`, `/api/sessions`, `/api/commands`, `/api/agents`, `/api/default-project-dir` が主要 endpoint
 - 専用の lint / format script は現状なく、完了判定は `verify:final` が最重要
 
 ## 必ず守ること

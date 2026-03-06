@@ -33,7 +33,7 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 | daemon 側の API とライフサイクル | `services/meeting-room-daemon/src/http/start-meeting-room-daemon-server.ts`, `services/meeting-room-daemon/src/app/meeting-room-daemon-app.ts` |
 | Claude runtime / PTY / ready 検出 | `services/meeting-room-daemon/src/runtime/meeting-runtime-manager.ts`, `electron/src/main/pty-manager.ts` |
 | 会話・状態の永続化と復元 | `services/meeting-room-daemon/src/sessions/meeting-session-store.ts`, `services/meeting-room-daemon/src/events/` |
-| ブラウザ UI | `apps/web/client/app.js`, `apps/web/client/index.html` |
+| ブラウザ UI | `apps/web/src/WebRootApp.tsx`, `apps/web/src/browser-meeting-room-client.ts`, `apps/web/src/index.html` |
 | Electron renderer UI | `electron/src/renderer/screens/SetupScreen.tsx`, `electron/src/renderer/screens/MeetingScreen.tsx` |
 | 契約型 / API surface | `packages/shared-contracts/src/meeting-room-daemon.ts`, `electron/src/shared/types.ts` |
 | Hook relay の挙動 | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
@@ -45,7 +45,7 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 - Setup 画面で議題・projectDir・参加 Agent を選ぶ
 - Meeting 画面で chat / terminal / runtime diagnostics を表示する
-- 主な入口は `electron/src/renderer/App.tsx` と `electron/src/renderer/screens/*`
+- 共通 UI 本体は `electron/src/renderer/MeetingRoomShell.tsx`、Electron 側の入口は `electron/src/renderer/App.tsx`
 
 ### 2. Electron main
 
@@ -55,9 +55,14 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 ### 3. meeting-room-daemon
 
-- `/api/commands`, `/api/events`, `/api/sessions`, `/api/meta`, `/health` を提供するローカルバックエンド
+- `/api/commands`, `/api/events`, `/api/sessions`, `/api/meta`, `/api/agents`, `/api/default-project-dir`, `/health` を提供するローカルバックエンド
 - Claude runtime 起動、terminal I/O、イベント永続化、SSE 配信、復元を担当する
 - 実体は `MeetingRoomDaemonApp`、runtime 実装は `MeetingRuntimeManager`、状態保持は `MeetingSessionStore`
+
+### 5. Browser UI
+
+- `apps/web/src/` で Browser client を実装し、`apps/web/client/` に build して配信する
+- `BrowserMeetingRoomClient` が daemon REST/SSE を直接叩き、`MeetingRoomShell` を再利用して Electron と同じ会議フローを表示する
 
 ### 4. Hooks / relay
 
@@ -217,6 +222,7 @@ cd electron
 
 ```bash
 npm --prefix electron run verify:final
+npm --prefix electron run e2e:web
 ```
 
 **内容**:

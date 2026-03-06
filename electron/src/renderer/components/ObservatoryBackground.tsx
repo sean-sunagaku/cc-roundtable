@@ -15,12 +15,27 @@ export function ObservatoryBackground(): JSX.Element {
     if (!container) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const probeCanvas = document.createElement("canvas");
+    const canUseWebgl = Boolean(
+      probeCanvas.getContext("webgl2") ||
+      probeCanvas.getContext("webgl") ||
+      probeCanvas.getContext("experimental-webgl")
+    );
+    if (!canUseWebgl) {
+      return;
+    }
+    let renderer: THREE.WebGLRenderer;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.z = 8;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+    } catch {
+      return;
+    }
+
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);

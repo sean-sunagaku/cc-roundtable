@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "react", "react-dom", "three"],
+    "typeRoots": ["../../electron/node_modules/@types"],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../../electron/src/shared/*"],
+      "@renderer/*": ["../../electron/src/renderer/*"],
+      "@contracts/*": ["../../packages/shared-contracts/src/*"],
+      "lucide-react": ["../../electron/node_modules/lucide-react"],
+      "marked": ["../../electron/node_modules/marked"],
+      "@xterm/addon-fit": ["../../electron/node_modules/@xterm/addon-fit"],
+      "@xterm/xterm": ["../../electron/node_modules/@xterm/xterm"],
+      "@xterm/xterm/css/xterm.css": ["../../electron/node_modules/@xterm/xterm/css/xterm.css"]
+    }
+  },
+  "include": [
+    "src/global.d.ts",
+    "src/main.tsx",
+    "src/WebRootApp.tsx",
+    "src/browser-meeting-room-client.ts",
+    "../../electron/src/renderer/**/*.ts",
+    "../../electron/src/renderer/**/*.tsx",
+    "../../electron/src/shared/**/*.ts",
+    "../../packages/shared-contracts/src/**/*.ts"
+  ]
+}

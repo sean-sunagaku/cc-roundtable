@@ -48,9 +48,58 @@
 - `plans/phase-3-chat-ui.md`
 - `plans/phase-4-setup.md`
 - `plans/phase-5-polish.md`
+- `plans/web-interface-parity.md`
 
 ## Execution Log
 - 2026-03-05: Initialized implementation workspace and planning structure.
 - 2026-03-05: Phase 1 hooks implemented and smoke-tested.
 - 2026-03-05: Electron app implemented (Phase 2-5), typecheck/build passed.
 - 2026-03-05: R1-R5 を実装・確認し、会議開始時の自動送信と Team 編成表示を追加。
+
+## Web Interface Parity (2026-03-07)
+
+### Parent Task
+
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| W0 | Web 版を Electron と同等の会議フローで完了させる | done | 実装、Web E2E、Electron GUI E2E、DOM/CDP での Web UI 動作確認まで完了 |
+| W1 | ToDo 運用を追加し、親子タスクとレビュー手順を固定する | done | `TODO.md` と `plans/web-interface-parity.md` を同期し、review 記録先も定義済み |
+| W2 | daemon 側に Web parity 用の補助 API と共通ロジックを実装する | done | Agent profile/default project dir/init prompt/summary を daemon/shared support へ移し、Web から使える |
+| W3 | Web クライアントを Electron 相当の Setup/Meeting UI に置き換える | done | Setup/Meeting/approval/debug/recovering まで Web shell で動作する |
+| W4 | Web build/serve 導線を正式化する | done | build / daemon:start / daemon:start:dev / e2e:web で Web 資産と daemon を同期できる |
+| W5 | Web E2E と既存最終検証を通す | done | `e2e:web` と `verify:final` が成功し、Web UI は DOM/CDP 操作でもフロー確認済み |
+| W6 | ドキュメントを同期する | done | README / service-overview / AGENTS / CLAUDE / TODO を実装実態へ更新 |
+
+### Fine-Grained Execution Queue
+
+| ID | Parent | Task | Status | Done When |
+|---|---|---|---|---|
+| W2.1 | W2 | Agent profile / init prompt / summary / default project dir を共通化する | done | daemon から共通ロジックを使え、Electron でも同じ定義を参照できる |
+| W2.2 | W2 | daemon REST surface と start/end の責務を Web 対応に広げる | done | agent 一覧/保存、default project dir、prompt 省略 start、summary 保存 end が Web から使える |
+| W2.R | W2 | reviewer チェック | done | backend review で見つかった `endMeeting` の summary persist 問題を修正済み |
+| W3.1 | W3 | Web app の state/client 層を作る | done | SSE/REST で tabs/messages/runtime/terminal を購読・取得できる |
+| W3.2 | W3 | Setup 画面を Electron 同等にする | done | topic/project/agent select/add/save/start が Web で動く |
+| W3.3 | W3 | Meeting 画面と debug/terminal/recovery を Electron 同等にする | done | tabs/chat/send/pause/resume/end/approval/runtime/debug/recovering が Web で動く |
+| W3.R | W3 | reviewer チェック | done | Web UI が Electron 相当の会議フローを満たす |
+| W4.1 | W4 | Web build/watch/serve を daemon 導線へ統合する | done | build / daemon:start / daemon:start:dev で Web 資産が古くならない |
+| W4.2 | W4 | Web E2E を追加する | done | 新規会議から recovering/end まで自動確認できる |
+| W4.R | W4 | reviewer チェック | done | build/serve/e2e/docs を別サブエージェント視点で確認し、blocking な抜けはなし |
+| W5.1 | W5 | 型チェック / build / Electron GUI E2E / Web E2E を通す | done | `npm --prefix electron run e2e:web` と `npm --prefix electron run verify:final` が成功 |
+| W5.2 | W5 | DOM / CDP で Web UI を手動確認する | done | ユーザー了承のもと、実 DOM 操作で Setup/start/send/pause/resume/end を確認済み |
+| W6.1 | W6 | README / docs/service-overview / AGENTS / TODO を同期する | done | docs の手順と実装が一致する |
+| W6.R | W6 | reviewer チェック | done | docs/sync 方針は別サブエージェント観点でも blocking issue なし |
+
+### Review Rule
+- Fine-Grained ToDo を `done` にする前に、実装担当とは別サブエージェントで対象差分をレビューする。
+- レビューで指摘が出た場合、その Fine-Grained ToDo は `doing` に戻して修正する。
+- レビュー結果は `Execution Log` に `reviewed by subagent / result` を記録する。
+- 実装中に不足が見つかった場合は、新しい Fine-Grained ToDo をこの表へ追記してから進める。
+
+### Review Log
+- 2026-03-07: Web parity 実装開始。W1 から着手。
+- 2026-03-07: W1.1/W1.2 reviewed by subagent (Lovelace) - DoD の具体化と review 記録先を追加。
+- 2026-03-07: W3 reviewed by subagent (Helmholtz) - `MeetingRoomShell + MeetingRoomClient` 境界は妥当、`SessionDebugWindow` の結合も blocking ではない。
+- 2026-03-07: W2 reviewed by subagent (Mencius) - `endMeeting` の summary persist タイミング/失敗時 handling を指摘。修正後、daemon parity は blocking issue なし。
+- 2026-03-07: W4/W6 reviewed by subagent (Cicero) - build/serve/e2e/docs 整合性に blocking issue なし。
+- 2026-03-07: W5.1 completed - `npm --prefix electron run e2e:web` 成功、`npm --prefix electron run verify:final` 成功。
+- 2026-03-07: W5.2 completed - ユーザー了承のもと、Chrome CDP 経由の DOM 操作で Web UI の start/send/pause/resume/end を確認。

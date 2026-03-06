@@ -5,14 +5,14 @@ import { FitAddon } from "@xterm/addon-fit";
 interface Props {
   meetingId: string;
   onResize: (meetingId: string, cols: number, rows: number) => Promise<void>;
+  writeData: (meetingId: string, data: string) => Promise<boolean>;
   subscribeData: (handler: (meetingId: string, chunk: string) => void) => () => void;
   initialContent?: string;
 }
 
-export function TerminalPane({ meetingId, onResize, subscribeData, initialContent }: Props): JSX.Element {
+export function TerminalPane({ meetingId, onResize, writeData, subscribeData, initialContent }: Props): JSX.Element {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
-  const fitRef = useRef<FitAddon | null>(null);
   const seededRef = useRef(false);
 
   const runTerminalCommand = (command: Promise<unknown>) => {
@@ -34,7 +34,6 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
     const fit = new FitAddon();
     term.loadAddon(fit);
     terminalRef.current = term;
-    fitRef.current = fit;
 
     if (containerRef.current) {
       term.open(containerRef.current);
@@ -49,7 +48,7 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
     });
 
     const dataListener = term.onData((data) => {
-      runTerminalCommand(window.meetingRoom.writeTerminal(meetingId, data));
+      runTerminalCommand(writeData(meetingId, data));
     });
 
     const observer = new ResizeObserver(() => {
@@ -66,7 +65,7 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
       terminalRef.current = null;
       seededRef.current = false;
     };
-  }, [meetingId, onResize, subscribeData]);
+  }, [meetingId, onResize, subscribeData, writeData]);
 
   useEffect(() => {
     if (seededRef.current) return;

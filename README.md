@@ -3,6 +3,9 @@
 Agent Team 用の Meeting Room 実験リポジトリです。  
 Electron アプリとして動かせるほか、`services/meeting-room-daemon` を Node バックエンドとして単体起動して `/web/index.html` から操作できます。
 
+- Electron renderer と Browser UI は `electron/src/renderer/MeetingRoomShell.tsx` を共通利用し、同じ会議フローを表示します
+- Browser client のソースは `apps/web/src/`、配信用の build 生成物は `apps/web/client/` です
+
 ## セットアップ
 
 このリポジトリは依存関係を `electron/` 配下に持っています。最初に 1 回だけ実行してください。
@@ -30,6 +33,7 @@ npm --prefix electron run daemon:start
 ```
 
 - `services/meeting-room-daemon/src` をビルド
+- `apps/web/src` を build して `apps/web/client` を更新
 - `services/meeting-room-daemon/dist/index.js` を Node で起動
 - ブラウザ UI は `http://127.0.0.1:4417/web/index.html`
 - ヘルスチェックは `http://127.0.0.1:4417/health`
@@ -41,6 +45,7 @@ npm --prefix electron run daemon:start:dev
 ```
 
 - daemon の TypeScript を watch build
+- Web client も watch build
 - ビルド成功ごとに daemon を自動再起動
 - バックエンドだけを触る時の開発向け
 
@@ -82,3 +87,12 @@ MEETING_ROOM_DAEMON_TOKEN=secret npm --prefix electron run daemon:start:dev
 ```bash
 npm --prefix electron run verify:final
 ```
+
+Web UI の自動確認はこれです。
+
+```bash
+npm --prefix electron run e2e:web
+```
+
+- browser client を headless browser で開く
+- 新規会議開始、手動送信、一時停止 / 再開、daemon 再起動後の recovering、会議終了を確認する
