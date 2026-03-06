@@ -16,6 +16,7 @@ const wsPort = process.env.MEETING_ROOM_WS_PORT ?? "10117";
 const runId = `${Date.now()}`;
 const browserSession = `meeting-room-final-e2e-${runId}`;
 const topic = `GUI E2E final verification ${runId}`;
+const bypassTopic = `GUI E2E bypass verification ${runId}`;
 const humanMessage = "GUI E2E の自動確認です。状態を短く返してください。";
 
 let electronProcess = null;
@@ -237,23 +238,30 @@ async function resetToSetupScreen() {
   throw new Error("Failed to return to setup screen");
 }
 
-async function startMeetingFromSetup() {
+async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = false } = {}) {
   const snap = snapshot();
   const topicRef = findRef(snap, "textbox", "議題（ここを中心に議論）");
   const startRef = findRef(snap, "button", "会議を開始");
+  const bypassRef = findRef(snap, "checkbox", "Bypass Mode");
   if (!topicRef || !startRef) {
     throw new Error(`Setup screen controls were not found.\n${snap}`);
   }
+  if (bypassMode && !bypassRef) {
+    throw new Error(`Bypass Mode checkbox was not found.\n${snap}`);
+  }
 
-  runAgentBrowser("fill", `@${topicRef}`, topic);
+  runAgentBrowser("fill", `@${topicRef}`, meetingTopic);
+  if (bypassMode && bypassRef) {
+    runAgentBrowser("click", `@${bypassRef}`);
+  }
   runAgentBrowser("click", `@${startRef}`);
 
   await waitFor(() => {
     const current = snapshot();
-    return isMeetingScreen(current, topic) ? current : null;
+    return isMeetingScreen(current, meetingTopic) ? current : null;
   }, "meeting screen after start", 30_000, 750);
 
-  return waitFor(() => currentMeetingIdByTitle(topic), "daemon session creation", 30_000, 750);
+  return waitFor(() => currentMeetingIdByTitle(meetingTopic), "daemon session creation", 30_000, 750);
 }
 
 async function sendHumanMessageAndVerify(meetingId) {
@@ -340,6 +348,17 @@ async function endMeetingAndVerifyCleared() {
   }, "empty session list after end", 30_000, 750);
 }
 
+async function verifyBypassModeStart() {
+  const meetingId = await startMeetingFromSetup({ meetingTopic: bypassTopic, bypassMode: true });
+
+  await waitFor(async () => {
+    const view = await currentMeetingView(meetingId);
+    return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true ? view : null;
+  }, "bypass mode session config", 30_000, 750);
+
+  await endMeetingAndVerifyCleared();
+}
+
 async function main() {
   logStep("launching Electron");
   await launchElectron();
@@ -363,6 +382,9 @@ async function main() {
 
     logStep("ending meeting and confirming cleanup");
     await endMeetingAndVerifyCleared();
+
+    logStep("starting bypass mode meeting");
+    await verifyBypassModeStart();
 
     logStep("GUI E2E passed");
   } finally {

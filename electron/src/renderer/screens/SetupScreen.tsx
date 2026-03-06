@@ -29,6 +29,7 @@ export function SetupScreen({
   const [projectDir, setProjectDir] = useState(defaultProjectDir);
   const [projectDirTouched, setProjectDirTouched] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [bypassMode, setBypassMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savingAgent, setSavingAgent] = useState(false);
   const [refreshingAgents, setRefreshingAgents] = useState(false);
@@ -79,7 +80,8 @@ export function SetupScreen({
         id: `meeting_${Date.now()}`,
         topic,
         projectDir,
-        members: selectedMembers
+        members: selectedMembers,
+        bypassMode
       });
     } finally {
       setSubmitting(false);
@@ -189,6 +191,31 @@ export function SetupScreen({
               </p>
             ) : null}
             {projectDirPickerError ? <p className="error-text">{projectDirPickerError}</p> : null}
+          </section>
+
+          <section className="setup-section">
+            <div className="setup-inline">
+              <div>
+                <strong>進行モード</strong>
+                <p className="setup-helper">承認を毎回挟む通常モードか、止めずに流す Bypass Mode を開始前に選べます。</p>
+              </div>
+              <span className={`mode-pill${bypassMode ? " bypass" : ""}`}>
+                {bypassMode ? "Bypass Mode ON" : "Approval Step Mode"}
+              </span>
+            </div>
+
+            <label className="setup-checkbox">
+              <input
+                type="checkbox"
+                aria-label="Bypass Mode"
+                checked={bypassMode}
+                onChange={(event) => setBypassMode(event.target.checked)}
+              />
+              <span>
+                Bypass Mode を有効にする
+                <small>ON にすると approval hook で止めず、AI がそのまま継続します。</small>
+              </span>
+            </label>
           </section>
 
           <section className="setup-section">

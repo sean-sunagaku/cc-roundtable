@@ -126,6 +126,9 @@ export function MeetingScreen({
       ) : null}
 
       <section className="status-row">
+        <span className={`mode-pill${currentTab?.config.bypassMode ? " bypass" : ""}`}>
+          {currentTab?.config.bypassMode ? "Bypass Mode ON" : "Approval Step Mode"}
+        </span>
         {Object.entries(agentStatuses).map(([agent, status]) => (
           <span key={agent} className={`agent-status ${status}`}>
             {agent}: {status}
@@ -133,7 +136,7 @@ export function MeetingScreen({
         ))}
       </section>
 
-      {approvalGate.mode === "blocked" ? (
+      {approvalGate.mode === "blocked" && !approvalGate.bypassMode ? (
         <section className="approval-gate-card">
           <div>
             <p className="approval-gate-label">承認待ち</p>

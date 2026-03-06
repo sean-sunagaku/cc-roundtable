@@ -23,6 +23,7 @@ export interface MeetingConfigRecord {
   topic: string;
   projectDir: string;
   members: string[];
+  bypassMode?: boolean;
 }
 
 export interface SummaryMessageRecord {
@@ -119,10 +120,19 @@ export class LocalMeetingRoomSupport {
   buildInitPrompt(config: MeetingConfigRecord): string {
     const topic = config.topic.trim();
     const memberLines = this.resolveMemberLines(config.members).map((line) => `- ${line}`);
+    const modeLines = config.bypassMode
+      ? [
+          "- Bypass Mode は ON です。人間の承認待ちで止まらず、そのまま議論と実装検討を継続してください。",
+          "- 返答ごとに停止確認を待たず、必要な Task / TeamCreate / SendMessage をそのまま進めてください。"
+        ]
+      : [
+          "- Bypass Mode は OFF です。人間が判断しやすい粒度で区切り、各主要な返答のあと次の判断を待つ前提で進めてください。"
+        ];
 
     return [
       "Meeting Room 起動指示:",
       "- いまから Agent Teams 会議を開始してください。",
+      ...modeLines,
       "- 最初の相談内容（議題）をもとに、必要な Team 編成を最初に提案・確定してください。",
       "- サブエージェントを起動する場合は general-purpose タイプのみを使ってください。Plan タイプの起動は禁止です。",
       "- 理由: Plan タイプはこの会議フローで必要な SendMessage / shutdown_response を扱えず、不整合の原因になります。",

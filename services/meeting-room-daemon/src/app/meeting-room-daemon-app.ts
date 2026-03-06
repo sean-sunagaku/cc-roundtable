@@ -219,7 +219,8 @@ export class MeetingRoomDaemonApp {
       id: command.meetingId,
       topic: command.topic,
       projectDir: command.projectDir,
-      members: [...command.members]
+      members: [...command.members],
+      bypassMode: command.bypassMode
     });
 
     this.sessions.append({
@@ -230,6 +231,7 @@ export class MeetingRoomDaemonApp {
     });
     this.writeApprovalGate(command.meetingId, {
       mode: "open",
+      bypassMode: command.bypassMode,
       updatedAt: new Date().toISOString()
     });
 
@@ -301,8 +303,13 @@ export class MeetingRoomDaemonApp {
   }
 
   private approveNextStep(meetingId: string): boolean {
-    if (!this.sessions.hasSession(meetingId)) {
+    const approvalGate = this.sessions.getApprovalGate(meetingId);
+    if (!approvalGate) {
       return false;
+    }
+    if (approvalGate.bypassMode || approvalGate.mode !== "blocked") {
+      this.emitSessionViewUpdated(meetingId);
+      return true;
     }
     this.updateApprovalGate(meetingId, "open");
     if (this.runtimes.hasRuntime(meetingId)) {
@@ -487,7 +494,9 @@ export class MeetingRoomDaemonApp {
       meetingId,
       payload: { message }
     });
-    this.updateApprovalGate(meetingId, "blocked", `agent:${message.sender}`);
+    if (!this.sessions.getApprovalGate(meetingId)?.bypassMode) {
+      this.updateApprovalGate(meetingId, "blocked", `agent:${message.sender}`);
+    }
     this.emitEvent({
       type: "message.received",
       eventId: createId("message_received"),
@@ -578,7 +587,8 @@ export class MeetingRoomDaemonApp {
       id: command.meetingId,
       topic: command.topic,
       projectDir: command.projectDir,
-      members: [...command.members]
+      members: [...command.members],
+      bypassMode: command.bypassMode
     };
     return {
       id: command.meetingId,
@@ -712,12 +722,14 @@ export class MeetingRoomDaemonApp {
 
   private updateApprovalGate(meetingId: string, mode: ApprovalGatePayload["mode"], reason?: string): void {
     const current = this.sessions.getApprovalGate(meetingId);
-    if (current?.mode === mode && current.reason === reason) {
+    const bypassMode = current?.bypassMode ?? false;
+    if (current?.mode === mode && current.reason === reason && current.bypassMode === bypassMode) {
       return;
     }
 
     const approvalGate: ApprovalGatePayload = {
       mode,
+      bypassMode,
       reason,
       updatedAt: new Date().toISOString()
     };

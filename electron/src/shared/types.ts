@@ -2,6 +2,7 @@ export type MessageStatus = "pending" | "confirmed";
 
 export interface ApprovalGate {
   mode: "open" | "blocked";
+  bypassMode: boolean;
   reason?: string;
   updatedAt: string;
 }
@@ -34,6 +35,7 @@ export interface MeetingConfig {
   topic: string;
   projectDir: string;
   members: string[];
+  bypassMode: boolean;
 }
 
 export interface MeetingTab {
