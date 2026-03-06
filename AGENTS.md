@@ -2,6 +2,78 @@
 
 AI エージェント（Cursor/Claude）がこのプロジェクトを編集・調査する際のコンテキストです。
 
+## サービス概要
+
+Meeting Room は、ローカルのコードベースを題材に複数 Agent で議論・実装を進めるための実験用サービスです。
+
+- ユーザーは議題、対象プロジェクト、参加 Agent を指定して会議を開始する
+- 1 会議ごとに Claude ランタイムが PTY 上で起動し、初回プロンプトが自動投入される
+- 画面上では chat と terminal を分けて観察でき、会話は hook relay 済みのメッセージを優先表示する
+- Electron デスクトップ UI でも、`meeting-room-daemon` + ブラウザ UI でも同じ会議状態を扱える
+- 会議状態は durable event log に保存され、再起動後は `recovering` として復元される
+
+重要: 現在の実装は **daemon-first** です。Electron main が直接 PTY を握るのではなく、ローカル daemon を起動して API/SSE 経由で会議を操作する構成が主系です。
+
+## 最初に読むファイル
+
+サービス把握の最短経路は次です。
+
+1. `docs/service-overview.md`
+2. `README.md`
+3. `packages/shared-contracts/src/meeting-room-daemon.ts`
+4. `hooks/README.md`
+5. `docs/current-architecture-overview.svg`
+
+実装詳細が必要になったら次を読むと早いです。
+
+| 関心 | 最初に見るファイル |
+|------|--------------------|
+| Electron から daemon をどう叩いているか | `electron/src/main/index.ts`, `electron/src/main/daemon/meeting-room-daemon-manager.ts` |
+| 会議開始、初回プロンプト、Agent 構成 | `electron/src/main/meeting.ts` |
+| daemon 側の API とライフサイクル | `services/meeting-room-daemon/src/http/start-meeting-room-daemon-server.ts`, `services/meeting-room-daemon/src/app/meeting-room-daemon-app.ts` |
+| Claude runtime / PTY / ready 検出 | `services/meeting-room-daemon/src/runtime/meeting-runtime-manager.ts`, `electron/src/main/pty-manager.ts` |
+| 会話・状態の永続化と復元 | `services/meeting-room-daemon/src/sessions/meeting-session-store.ts`, `services/meeting-room-daemon/src/events/` |
+| ブラウザ UI | `apps/web/client/app.js`, `apps/web/client/index.html` |
+| Electron renderer UI | `electron/src/renderer/screens/SetupScreen.tsx`, `electron/src/renderer/screens/MeetingScreen.tsx` |
+| 契約型 / API surface | `packages/shared-contracts/src/meeting-room-daemon.ts`, `electron/src/shared/types.ts` |
+| Hook relay の挙動 | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
+| GUI 最終検証 | `e2e/gui/final-verification.mjs` |
+
+## 現在の構成
+
+### 1. Electron renderer
+
+- Setup 画面で議題・projectDir・参加 Agent を選ぶ
+- Meeting 画面で chat / terminal / runtime diagnostics を表示する
+- 主な入口は `electron/src/renderer/App.tsx` と `electron/src/renderer/screens/*`
+
+### 2. Electron main
+
+- ローカル daemon を起動・監視し、IPC を daemon command に変換する
+- `MeetingService` は今も重要だが、主責務は Agent profile 管理、初回プロンプト生成、summary 保存などの補助側
+- 会議本体の start / pause / resume / end / sendHumanMessage は `index.ts` から daemon へ流れる
+
+### 3. meeting-room-daemon
+
+- `/api/commands`, `/api/events`, `/api/sessions`, `/api/meta`, `/health` を提供するローカルバックエンド
+- Claude runtime 起動、terminal I/O、イベント永続化、SSE 配信、復元を担当する
+- 実体は `MeetingRoomDaemonApp`、runtime 実装は `MeetingRuntimeManager`、状態保持は `MeetingSessionStore`
+
+### 4. Hooks / relay
+
+- `.claude/settings.json` から `hooks/run-hook.sh` 経由で Python hooks を起動する
+- `SendMessage`, `SubagentStop`, `Stop`, `TeamCreate`, `Task` を relay し、chat 表示や状態更新に使う
+- terminal 生ログから会話を再構成する fallback は廃止済みで、hook 起点の payload が正系
+
+## Project knowledge の取り方
+
+- まず `docs/service-overview.md` を読めば、概要・起動方法・責務分割・調査起点が一通りわかります
+- 契約を先に掴みたい場合は `packages/shared-contracts/src/meeting-room-daemon.ts` を起点にすると、API と event の全体像を短時間で把握できます
+- 「なぜ今こうなっているか」を知りたい時は `docs/rearchitecture/content_rearchitecture_2026-03-06/` を読むと設計意図の比較材料があります
+- Hook relay の表示仕様やノイズ除去ルールは `hooks/README.md` が一次情報です
+- エージェント向けドキュメントを更新する時は、`AGENTS.md` / `CLAUDE.md` / `docs/service-overview.md` をセットで同期してください
+- この環境で Project memory を使えるエージェントは、project overview / commands / completion notes も参照してください
+
 ## 既知の不具合と修正履歴
 
 ### 1. Claude Code で Hook が読み込まれない（Hooks: Found 0 total hooks）
