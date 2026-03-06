@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { ChatMessage, ClaudeSessionDebug, ConversationHealth, MeetingTab, RuntimeEvent } from "@shared/types";
 import type { MeetingUiControlMode } from "@shared/ipc";
 import { ChatView } from "../components/ChatView";
@@ -49,15 +50,17 @@ export function MeetingScreen({
 }: Props): JSX.Element {
   const [showTerminal, setShowTerminal] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState("メンバー追加: researcher");
   const currentTab = useMemo(() => tabs.find((tab) => tab.id === currentTabId), [tabs, currentTabId]);
   const hasMcpError = runtimeEvents.some((event) => event.type === "mcp_error");
 
   return (
     <div className="meeting-wrap">
+      {/* Layer 1: Header */}
       <header className="meeting-header">
         <div>
-          <h2>Meeting Room - {currentTab?.title ?? "Unknown"}</h2>
+          <h2>{currentTab?.title ?? "Meeting"}</h2>
           <ConnectionStatus connected={wsConnected} />
         </div>
         <div className="actions">
@@ -68,23 +71,25 @@ export function MeetingScreen({
             再開
           </button>
           <button type="button" className="danger" onClick={() => void onEnd()} disabled={ending}>
-            {ending ? "サマリー保存中..." : "会議終了"}
+            {ending ? "保存中..." : "会議終了"}
           </button>
         </div>
       </header>
 
-      <nav className="tab-list">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={tab.id === currentTabId ? "active" : ""}
-            onClick={() => onSwitchTab(tab.id)}
-          >
-            {tab.title}
-          </button>
-        ))}
-      </nav>
+      {tabs.length > 1 ? (
+        <nav className="tab-list">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={tab.id === currentTabId ? "active" : ""}
+              onClick={() => onSwitchTab(tab.id)}
+            >
+              {tab.title}
+            </button>
+          ))}
+        </nav>
+      ) : null}
 
       <section className="status-row">
         {Object.entries(agentStatuses).map(([agent, status]) => (
@@ -94,79 +99,98 @@ export function MeetingScreen({
         ))}
       </section>
 
-      <section className="health-row">
-        <div className={`health-card ${health.inputDeliveredAt ? "ok" : "warn"}`}>
-          <strong>Input到達</strong>
-          <p>{health.inputDeliveredAt ? `OK (${new Date(health.inputDeliveredAt).toLocaleTimeString("ja-JP")})` : "未確認"}</p>
-        </div>
-        <div className={`health-card ${health.lastAgentReplyAt ? "ok" : "warn"}`}>
-          <strong>Agent返信</strong>
-          <p>{health.lastAgentReplyAt ? `受信 (${new Date(health.lastAgentReplyAt).toLocaleTimeString("ja-JP")})` : "未受信"}</p>
-        </div>
-      </section>
+      {/* Layer 2: Diagnostics (collapsible) */}
+      <div className="diagnostics-layer">
+        <button
+          type="button"
+          className="terminal-toggle"
+          onClick={() => setShowDiagnostics((v) => !v)}
+          style={{ marginTop: 0, marginBottom: showDiagnostics ? "var(--space-xs)" : 0 }}
+        >
+          {showDiagnostics ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />}
+          {" "}Diagnostics
+        </button>
 
-      <section className="runtime-events">
-        {runtimeEvents.length === 0 ? (
-          <p className="subtle">Claude利用上限・MCP状態の警告はありません。</p>
-        ) : (
-          runtimeEvents.map((event, idx) => (
-            <div key={`${event.timestamp}_${idx}`} className={`runtime-event ${event.type}`}>
-              <strong>{event.type === "usage_limit" ? "Claude利用上限" : event.type === "mcp_error" ? "MCPエラー" : "MCP情報"}</strong>
-              <p>{event.message}</p>
-            </div>
-          ))
-        )}
-        {hasMcpError ? (
-          <button type="button" onClick={() => void onRetryMcp()}>
-            MCP再試行 (/mcp)
-          </button>
-        ) : null}
-      </section>
-
-      <section className="runtime-events">
-        <div className="debug-header">
-          <strong>Claude Session Debug</strong>
-          <div className="actions">
-            <button type="button" onClick={() => void onOpenDevTools()}>
-              Open DevTools
-            </button>
-            <button type="button" onClick={() => void onOpenSessionDebugWindow()}>
-              Debugを別Window
-            </button>
-            <button type="button" onClick={() => setShowDebug((v) => !v)}>
-              {showDebug ? "Debugを閉じる" : "Debugを開く"}
-            </button>
-          </div>
-        </div>
-        {showDebug ? (
+        {showDiagnostics ? (
           <>
-            <div className="health-row">
-              <div className={`health-card ${sessionDebug?.hasUsageLimit ? "warn" : "ok"}`}>
-                <strong>Usage Limit Flag</strong>
-                <p>{sessionDebug?.hasUsageLimit ? "Detected" : "Not detected"}</p>
+            <section className="health-row">
+              <div className={`health-card ${health.inputDeliveredAt ? "ok" : "warn"}`}>
+                <strong>Input 到達</strong>
+                <p>{health.inputDeliveredAt ? `OK (${new Date(health.inputDeliveredAt).toLocaleTimeString("ja-JP")})` : "未確認"}</p>
               </div>
-              <div className={`health-card ${sessionDebug?.hasMcpError ? "warn" : "ok"}`}>
-                <strong>MCP Error Flag</strong>
-                <p>{sessionDebug?.hasMcpError ? "Detected" : "Not detected"}</p>
+              <div className={`health-card ${health.lastAgentReplyAt ? "ok" : "warn"}`}>
+                <strong>Agent 返信</strong>
+                <p>{health.lastAgentReplyAt ? `受信 (${new Date(health.lastAgentReplyAt).toLocaleTimeString("ja-JP")})` : "未受信"}</p>
               </div>
-            </div>
-            <pre className="session-tail">{(sessionDebug?.tail ?? []).join("\n") || "(no session output yet)"}</pre>
+            </section>
+
+            <section className="runtime-events">
+              {runtimeEvents.length === 0 ? (
+                <p className="subtle">警告なし</p>
+              ) : (
+                runtimeEvents.map((event, idx) => (
+                  <div key={`${event.timestamp}_${idx}`} className={`runtime-event ${event.type}`}>
+                    <strong>{event.type === "usage_limit" ? "利用上限" : event.type === "mcp_error" ? "MCP Error" : "MCP Info"}</strong>
+                    <p>{event.message}</p>
+                  </div>
+                ))
+              )}
+              {hasMcpError ? (
+                <button type="button" onClick={() => void onRetryMcp()}>
+                  MCP 再試行
+                </button>
+              ) : null}
+            </section>
+
+            <section className="runtime-events">
+              <div className="debug-header">
+                <strong>Session Debug</strong>
+                <div className="actions">
+                  <button type="button" onClick={() => void onOpenDevTools()}>
+                    DevTools
+                  </button>
+                  <button type="button" onClick={() => void onOpenSessionDebugWindow()}>
+                    別 Window
+                  </button>
+                  <button type="button" onClick={() => setShowDebug((v) => !v)}>
+                    {showDebug ? "閉じる" : "開く"}
+                  </button>
+                </div>
+              </div>
+              {showDebug ? (
+                <>
+                  <div className="health-row">
+                    <div className={`health-card ${sessionDebug?.hasUsageLimit ? "warn" : "ok"}`}>
+                      <strong>Usage Limit</strong>
+                      <p>{sessionDebug?.hasUsageLimit ? "Detected" : "Clear"}</p>
+                    </div>
+                    <div className={`health-card ${sessionDebug?.hasMcpError ? "warn" : "ok"}`}>
+                      <strong>MCP Error</strong>
+                      <p>{sessionDebug?.hasMcpError ? "Detected" : "Clear"}</p>
+                    </div>
+                  </div>
+                  <pre className="session-tail">{(sessionDebug?.tail ?? []).join("\n") || "(no output)"}</pre>
+                </>
+              ) : null}
+            </section>
           </>
         ) : null}
-      </section>
+      </div>
 
+      {/* Layer 1: Primary — Chat + Input */}
       <ChatView messages={messages} />
       <InputBar onSend={onSend} />
 
       <section className="settings-inline">
         <input value={settingsDraft} onChange={(event) => setSettingsDraft(event.target.value)} />
         <button type="button" onClick={() => onControl("settings", settingsDraft)}>
-          会議設定を更新
+          設定更新
         </button>
       </section>
 
       <button className="terminal-toggle" type="button" onClick={() => setShowTerminal((state) => !state)}>
-        {showTerminal ? "▲ Terminal を閉じる" : "▼ Terminal を開く"}
+        {showTerminal ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />}
+        {" "}Terminal
       </button>
       {showTerminal && currentTab ? (
         <TerminalPane

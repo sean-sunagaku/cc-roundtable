@@ -24,8 +24,11 @@ export function TerminalPane({ meetingId, onResize, subscribeData, initialConten
     const term = new Terminal({
       cursorBlink: true,
       theme: {
-        background: "#071019",
-        foreground: "#d6ecff"
+        background: "#0B1A2A",
+        foreground: "#D8E8F5",
+        cursor: "#5BA8A0",
+        cursorAccent: "#0B1A2A",
+        selectionBackground: "#294A66",
       }
     });
     const fit = new FitAddon();
