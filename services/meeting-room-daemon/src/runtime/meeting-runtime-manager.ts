@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ACTIVE_FLAG_RELATIVE_PATH, HOOKS_WS_PORT } from "../constants";
+import { ACTIVE_FLAG_RELATIVE_PATH, APPROVAL_STATE_RELATIVE_DIR, HOOKS_WS_PORT } from "../constants";
 import type { PtyLike, RuntimeHandle } from "../types";
 import { buildClaudeLaunchArgs, requireNodePty, shellQuote } from "../utils";
 
@@ -147,6 +147,8 @@ export class MeetingRuntimeManager {
       PATH: process.env.PATH || "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
       MEETING_ROOM_MEETING_ID: meetingId,
       MEETING_ROOM_ACTIVE_FILE: path.resolve(this.options.repoRoot, ACTIVE_FLAG_RELATIVE_PATH),
+      MEETING_ROOM_APPROVAL_DIR: path.resolve(this.options.repoRoot, APPROVAL_STATE_RELATIVE_DIR),
+      MEETING_ROOM_APPROVAL_FILE: path.resolve(this.options.repoRoot, APPROVAL_STATE_RELATIVE_DIR, `${meetingId}.json`),
       MEETING_ROOM_SETTINGS_FILE: path.resolve(this.options.repoRoot, ".claude/settings.json"),
       MEETING_ROOM_HOOKS_DIR: path.resolve(this.options.repoRoot, "hooks"),
       MEETING_ROOM_FALLBACK_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/discussion.log.jsonl"),

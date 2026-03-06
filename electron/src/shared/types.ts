@@ -1,5 +1,11 @@
 export type MessageStatus = "pending" | "confirmed";
 
+export interface ApprovalGate {
+  mode: "open" | "blocked";
+  reason?: string;
+  updatedAt: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: string;
@@ -35,7 +41,7 @@ export interface MeetingTab {
   title: string;
   config: MeetingConfig;
   createdAt: string;
-  status: "running" | "paused" | "ended" | "recovering";
+  status: "running" | "paused" | "awaiting_review" | "ended" | "recovering";
 }
 
 export interface AgentProfile {
@@ -96,6 +102,7 @@ export interface MeetingSessionView {
   runtimeEvents: RuntimeEvent[];
   health: ConversationHealth;
   sessionDebug: ClaudeSessionDebug;
+  approvalGate: ApprovalGate;
 }
 
 export interface DaemonAccessPolicy {

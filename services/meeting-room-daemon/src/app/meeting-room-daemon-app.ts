@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
+  ApprovalGatePayload,
   AgentStatusChangedEvent,
   ChatMessagePayload,
   ClaudeSessionDebugPayload,
@@ -24,7 +25,12 @@ import type {
   SessionViewUpdatedEvent,
   TerminalChunkEvent
 } from "@contracts/meeting-room-daemon";
-import { ACTIVE_FLAG_RELATIVE_PATH, SESSION_VIEW_UPDATED_EVENT, WEB_ROOT_PREFIX } from "../constants";
+import {
+  ACTIVE_FLAG_RELATIVE_PATH,
+  APPROVAL_STATE_RELATIVE_DIR,
+  SESSION_VIEW_UPDATED_EVENT,
+  WEB_ROOT_PREFIX
+} from "../constants";
 import { DaemonEventStream } from "../events/daemon-event-stream";
 import { HooksRelayReceiver } from "../relay/hooks-relay-receiver";
 import {
@@ -42,6 +48,7 @@ import { createId, ensureWorkspaceTrustAccepted, resolveRepoRoot } from "../util
 export class MeetingRoomDaemonApp {
   private readonly repoRoot = resolveRepoRoot();
   private readonly dataDir = path.resolve(this.repoRoot, ".claude/meeting-room/daemon");
+  private readonly approvalDir = path.resolve(this.repoRoot, APPROVAL_STATE_RELATIVE_DIR);
   private readonly relayReceiver = new HooksRelayReceiver();
   private readonly eventStream = new DaemonEventStream();
   private readonly accessPolicy: DaemonAccessPolicyPayload;
@@ -69,6 +76,7 @@ export class MeetingRoomDaemonApp {
   }
 
   async start(): Promise<void> {
+    this.syncApprovalFiles();
     this.relayReceiver.start((payload) => {
       this.handleRelayPayload(payload);
     });
@@ -133,6 +141,8 @@ export class MeetingRoomDaemonApp {
         return this.ack(commandId, this.startMeeting(command), command.meetingId);
       case "sendHumanMessage":
         return this.ack(commandId, this.sendHumanMessage(command.meetingId, command.message), command.meetingId);
+      case "approveNextStep":
+        return this.ack(commandId, this.approveNextStep(command.meetingId), command.meetingId);
       case "pauseMeeting":
         return this.ack(commandId, this.sendControlPrompt(command.meetingId, "pause"), command.meetingId);
       case "resumeMeeting":
@@ -180,6 +190,10 @@ export class MeetingRoomDaemonApp {
       at: new Date().toISOString(),
       meetingId: command.meetingId,
       payload: { prompt: command.initPrompt }
+    });
+    this.writeApprovalGate(command.meetingId, {
+      mode: "open",
+      updatedAt: new Date().toISOString()
     });
 
     this.emitEvent({
@@ -255,6 +269,25 @@ export class MeetingRoomDaemonApp {
     return true;
   }
 
+  private approveNextStep(meetingId: string): boolean {
+    if (!this.sessions.hasSession(meetingId)) {
+      return false;
+    }
+    this.updateApprovalGate(meetingId, "open");
+    if (this.runtimes.hasRuntime(meetingId)) {
+      this.runtimes.writePrompt(
+        meetingId,
+        [
+          "ユーザーが直前の返答を確認して承認しました。",
+          "直前に承認待ちで止まった作業をそのまま再開してください。",
+          "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。"
+        ].join("\n")
+      );
+    }
+    this.emitSessionViewUpdated(meetingId);
+    return true;
+  }
+
   private sendControlPrompt(meetingId: string, mode: "pause" | "resume"): boolean {
     const promptMap = {
       pause: "会議を一時停止し、現時点の要点を短くまとめてください。",
@@ -308,6 +341,7 @@ export class MeetingRoomDaemonApp {
 
     this.emitSessionViewUpdated(meetingId);
     this.emitTabsChanged();
+    this.clearApprovalGate(meetingId);
     this.writeMeetingFlag(this.listTabs().length > 0);
     return true;
   }
@@ -407,6 +441,7 @@ export class MeetingRoomDaemonApp {
       meetingId,
       payload: { message }
     });
+    this.updateApprovalGate(meetingId, "blocked", `agent:${message.sender}`);
     this.emitEvent({
       type: "message.received",
       eventId: createId("message_received"),
@@ -542,12 +577,12 @@ export class MeetingRoomDaemonApp {
       return runtimeMeetingIds[0];
     }
 
-    const liveSessions = this.sessions.listMeetingIdsByStatus(["running", "paused"]);
+    const liveSessions = this.sessions.listMeetingIdsByStatus(["running", "paused", "awaiting_review"]);
     if (liveSessions.length === 1) {
       return liveSessions[0];
     }
 
-    const recoverableSessions = this.sessions.listMeetingIdsByStatus(["running", "paused", "recovering"]);
+    const recoverableSessions = this.sessions.listMeetingIdsByStatus(["running", "paused", "awaiting_review", "recovering"]);
     if (recoverableSessions.length === 1) {
       return recoverableSessions[0];
     }
@@ -564,6 +599,50 @@ export class MeetingRoomDaemonApp {
     }
     if (fs.existsSync(flagPath)) {
       fs.rmSync(flagPath);
+    }
+  }
+
+  private updateApprovalGate(meetingId: string, mode: ApprovalGatePayload["mode"], reason?: string): void {
+    const current = this.sessions.getApprovalGate(meetingId);
+    if (current?.mode === mode && current.reason === reason) {
+      return;
+    }
+
+    const approvalGate: ApprovalGatePayload = {
+      mode,
+      reason,
+      updatedAt: new Date().toISOString()
+    };
+    this.sessions.append({
+      kind: "ApprovalGateUpdated",
+      at: approvalGate.updatedAt,
+      meetingId,
+      payload: { approvalGate }
+    });
+    this.writeApprovalGate(meetingId, approvalGate);
+  }
+
+  private writeApprovalGate(meetingId: string, approvalGate: ApprovalGatePayload): void {
+    const filePath = path.resolve(this.approvalDir, `${meetingId}.json`);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `${JSON.stringify({ meetingId, ...approvalGate }, null, 2)}\n`, "utf-8");
+  }
+
+  private clearApprovalGate(meetingId: string): void {
+    const filePath = path.resolve(this.approvalDir, `${meetingId}.json`);
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath);
+    }
+  }
+
+  private syncApprovalFiles(): void {
+    fs.mkdirSync(this.approvalDir, { recursive: true });
+    for (const tab of this.sessions.listTabs()) {
+      const approvalGate = this.sessions.getApprovalGate(tab.id);
+      if (!approvalGate) {
+        continue;
+      }
+      this.writeApprovalGate(tab.id, approvalGate);
     }
   }
 }

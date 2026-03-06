@@ -54,7 +54,7 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 | Runtime | Claude 起動、PTY I/O、init prompt flush | `services/meeting-room-daemon/src/runtime/meeting-runtime-manager.ts` |
 | Session persistence | durable event log、recovering 復元、chat/debug filtering | `services/meeting-room-daemon/src/sessions/meeting-session-store.ts`, `services/meeting-room-daemon/src/events/` |
 | Shared contracts | command / event / payload schema | `packages/shared-contracts/src/meeting-room-daemon.ts` |
-| Hooks | SendMessage / Stop / SubagentStop relay | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
+| Hooks | SendMessage / Stop / SubagentStop relay、approval gate | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
 | Browser client | daemon 操作用の薄い Web UI | `apps/web/client/app.js`, `apps/web/client/index.html` |
 
 ## 会議の基本フロー

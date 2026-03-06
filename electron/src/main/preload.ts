@@ -21,6 +21,8 @@ const api = {
   endMeeting: (meetingId: string): Promise<void> => ipc.invoke("meeting:end", meetingId),
   sendHumanMessage: (meetingId: string, message: string): Promise<boolean> =>
     ipc.invoke("meeting:human-message", meetingId, message),
+  approveNextStep: (meetingId: string): Promise<boolean> =>
+    ipc.invoke("meeting:approve-next-step", meetingId),
   sendControlMessage: (meetingId: string, mode: MeetingControlMode): Promise<void> =>
     ipc.invoke("meeting:control-message", meetingId, mode),
   listAgents: (): Promise<AgentProfile[]> => ipc.invoke("meeting:list-agents"),

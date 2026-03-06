@@ -17,6 +17,7 @@ Meeting Room は、ローカルの project directory を対象に、複数 Agent
 - Electron デスクトップ UI と、`meeting-room-daemon` + ブラウザ UI の 2 つの操作面がある
 - 1 会議につき 1 つの Claude runtime が PTY 上で起動する
 - chat には hook relay 済みの Agent 発話や状態更新を表示し、terminal には Claude TUI の生出力を残す
+- 承認待ち中は `approval-gate.py` が `SendMessage` / `Task` / `TeamCreate` を Hook で止める
 - 会議状態は event log に保存され、再起動時には `recovering` として復元される
 
 重要: 現在の主系は **daemon-first** です。Electron main は local daemon のクライアントとして振る舞い、会議制御は daemon command に変換して送ります。

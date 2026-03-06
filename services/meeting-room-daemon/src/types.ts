@@ -1,5 +1,10 @@
 import type { ServerResponse } from "node:http";
-import type { ChatMessagePayload, MeetingTabPayload, RuntimeEventPayload } from "@contracts/meeting-room-daemon";
+import type {
+  ApprovalGatePayload,
+  ChatMessagePayload,
+  MeetingTabPayload,
+  RuntimeEventPayload
+} from "@contracts/meeting-room-daemon";
 
 export type RelayPayload = {
   type: "agent_message" | "agent_status";
@@ -18,6 +23,7 @@ export type DurableEvent =
   | { kind: "InitPromptQueued"; at: string; meetingId: string; payload: { prompt: string } }
   | { kind: "ClaudeReadyDetected"; at: string; meetingId: string }
   | { kind: "InitPromptSent"; at: string; meetingId: string }
+  | { kind: "ApprovalGateUpdated"; at: string; meetingId: string; payload: { approvalGate: ApprovalGatePayload } }
   | { kind: "HumanMessageSubmitted"; at: string; meetingId: string; payload: { message: ChatMessagePayload } }
   | { kind: "AgentMessageReceived"; at: string; meetingId: string; payload: { message: ChatMessagePayload } }
   | { kind: "AgentStatusChanged"; at: string; meetingId: string; payload: { sender: string; status: "active" | "completed" } }

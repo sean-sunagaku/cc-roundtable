@@ -45,6 +45,12 @@ const DEFAULT_AGENT_PROFILES: Array<Omit<AgentProfile, "source">> = [
     name: "Researcher",
     description: "ユーザー調査と仮説検証を担当する",
     enabledByDefault: false
+  },
+  {
+    id: "user-liaison",
+    name: "User Liaison",
+    description: "前提不足や曖昧さを見つけたら、ユーザーに確認すべき論点を整理して共有する",
+    enabledByDefault: true
   }
 ];
 
@@ -76,6 +82,8 @@ export class MeetingService {
       "- Team 編成や再編成の際も同じです。常に broadcast 可能な general-purpose タイプだけで構成してください。",
       "- 会議中の SendMessage は必ず type: \"broadcast\" のみを使ってください。directed は禁止です。",
       "- すべての重要な検討結果は、チャット欄に表示されるよう broadcast で共有してください。",
+      "- 前提不足や未確定事項がある場合は、user-liaison の役割でユーザーへの確認事項を整理し、先に確認を優先してください。",
+      "- 返答は一度に広げすぎず、次に人間が判断できる粒度で区切ってください。",
       "- 返答は『結論 / 根拠 / 次アクション』の順で簡潔に整理してください。",
       "",
       `議題: ${topic || "(未指定)"}`,

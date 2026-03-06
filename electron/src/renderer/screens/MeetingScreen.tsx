@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import type { ChatMessage, ClaudeSessionDebug, ConversationHealth, MeetingTab, RuntimeEvent } from "@shared/types";
+import type {
+  ApprovalGate,
+  ChatMessage,
+  ClaudeSessionDebug,
+  ConversationHealth,
+  MeetingTab,
+  RuntimeEvent
+} from "@shared/types";
 import type { MeetingControlMode } from "@shared/ipc";
 import { ChatView } from "../components/ChatView";
 import { ConnectionStatus } from "../components/ConnectionStatus";
@@ -86,11 +93,13 @@ interface Props {
   agentStatuses: Record<string, "active" | "completed">;
   ending: boolean;
   health: ConversationHealth;
+  approvalGate: ApprovalGate;
   runtimeEvents: RuntimeEvent[];
   onRetryMcp: () => Promise<void>;
   sessionDebug: ClaudeSessionDebug | null;
   onOpenDevTools: () => Promise<void>;
   onOpenSessionDebugWindow: () => Promise<void>;
+  onApproveNextStep: () => Promise<void>;
 }
 
 export function MeetingScreen({
@@ -105,11 +114,13 @@ export function MeetingScreen({
   agentStatuses,
   ending,
   health,
+  approvalGate,
   runtimeEvents,
   onRetryMcp,
   sessionDebug,
   onOpenDevTools,
-  onOpenSessionDebugWindow
+  onOpenSessionDebugWindow,
+  onApproveNextStep
 }: Props): JSX.Element {
   const [showTerminal, setShowTerminal] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
@@ -172,6 +183,23 @@ export function MeetingScreen({
           </span>
         ))}
       </section>
+
+      {approvalGate.mode === "blocked" ? (
+        <section className="approval-gate-card">
+          <div>
+            <p className="approval-gate-label">承認待ち</p>
+            <strong>AI の次アクションを Hook で停止中です。</strong>
+            <p className="subtle">
+              {approvalGate.reason?.startsWith("agent:")
+                ? `${approvalGate.reason.slice("agent:".length)} の返答を確認したら、次へ進めてください。`
+                : "返答を確認したら、次へ進めてください。"}
+            </p>
+          </div>
+          <button type="button" onClick={() => void onApproveNextStep()}>
+            次へ進める
+          </button>
+        </section>
+      ) : null}
 
       <ChatView messages={messages} />
       <InputBar onSend={onSend} />

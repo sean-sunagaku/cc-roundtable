@@ -4,6 +4,7 @@ export const JSON_HEADERS = {
 } as const;
 
 export const ACTIVE_FLAG_RELATIVE_PATH = ".claude/meeting-room/.active";
+export const APPROVAL_STATE_RELATIVE_DIR = ".claude/meeting-room/approval";
 export const HOOKS_WS_PORT = Number.parseInt(process.env.MEETING_ROOM_WS_PORT ?? "9999", 10) || 9999;
 export const SESSION_DEBUG_SUFFIX = "/debug";
 export const SESSION_TERMINAL_SUFFIX = "/terminal";

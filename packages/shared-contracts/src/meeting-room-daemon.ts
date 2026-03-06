@@ -18,7 +18,7 @@ export interface MeetingTabPayload {
   title: string;
   config: MeetingConfigPayload;
   createdAt: string;
-  status: "running" | "paused" | "ended" | "recovering";
+  status: "running" | "paused" | "awaiting_review" | "ended" | "recovering";
 }
 
 export interface ChatMessagePayload {
@@ -30,6 +30,12 @@ export interface ChatMessagePayload {
   team?: string;
   status: "pending" | "confirmed";
   source: "human" | "agent";
+}
+
+export interface ApprovalGatePayload {
+  mode: "open" | "blocked";
+  reason?: string;
+  updatedAt: string;
 }
 
 export interface ConversationHealthPayload {
@@ -62,6 +68,7 @@ export interface MeetingSessionViewPayload {
   runtimeEvents: RuntimeEventPayload[];
   health: ConversationHealthPayload;
   sessionDebug: ClaudeSessionDebugPayload;
+  approvalGate: ApprovalGatePayload;
 }
 
 export interface DaemonAccessPolicyPayload {
@@ -96,6 +103,11 @@ export interface SendHumanMessageCommand {
   type: "sendHumanMessage";
   meetingId: string;
   message: string;
+}
+
+export interface ApproveNextStepCommand {
+  type: "approveNextStep";
+  meetingId: string;
 }
 
 export interface PauseMeetingCommand {
@@ -134,6 +146,7 @@ export interface ResizeTerminalCommand {
 export type MeetingRoomDaemonCommand =
   | StartMeetingCommand
   | SendHumanMessageCommand
+  | ApproveNextStepCommand
   | PauseMeetingCommand
   | ResumeMeetingCommand
   | EndMeetingCommand

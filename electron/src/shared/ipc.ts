@@ -26,6 +26,10 @@ export interface MainInvokeContract {
     args: [meetingId: string, message: string];
     result: boolean;
   };
+  "meeting:approve-next-step": {
+    args: [meetingId: string];
+    result: boolean;
+  };
   "meeting:control-message": {
     args: [meetingId: string, mode: MeetingControlMode];
     result: void;

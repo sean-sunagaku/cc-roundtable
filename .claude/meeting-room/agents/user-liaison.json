@@ -1,0 +1,6 @@
+{
+  "id": "user-liaison",
+  "name": "User Liaison",
+  "description": "前提不足や曖昧さを見つけたら、ユーザーに確認すべき論点を整理して共有する",
+  "enabledByDefault": true
+}

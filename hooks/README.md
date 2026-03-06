@@ -2,6 +2,7 @@
 
 ## Files
 - `enforce-broadcast.py`: PreToolUse hook to block directed `SendMessage`.
+- `approval-gate.py`: PreToolUse hook to block `SendMessage` / `Task` / `TeamCreate` while human approval is pending.
 - `team-event-relay.py`: PostToolUse hook to relay `TeamCreate`/`Task` events to chat.
 - `ws-relay.py`: PostToolUse hook to relay `SendMessage` payloads over WebSocket.
 - `subagent-status-relay.py`: PostToolUse hook to relay `SubagentStop` status events.
@@ -64,6 +65,7 @@ Electron now exports these env vars to Claude sessions:
 - `MEETING_ROOM_SETTINGS_FILE` (repo `.claude/settings.json`)
 - `MEETING_ROOM_HOOKS_DIR` (repo `hooks/`)
 - `MEETING_ROOM_ACTIVE_FILE` (meeting active flag path)
+- `MEETING_ROOM_APPROVAL_DIR` / `MEETING_ROOM_APPROVAL_FILE` (approval gate state path)
 - `MEETING_ROOM_MEETING_ID` (current meeting id)
 - `MEETING_ROOM_STOP_DEBUG_LOG` (Stop hook debug JSONL path)
 

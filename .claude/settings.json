@@ -7,6 +7,28 @@
           {
             "type": "command",
             "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" enforce-broadcast.py"
+          },
+          {
+            "type": "command",
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" approval-gate.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" approval-gate.py"
+          }
+        ]
+      },
+      {
+        "matcher": "TeamCreate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" approval-gate.py"
           }
         ]
       }

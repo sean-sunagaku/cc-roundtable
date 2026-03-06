@@ -1,4 +1,5 @@
 import type {
+  ApprovalGatePayload,
   ClaudeSessionDebugPayload,
   MeetingSessionViewPayload,
   MeetingTabPayload
@@ -48,6 +49,9 @@ export class MeetingSessionStore {
     if (!session) {
       return null;
     }
+    if (!session.approvalGate) {
+      session.approvalGate = this.defaultApprovalGate();
+    }
     const view = deepClone(session);
     view.messages = view.messages.filter((message) => {
       if (message.source !== "agent") {
@@ -77,6 +81,18 @@ export class MeetingSessionStore {
   getTab(meetingId: string): MeetingTabPayload | null {
     const tab = this.sessions.get(meetingId)?.tab;
     return tab ? deepClone(tab) : null;
+  }
+
+  getApprovalGate(meetingId: string): ApprovalGatePayload | null {
+    const session = this.sessions.get(meetingId);
+    if (!session) {
+      return null;
+    }
+    if (!session.approvalGate) {
+      session.approvalGate = this.defaultApprovalGate();
+    }
+    const gate = session.approvalGate;
+    return gate ? deepClone(gate) : null;
   }
 
   listMeetingIdsByStatus(statuses: MeetingTabPayload["status"][]): string[] {
@@ -117,6 +133,10 @@ export class MeetingSessionStore {
             tail: [],
             hasUsageLimit: false,
             hasMcpError: false
+          },
+          approvalGate: {
+            mode: "open",
+            updatedAt: event.at
           }
         });
         return;
@@ -132,6 +152,19 @@ export class MeetingSessionStore {
       }
       case "InitPromptSent":
         return;
+      case "ApprovalGateUpdated": {
+        const session = this.sessions.get(event.meetingId);
+        if (!session) return;
+        session.approvalGate = deepClone(event.payload.approvalGate);
+        if (session.tab.status !== "ended") {
+          if (event.payload.approvalGate.mode === "blocked") {
+            session.tab.status = "awaiting_review";
+          } else if (session.tab.status === "awaiting_review") {
+            session.tab.status = "running";
+          }
+        }
+        return;
+      }
       case "HumanMessageSubmitted": {
         const session = this.sessions.get(event.meetingId);
         if (!session) return;
@@ -203,9 +236,19 @@ export class MeetingSessionStore {
       this.apply(event);
     }
     for (const session of this.sessions.values()) {
+      if (!session.approvalGate) {
+        session.approvalGate = this.defaultApprovalGate();
+      }
       if (session.tab.status !== "ended") {
         session.tab.status = "recovering";
       }
     }
+  }
+
+  private defaultApprovalGate(): ApprovalGatePayload {
+    return {
+      mode: "open",
+      updatedAt: new Date(0).toISOString()
+    };
   }
 }

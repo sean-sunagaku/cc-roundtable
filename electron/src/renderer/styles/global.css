@@ -597,6 +597,38 @@ button:disabled {
   animation: agent-active-pulse 3s ease-in-out infinite;
 }
 
+.approval-gate-card {
+  margin: 0 0 var(--space-s);
+  padding: var(--space-s) var(--space-m);
+  border-radius: var(--radius-m);
+  border: 1px solid rgba(196, 154, 53, 0.45);
+  background: linear-gradient(180deg, rgba(196, 154, 53, 0.10), rgba(196, 154, 53, 0.04));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  flex-shrink: 0;
+}
+
+.approval-gate-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.approval-gate-label {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-warm-vivid);
+}
+
+.approval-gate-card .subtle {
+  margin: 0;
+}
+
 @keyframes agent-active-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
@@ -1048,6 +1080,11 @@ button:disabled {
   .health-row,
   .input-bar {
     grid-template-columns: 1fr;
+  }
+
+  .approval-gate-card {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .input-bar button {

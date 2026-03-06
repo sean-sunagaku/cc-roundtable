@@ -133,6 +133,14 @@ function registerIpc(): void {
     return ack.accepted;
   });
 
+  handleIpc("meeting:approve-next-step", async (meetingId) => {
+    const ack = await dispatchDaemonCommand({
+      type: "approveNextStep",
+      meetingId
+    });
+    return ack.accepted;
+  });
+
   handleIpc("meeting:control-message", async (meetingId, mode) => {
     if (mode === "pause") {
       await dispatchDaemonCommand({
@@ -406,6 +414,10 @@ function toClaudeSessionDebug(debug: MeetingSessionViewPayload["sessionDebug"]):
 }
 
 function toMeetingSessionView(view: MeetingSessionViewPayload): MeetingSessionView {
+  const approvalGate = view.approvalGate ?? {
+    mode: "open" as const,
+    updatedAt: new Date(0).toISOString()
+  };
   return {
     tab: toMeetingTab(view.tab),
     messages: view.messages.map(toChatMessage),
@@ -414,7 +426,12 @@ function toMeetingSessionView(view: MeetingSessionViewPayload): MeetingSessionVi
     health: {
       ...view.health
     },
-    sessionDebug: toClaudeSessionDebug(view.sessionDebug)
+    sessionDebug: toClaudeSessionDebug(view.sessionDebug),
+    approvalGate: {
+      mode: approvalGate.mode,
+      reason: approvalGate.reason,
+      updatedAt: approvalGate.updatedAt
+    }
   };
 }
 

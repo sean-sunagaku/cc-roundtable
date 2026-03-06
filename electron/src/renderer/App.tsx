@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
+  ApprovalGate,
   AgentProfile,
   AgentProfileInput,
-  AgentMessagePayload,
   ChatMessage,
   ClaudeSessionDebug,
   ConversationHealth,
@@ -20,29 +20,6 @@ import { SessionDebugWindow } from "./screens/SessionDebugWindow";
 
 const DEFAULT_PROJECT_DIR = "/";
 type AgentRunStatus = "active" | "completed";
-
-function toChatMessage(payload: AgentMessagePayload): ChatMessage {
-  return {
-    id: payload.id,
-    sender: payload.sender,
-    subagent: payload.subagent,
-    content: payload.content,
-    timestamp: payload.timestamp,
-    team: payload.team,
-    source: "agent",
-    status: "confirmed"
-  };
-}
-
-function maybeConfirmPending(existing: ChatMessage[], incoming: ChatMessage): ChatMessage[] {
-  const pendingIndex = existing.findIndex(
-    (item) => item.source === "human" && item.status === "pending" && incoming.content.includes(item.content)
-  );
-  if (pendingIndex < 0) return [...existing, incoming];
-  const next = [...existing];
-  next[pendingIndex] = { ...next[pendingIndex], status: "confirmed" };
-  return [...next, incoming];
-}
 
 export function App(): JSX.Element {
   const urlParams = new URLSearchParams(window.location.search);
@@ -69,6 +46,7 @@ export function App(): JSX.Element {
   const [agentStatusesByMeeting, setAgentStatusesByMeeting] = useState<Record<string, Record<string, AgentRunStatus>>>({});
   const [runtimeEventsByMeeting, setRuntimeEventsByMeeting] = useState<Record<string, RuntimeEvent[]>>({});
   const [healthByMeeting, setHealthByMeeting] = useState<Record<string, ConversationHealth>>({});
+  const [approvalGateByMeeting, setApprovalGateByMeeting] = useState<Record<string, ApprovalGate>>({});
   const [sessionDebug, setSessionDebug] = useState<ClaudeSessionDebug | null>(null);
   const [, setDaemonMeta] = useState<MeetingRoomDaemonMeta | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
@@ -107,20 +85,12 @@ export function App(): JSX.Element {
       setWsConnected(true);
       const meetingId = incoming.meetingId || currentTabId || tabs[0]?.id;
       if (!meetingId) return;
-
-      const chat = toChatMessage(incoming);
-      setMessagesByMeeting((prev) => {
-        const current = prev[meetingId] ?? [];
-        return { ...prev, [meetingId]: maybeConfirmPending(current, chat) };
-      });
-      setHealthByMeeting((prev) => ({
-        ...prev,
-        [meetingId]: {
-          ...prev[meetingId],
-          lastAgentReplyAt: incoming.timestamp
-        }
-      }));
       beep();
+      void window.meetingRoom.getSessionView(meetingId).then((view) => {
+        if (view) {
+          hydrateSessionView(view);
+        }
+      });
     });
     const unsubTabs = window.meetingRoom.onTabsUpdate((nextTabs) => {
       setTabs(nextTabs);
@@ -186,6 +156,10 @@ export function App(): JSX.Element {
     setHealthByMeeting((prev) => ({
       ...prev,
       [view.tab.id]: view.health
+    }));
+    setApprovalGateByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.approvalGate
     }));
     setSessionDebug(view.sessionDebug);
   };
@@ -301,6 +275,15 @@ export function App(): JSX.Element {
     await window.meetingRoom.openSessionDebugWindow(currentTabId);
   };
 
+  const handleApproveNextStep = async () => {
+    if (!currentTabId) return;
+    await window.meetingRoom.approveNextStep(currentTabId);
+    const view = await window.meetingRoom.getSessionView(currentTabId);
+    if (view) {
+      hydrateSessionView(view);
+    }
+  };
+
   const beep = () => {
     if (!notifyRef.current) {
       notifyRef.current = new AudioContext();
@@ -342,11 +325,16 @@ export function App(): JSX.Element {
       agentStatuses={agentStatusesByMeeting[currentTabId] ?? {}}
       ending={ending}
       health={healthByMeeting[currentTabId] ?? {}}
+      approvalGate={approvalGateByMeeting[currentTabId] ?? {
+        mode: "open",
+        updatedAt: new Date(0).toISOString()
+      }}
       runtimeEvents={runtimeEventsByMeeting[currentTabId] ?? []}
       onRetryMcp={handleRetryMcp}
       sessionDebug={sessionDebug}
       onOpenDevTools={handleOpenDevTools}
       onOpenSessionDebugWindow={handleOpenSessionDebugWindow}
+      onApproveNextStep={handleApproveNextStep}
     />
   );
 }

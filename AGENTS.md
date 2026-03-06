@@ -62,6 +62,7 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 ### 4. Hooks / relay
 
 - `.claude/settings.json` から `hooks/run-hook.sh` 経由で Python hooks を起動する
+- `approval-gate.py` が `SendMessage` / `Task` / `TeamCreate` を承認待ち中にブロックする
 - `SendMessage`, `SubagentStop`, `Stop`, `TeamCreate`, `Task` を relay し、chat 表示や状態更新に使う
 - terminal 生ログから会話を再構成する fallback は廃止済みで、hook 起点の payload が正系
 
