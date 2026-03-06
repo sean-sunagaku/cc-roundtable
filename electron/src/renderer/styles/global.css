@@ -637,10 +637,10 @@ button:disabled {
 /* ── Debug tools area ── */
 .debug-tools {
   flex-shrink: 0;
+  margin-top: var(--space-s);
 }
 
 .debug-toggle-row {
-  margin-top: var(--space-s);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
@@ -663,16 +663,10 @@ button:disabled {
   gap: var(--space-s);
 }
 
-.debug-block {
-  display: grid;
-  gap: var(--space-xs);
-}
-
 .health-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-xs);
-  margin-bottom: var(--space-s);
 }
 
 .health-card {
@@ -754,24 +748,12 @@ button:disabled {
 
 .debug-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: var(--space-s);
 }
 
-.session-tail {
-  margin: 0;
-  max-height: 220px;
-  overflow: auto;
-  border: 1px solid var(--color-surface-border);
-  border-radius: var(--radius-s);
-  padding: var(--space-s);
-  background: #1A2332;
-  font-family: var(--font-mono);
-  font-size: var(--type-small);
-  line-height: 1.7;
-  white-space: pre-wrap;
-  color: #D0D8E4;
+.debug-header p {
+  margin: 4px 0 0;
 }
 
 .session-debug-terminal .terminal-pane {
@@ -1028,27 +1010,9 @@ button:disabled {
   flex-shrink: 0;
 }
 
-.terminal-preview {
-  margin-top: var(--space-xs);
-  border: 1px solid var(--color-surface-border);
-  border-radius: var(--radius-m);
-  background: #0B1A2A;
-  color: #D8E8F5;
-  box-shadow: var(--shadow-1);
-  min-height: 260px;
-  max-height: 320px;
-  overflow: auto;
-  flex-shrink: 0;
-}
-
-.terminal-preview pre {
-  margin: 0;
-  padding: var(--space-s);
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: var(--font-mono);
-  font-size: var(--type-small);
-  line-height: 1.7;
+.meeting-terminal-pane .terminal-pane {
+  margin-top: 0;
+  height: 340px;
 }
 
 
