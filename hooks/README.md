@@ -67,5 +67,8 @@ Electron now exports these env vars to Claude sessions:
 - `MEETING_ROOM_MEETING_ID` (current meeting id)
 - `MEETING_ROOM_STOP_DEBUG_LOG` (Stop hook debug JSONL path)
 
-Hook commands in settings resolve scripts using:
-- `${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}`
+Hook commands in settings first go through `hooks/run-hook.sh`:
+- `MEETING_ROOM_HOOKS_DIR` があればそれを使う
+- なければ `CLAUDE_PROJECT_DIR` または `git rev-parse --show-toplevel` から repo root を解決する
+- `MEETING_ROOM_MEETING_ID` または `MEETING_ROOM_ACTIVE_FILE` が渡された Meeting Room セッションだけ hook を起動する
+- 通常の Claude セッションでは hook を起動せず、そのまま `exit 0` する

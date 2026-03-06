@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/enforce-broadcast.py\""
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" enforce-broadcast.py"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/team-event-relay.py\""
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" team-event-relay.py"
           }
         ]
       },
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/team-event-relay.py\""
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" team-event-relay.py"
           }
         ]
       },
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/ws-relay.py\""
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" ws-relay.py"
           }
         ]
       },
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/subagent-status-relay.py\""
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" subagent-status-relay.py"
           }
         ]
       }
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${MEETING_ROOM_HOOKS_DIR:-$PWD/hooks}/stop-relay.py\""
+            "command": "HOOKS_DIR=\"${MEETING_ROOM_HOOKS_DIR:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/hooks}\"; [ -f \"$HOOKS_DIR/run-hook.sh\" ] || exit 0; bash \"$HOOKS_DIR/run-hook.sh\" stop-relay.py"
           }
         ]
       }

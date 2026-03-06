@@ -11,6 +11,25 @@ import secrets
 import socket
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
+
+
+def _candidate_active_paths() -> list[Path]:
+    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    paths: list[Path] = []
+    if env_path:
+        paths.append(Path(env_path).expanduser())
+    cwd = Path.cwd()
+    paths.append(cwd / ".claude" / "meeting-room" / ".active")
+    paths.append(Path.home() / ".claude" / "meeting-room" / ".active")
+    return paths
+
+
+def is_meeting_mode_active() -> bool:
+    for path in _candidate_active_paths():
+        if path.exists():
+            return True
+    return False
 
 
 def parse_payload() -> dict:
@@ -89,6 +108,9 @@ def fallback_log(payload: dict) -> None:
 
 
 def main() -> int:
+    if not is_meeting_mode_active():
+        return 0
+
     payload = parse_payload()
     if not payload:
         return 0
