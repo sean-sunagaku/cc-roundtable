@@ -25,7 +25,8 @@ npm --prefix electron run dev
 ## Web アプリを起動する
 
 ブラウザ版 Meeting Room は、`meeting-room-daemon` が `/web/index.html` を配信する形で起動します。  
-つまり、**Web アプリを使う時は先に daemon を起動**します。
+つまり、**Web アプリを使う時は先に daemon を起動**します。  
+Web UI は配信元の daemon にそのまま固定接続されるので、接続設定の入力はありません。
 
 ### 最短手順
 
@@ -40,8 +41,6 @@ npm --prefix electron run daemon:start
 ```text
 http://127.0.0.1:4417/web/index.html
 ```
-
-3. `MEETING_ROOM_DAEMON_TOKEN` を設定している場合だけ、画面上の token 欄に同じ値を入力する
 
 ### 開発中に watch 付きで起動する
 
@@ -108,7 +107,8 @@ MEETING_ROOM_DAEMON_TOKEN=secret npm --prefix electron run daemon:start:dev
 
 すでに Electron アプリや別の daemon が動いていて `4417` / `9999` が使用中の時は、`MEETING_ROOM_DAEMON_PORT` と `MEETING_ROOM_WS_PORT` をずらしてください。
 
-`MEETING_ROOM_DAEMON_TOKEN` を設定した場合、`/web/index.html` 側でも同じトークンを入力してください。
+`MEETING_ROOM_DAEMON_TOKEN` は daemon API を保護したい時の任意設定です。  
+現在の `/web/index.html` は配信元 daemon に固定接続する前提なので、通常のブラウザ UI 利用では設定しない想定です。
 
 ## 最終確認
 
