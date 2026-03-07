@@ -14,6 +14,12 @@ import { ConnectionStatus } from "../components/ConnectionStatus";
 import { InputBar } from "../components/InputBar";
 import { TerminalPane } from "../components/TerminalPane";
 
+interface TerminalControls {
+  onResize: (meetingId: string, cols: number, rows: number) => Promise<void>;
+  subscribeData: (handler: (meetingId: string, chunk: string) => void) => () => void;
+  writeData: (meetingId: string, data: string) => Promise<boolean>;
+}
+
 interface Props {
   tabs: MeetingTab[];
   currentTabId: string;
@@ -33,6 +39,9 @@ interface Props {
   onOpenDevTools: () => Promise<void>;
   onOpenSessionDebugWindow: () => Promise<void>;
   onApproveNextStep: () => Promise<void>;
+  canOpenDevTools?: boolean;
+  canOpenSessionDebugWindow?: boolean;
+  terminalControls: TerminalControls;
 }
 
 export function MeetingScreen({
@@ -53,7 +62,10 @@ export function MeetingScreen({
   sessionDebug,
   onOpenDevTools,
   onOpenSessionDebugWindow,
-  onApproveNextStep
+  onApproveNextStep,
+  canOpenDevTools,
+  canOpenSessionDebugWindow,
+  terminalControls
 }: Props): JSX.Element {
   const [developerToolsVisible, setDeveloperToolsVisible] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
@@ -83,6 +95,9 @@ export function MeetingScreen({
           <ConnectionStatus connected={wsConnected} />
         </div>
         <div className="actions">
+          <button type="button" onClick={() => setDeveloperToolsVisible((value) => !value)}>
+            {developerToolsVisible ? "Debug を閉じる" : "Debug を開く"}
+          </button>
           <button type="button" onClick={() => onControl("pause")}>
             一時停止
           </button>
@@ -145,12 +160,16 @@ export function MeetingScreen({
               {showDebugPanel ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />}
               {" "}Debug
             </button>
-            <button className="terminal-toggle" type="button" onClick={() => void onOpenSessionDebugWindow()}>
-              別 Window
-            </button>
-            <button className="terminal-toggle" type="button" onClick={() => void onOpenDevTools()}>
-              DevTools
-            </button>
+            {canOpenSessionDebugWindow ? (
+              <button className="terminal-toggle" type="button" onClick={() => void onOpenSessionDebugWindow()}>
+                別 Window
+              </button>
+            ) : null}
+            {canOpenDevTools ? (
+              <button className="terminal-toggle" type="button" onClick={() => void onOpenDevTools()}>
+                DevTools
+              </button>
+            ) : null}
           </div>
 
           {showDebugPanel ? (
@@ -165,8 +184,9 @@ export function MeetingScreen({
               <section className="meeting-terminal-pane">
                 <TerminalPane
                   meetingId={currentTabId}
-                  onResize={window.meetingRoom.resizeTerminal}
-                  subscribeData={window.meetingRoom.onTerminalData}
+                  onResize={terminalControls.onResize}
+                  subscribeData={terminalControls.subscribeData}
+                  writeData={terminalControls.writeData}
                   initialContent={sessionDebug?.tail?.join("\n") ?? "(no session output yet)"}
                 />
               </section>

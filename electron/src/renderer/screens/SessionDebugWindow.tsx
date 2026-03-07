@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
+import type { MeetingRoomClient } from "@shared/meeting-room-client";
 import type { ClaudeSessionDebug } from "@shared/types";
 import { TerminalPane } from "../components/TerminalPane";
 
 interface Props {
+  client: MeetingRoomClient;
   meetingId: string;
+  canOpenDevTools?: boolean;
 }
 
-export function SessionDebugWindow({ meetingId }: Props): JSX.Element {
+export function SessionDebugWindow({ client, meetingId, canOpenDevTools }: Props): JSX.Element {
   const [debug, setDebug] = useState<ClaudeSessionDebug | null>(null);
   const initialTail = debug?.tail?.join("\n") ?? "";
 
   useEffect(() => {
     let disposed = false;
     const load = async () => {
-      const result = await window.meetingRoom.getSessionDebug(meetingId);
+      const result = await client.getSessionDebug(meetingId);
       if (!disposed) setDebug(result);
     };
     void load();
@@ -24,7 +27,7 @@ export function SessionDebugWindow({ meetingId }: Props): JSX.Element {
       disposed = true;
       window.clearInterval(timer);
     };
-  }, [meetingId]);
+  }, [client, meetingId]);
 
   return (
     <div className="meeting-wrap">
@@ -34,9 +37,11 @@ export function SessionDebugWindow({ meetingId }: Props): JSX.Element {
           <p className="subtle">meetingId: {meetingId}</p>
         </div>
         <div className="actions">
-          <button type="button" onClick={() => void window.meetingRoom.openDevTools()}>
-            Open DevTools
-          </button>
+          {canOpenDevTools ? (
+            <button type="button" onClick={() => void client.openDevTools?.()}>
+              Open DevTools
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -54,8 +59,9 @@ export function SessionDebugWindow({ meetingId }: Props): JSX.Element {
       <div className="session-debug-terminal">
         <TerminalPane
           meetingId={meetingId}
-          onResize={window.meetingRoom.resizeTerminal}
-          subscribeData={window.meetingRoom.onTerminalData}
+          onResize={client.resizeTerminal}
+          subscribeData={client.onTerminalData}
+          writeData={client.writeTerminal}
           initialContent={initialTail || "(no session output yet)"}
         />
       </div>

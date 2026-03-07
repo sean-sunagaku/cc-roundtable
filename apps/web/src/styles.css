@@ -1,0 +1,18 @@
+.web-client-shell {
+  min-height: 100vh;
+}
+
+.web-connection-error {
+  margin: 16px auto 0;
+  max-width: 860px;
+  padding: 12px 16px;
+  border-radius: var(--radius-m);
+  border: 1px solid rgba(208, 80, 80, 0.25);
+  background: rgba(208, 80, 80, 0.08);
+  color: var(--color-semantic-error);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}

@@ -31,3 +31,4 @@ flowchart TD
 ## Current Focus
 - All planned phases are implemented.
 - Next operational step: run `npm run dev` in `electron/` and validate live Claude integration in your environment.
+- Web parity work is tracked in `plans/web-interface-parity.md` and `TODO.md` (`W1`-`W5`).

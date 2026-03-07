@@ -30,11 +30,13 @@ const daemonEntry = path.join(rootDir, "services", "meeting-room-daemon", "dist"
 const daemonSource = path.join(rootDir, "services", "meeting-room-daemon", "src", "index.ts");
 const daemonTsconfig = path.join(rootDir, "services", "meeting-room-daemon", "tsconfig.json");
 const daemonDistDir = path.join(rootDir, "services", "meeting-room-daemon", "dist");
+const webBuilderScript = path.join(rootDir, "scripts", "build-web-client.mjs");
 const host = process.env.MEETING_ROOM_DAEMON_HOST?.trim() || "127.0.0.1";
 const port = process.env.MEETING_ROOM_DAEMON_PORT?.trim() || "4417";
 
 let daemonProcess = null;
 let buildContext = null;
+let webBuilderProcess = null;
 let shuttingDown = false;
 let restartChain = Promise.resolve();
 
@@ -117,6 +119,67 @@ async function stopDaemon() {
   });
 }
 
+async function runWebBuildOnce() {
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [webBuilderScript], {
+      cwd: rootDir,
+      env: process.env,
+      stdio: "inherit"
+    });
+    child.once("exit", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`web build failed with code ${code ?? "null"}`));
+    });
+  });
+}
+
+function startWebWatch() {
+  if (webBuilderProcess) {
+    return;
+  }
+  const child = spawn(process.execPath, [webBuilderScript, "--watch"], {
+    cwd: rootDir,
+    env: process.env,
+    stdio: "inherit"
+  });
+  webBuilderProcess = child;
+  child.once("exit", (code, signal) => {
+    if (webBuilderProcess === child) {
+      webBuilderProcess = null;
+    }
+    if (!shuttingDown) {
+      log(`web builder stopped (code=${code ?? "null"}, signal=${signal ?? "null"})`);
+    }
+  });
+}
+
+async function stopWebBuilder() {
+  const child = webBuilderProcess;
+  webBuilderProcess = null;
+  if (!child) {
+    return;
+  }
+  await new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    child.once("exit", finish);
+    child.kill("SIGTERM");
+    setTimeout(() => {
+      if (child.exitCode === null) {
+        child.kill("SIGKILL");
+      }
+    }, 1500);
+    setTimeout(finish, 3000);
+  });
+}
+
 function queueRestart(reason) {
   restartChain = restartChain.then(async () => {
     if (shuttingDown) return;
@@ -133,6 +196,7 @@ function queueRestart(reason) {
 }
 
 async function startWatchMode() {
+  startWebWatch();
   const restartPlugin = {
     name: "restart-daemon-on-build",
     setup(build) {
@@ -155,6 +219,7 @@ async function shutdown(exitCode = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   await buildContext?.dispose();
+  await stopWebBuilder();
   await stopDaemon();
   process.exit(exitCode);
 }
@@ -173,6 +238,7 @@ async function main() {
     return;
   }
 
+  await runWebBuildOnce();
   await esbuild.build(buildOptions());
   if (!fs.existsSync(daemonEntry)) {
     throw new Error(`daemon entry file was not generated: ${daemonEntry}`);

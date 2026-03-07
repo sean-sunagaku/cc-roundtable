@@ -13,10 +13,15 @@ import type {
   RuntimeEvent
 } from "@shared/types";
 import type { MeetingControlMode } from "@shared/ipc";
+import type { MeetingRoomClient } from "@shared/meeting-room-client";
 
 const ipc = new RendererIpcClient();
 
-const api = {
+export type MeetingRoomApi = MeetingRoomClient & {
+  saveSummary: (payload: MeetingSummaryPayload) => Promise<string>;
+};
+
+const api: MeetingRoomApi = {
   startMeeting: (config: MeetingConfig): Promise<MeetingTab> => ipc.invoke("meeting:start", config),
   endMeeting: (meetingId: string): Promise<void> => ipc.invoke("meeting:end", meetingId),
   sendHumanMessage: (meetingId: string, message: string): Promise<boolean> =>
@@ -29,6 +34,7 @@ const api = {
   saveAgent: (input: AgentProfileInput): Promise<AgentProfile> => ipc.invoke("meeting:save-agent", input),
   listTabs: (): Promise<MeetingTab[]> => ipc.invoke("meeting:list-tabs"),
   defaultProjectDir: (): Promise<string> => ipc.invoke("meeting:default-project-dir"),
+  pickProjectDir: (currentDir?: string): Promise<string | null> => ipc.invoke("meeting:pick-project-dir", currentDir),
   saveSummary: (payload: MeetingSummaryPayload): Promise<string> => ipc.invoke("meeting:save-summary", payload),
   retryMcp: (meetingId: string): Promise<boolean> => ipc.invoke("meeting:retry-mcp", meetingId),
   getSessionDebug: (meetingId: string): Promise<ClaudeSessionDebug> => ipc.invoke("meeting:get-session-debug", meetingId),
@@ -48,5 +54,3 @@ const api = {
 };
 
 contextBridge.exposeInMainWorld("meetingRoom", api);
-
-export type MeetingRoomApi = typeof api;

@@ -5,6 +5,36 @@ export const MEETING_ROOM_DAEMON_COMMANDS_PATH = "/api/commands";
 export const MEETING_ROOM_DAEMON_EVENTS_PATH = "/api/events";
 export const MEETING_ROOM_DAEMON_SESSIONS_PATH = "/api/sessions";
 export const MEETING_ROOM_DAEMON_META_PATH = "/api/meta";
+export const MEETING_ROOM_DAEMON_AGENTS_PATH = "/api/agents";
+export const MEETING_ROOM_DAEMON_DEFAULT_PROJECT_DIR_PATH = "/api/default-project-dir";
+export const MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH = "/api/pick-project-dir";
+
+export interface AgentProfilePayload {
+  id: string;
+  name: string;
+  description: string;
+  enabledByDefault: boolean;
+  source: string;
+}
+
+export interface AgentProfileInputPayload {
+  id?: string;
+  name: string;
+  description: string;
+  enabledByDefault?: boolean;
+}
+
+export interface MeetingRoomDaemonAgentsResponse {
+  agents: AgentProfilePayload[];
+}
+
+export interface MeetingRoomDaemonDefaultProjectDirResponse {
+  defaultProjectDir: string;
+}
+
+export interface MeetingRoomDaemonPickProjectDirResponse {
+  projectDir: string | null;
+}
 
 export interface MeetingConfigPayload {
   id: string;
@@ -96,7 +126,7 @@ export interface StartMeetingCommand {
   topic: string;
   projectDir: string;
   members: string[];
-  initPrompt: string;
+  initPrompt?: string;
 }
 
 export interface SendHumanMessageCommand {

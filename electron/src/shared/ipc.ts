@@ -50,6 +50,10 @@ export interface MainInvokeContract {
     args: [];
     result: string;
   };
+  "meeting:pick-project-dir": {
+    args: [currentDir?: string];
+    result: string | null;
+  };
   "meeting:save-summary": {
     args: [payload: MeetingSummaryPayload];
     result: string;

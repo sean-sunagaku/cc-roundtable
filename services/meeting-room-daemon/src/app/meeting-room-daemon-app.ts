@@ -3,6 +3,8 @@ import path from "node:path";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
   ApprovalGatePayload,
+  AgentProfileInputPayload,
+  AgentProfilePayload,
   AgentStatusChangedEvent,
   ChatMessagePayload,
   ClaudeSessionDebugPayload,
@@ -25,6 +27,7 @@ import type {
   SessionViewUpdatedEvent,
   TerminalChunkEvent
 } from "@contracts/meeting-room-daemon";
+import { LocalMeetingRoomSupport } from "../../../../packages/meeting-room-support/src/local-meeting-room-support";
 import {
   ACTIVE_FLAG_RELATIVE_PATH,
   APPROVAL_STATE_RELATIVE_DIR,
@@ -47,8 +50,15 @@ import { createId, ensureWorkspaceTrustAccepted, resolveRepoRoot } from "../util
 
 export class MeetingRoomDaemonApp {
   private readonly repoRoot = resolveRepoRoot();
-  private readonly dataDir = path.resolve(this.repoRoot, ".claude/meeting-room/daemon");
-  private readonly approvalDir = path.resolve(this.repoRoot, APPROVAL_STATE_RELATIVE_DIR);
+  private readonly dataDir =
+    process.env.MEETING_ROOM_DAEMON_DATA_DIR?.trim() ||
+    path.resolve(this.repoRoot, ".claude/meeting-room/daemon");
+  private readonly approvalDir =
+    process.env.MEETING_ROOM_APPROVAL_DIR?.trim() ||
+    path.resolve(this.repoRoot, APPROVAL_STATE_RELATIVE_DIR);
+  private readonly activeFile =
+    process.env.MEETING_ROOM_ACTIVE_FILE?.trim() ||
+    path.resolve(this.repoRoot, ACTIVE_FLAG_RELATIVE_PATH);
   private readonly relayReceiver = new HooksRelayReceiver();
   private readonly eventStream = new DaemonEventStream();
   private readonly accessPolicy: DaemonAccessPolicyPayload;
@@ -60,13 +70,17 @@ export class MeetingRoomDaemonApp {
   private readonly authToken = process.env.MEETING_ROOM_DAEMON_TOKEN?.trim() || "";
   private readonly sessions: MeetingSessionStore;
   private readonly runtimes: MeetingRuntimeManager;
+  private readonly support: LocalMeetingRoomSupport;
 
   constructor(log: (message: string) => void) {
     this.sessions = new MeetingSessionStore(path.resolve(this.dataDir, "events"));
     this.runtimes = new MeetingRuntimeManager({
       repoRoot: this.repoRoot,
+      activeFile: this.activeFile,
+      approvalDir: this.approvalDir,
       log
     });
+    this.support = new LocalMeetingRoomSupport(this.repoRoot);
     this.accessPolicy = {
       sessionHost: "mac-daemon",
       authMode: this.authToken ? "token-required" : "local-open",
@@ -103,6 +117,22 @@ export class MeetingRoomDaemonApp {
 
   getActiveMeetingCount(): number {
     return this.sessions.getActiveMeetingCount();
+  }
+
+  defaultProjectDir(): string {
+    return this.support.defaultProjectDir();
+  }
+
+  pickProjectDir(currentDir?: string): string | null {
+    return this.support.pickProjectDir(currentDir);
+  }
+
+  listAgentProfiles(): AgentProfilePayload[] {
+    return this.support.listAgentProfiles();
+  }
+
+  saveAgentProfile(input: AgentProfileInputPayload): AgentProfilePayload {
+    return this.support.saveAgentProfile(input);
   }
 
   meta(): MeetingRoomDaemonMetaPayload {
@@ -185,11 +215,18 @@ export class MeetingRoomDaemonApp {
       meetingId: command.meetingId,
       payload: { tab }
     });
+    const initPrompt = command.initPrompt?.trim() || this.support.buildInitPrompt({
+      id: command.meetingId,
+      topic: command.topic,
+      projectDir: command.projectDir,
+      members: [...command.members]
+    });
+
     this.sessions.append({
       kind: "InitPromptQueued",
       at: new Date().toISOString(),
       meetingId: command.meetingId,
-      payload: { prompt: command.initPrompt }
+      payload: { prompt: initPrompt }
     });
     this.writeApprovalGate(command.meetingId, {
       mode: "open",
@@ -207,7 +244,7 @@ export class MeetingRoomDaemonApp {
     this.runtimes.startRuntime({
       meetingId: command.meetingId,
       projectDir: command.projectDir,
-      initPrompt: command.initPrompt,
+      initPrompt,
       onData: (data) => {
         this.handlePtyData(command.meetingId, data);
       },
@@ -239,13 +276,7 @@ export class MeetingRoomDaemonApp {
       return false;
     }
 
-    const prompt = [
-      "人間参加者からの入力です。内容を必ずチーム全体へ broadcast してください。",
-      "そのうえで、必要な検討と提案を続けてください。",
-      "",
-      "[Human Input]",
-      normalized
-    ].join("\n");
+    const prompt = this.buildHumanMessagePrompt(meetingId, normalized);
 
     if (!this.runtimes.writePrompt(meetingId, prompt)) {
       return false;
@@ -275,14 +306,7 @@ export class MeetingRoomDaemonApp {
     }
     this.updateApprovalGate(meetingId, "open");
     if (this.runtimes.hasRuntime(meetingId)) {
-      this.runtimes.writePrompt(
-        meetingId,
-        [
-          "ユーザーが直前の返答を確認して承認しました。",
-          "直前に承認待ちで止まった作業をそのまま再開してください。",
-          "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。"
-        ].join("\n")
-      );
+      this.runtimes.writePrompt(meetingId, this.buildApprovalResumePrompt(meetingId));
     }
     this.emitSessionViewUpdated(meetingId);
     return true;
@@ -291,7 +315,7 @@ export class MeetingRoomDaemonApp {
   private sendControlPrompt(meetingId: string, mode: "pause" | "resume"): boolean {
     const promptMap = {
       pause: "会議を一時停止し、現時点の要点を短くまとめてください。",
-      resume: "会議を再開してください。直前の要点を確認して続行してください。"
+      resume: this.buildResumePrompt(meetingId)
     };
     const ok = this.runtimes.writePrompt(meetingId, promptMap[mode]);
     if (!ok) {
@@ -313,9 +337,7 @@ export class MeetingRoomDaemonApp {
     if (!status || status === "ended") {
       return false;
     }
-    if (reason === "command") {
-      this.runtimes.writePrompt(meetingId, "会議を終了してください。結論・保留事項・次アクションをまとめてください。");
-    }
+    const tab = this.sessions.getTab(meetingId);
 
     this.sessions.append({
       kind: "MeetingEnded",
@@ -325,7 +347,6 @@ export class MeetingRoomDaemonApp {
     });
     this.runtimes.stopRuntime(meetingId);
 
-    const tab = this.sessions.getTab(meetingId);
     if (tab) {
       this.emitEvent({
         type: "meeting.ended",
@@ -343,7 +364,32 @@ export class MeetingRoomDaemonApp {
     this.emitTabsChanged();
     this.clearApprovalGate(meetingId);
     this.writeMeetingFlag(this.listTabs().length > 0);
+    this.persistMeetingSummary(meetingId, tab);
     return true;
+  }
+
+  private persistMeetingSummary(meetingId: string, tab: MeetingTabPayload | null): void {
+    if (!tab) {
+      return;
+    }
+    const sessionView = this.sessions.getSessionView(meetingId);
+    if (!sessionView) {
+      return;
+    }
+    try {
+      this.support.saveMeetingSummary({
+        meetingId,
+        title: tab.title,
+        topic: tab.config.topic,
+        messages: sessionView.messages
+      });
+    } catch (error) {
+      console.warn(
+        `[meeting-room-daemon] failed to persist summary for ${meetingId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
   private writeRaw(meetingId: string, data: string): boolean {
@@ -543,6 +589,69 @@ export class MeetingRoomDaemonApp {
     };
   }
 
+  private buildHumanMessagePrompt(meetingId: string, message: string): string {
+    return [
+      "人間参加者からの入力です。内容を必ずチーム全体へ broadcast してください。",
+      "会議コンテキストを再掲するので、これを前提に検討と提案を続けてください。",
+      ...this.buildMeetingContextLines(meetingId),
+      "",
+      "[Human Input]",
+      message
+    ].join("\n");
+  }
+
+  private buildApprovalResumePrompt(meetingId: string): string {
+    const view = this.sessions.getSessionView(meetingId);
+    const reason = view?.approvalGate.reason;
+    return [
+      "ユーザーが直前の返答を確認して承認しました。",
+      "以下の会議コンテキストを前提に、承認待ちで止まった作業をそのまま再開してください。",
+      ...(reason ? [`承認待ち理由: ${reason}`] : []),
+      ...this.buildMeetingContextLines(meetingId),
+      "",
+      "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。",
+      "会議コンテキストが不足しているとは扱わず、上の議題と直近の会話を前提に続行してください。"
+    ].join("\n");
+  }
+
+  private buildResumePrompt(meetingId: string): string {
+    return [
+      "会議を再開してください。",
+      "以下の会議コンテキストを確認し、直前の要点を踏まえて続行してください。",
+      ...this.buildMeetingContextLines(meetingId),
+      "",
+      "次の進捗は broadcast で共有してください。"
+    ].join("\n");
+  }
+
+  private buildMeetingContextLines(meetingId: string): string[] {
+    const view = this.sessions.getSessionView(meetingId);
+    if (!view) {
+      return ["議題: (不明)", "直近の会話: (取得不可)"];
+    }
+
+    const recentMessages = view.messages
+      .slice(-6)
+      .map((message) => this.toPromptMessageLine(message));
+
+    return [
+      `議題: ${view.tab.config.topic || "(未指定)"}`,
+      `project directory: ${view.tab.config.projectDir || "(未指定)"}`,
+      `参加 Agent: ${view.tab.config.members.length > 0 ? view.tab.config.members.join(", ") : "(未指定)"}`,
+      "直近の会話:",
+      ...(recentMessages.length > 0 ? recentMessages : ["- (まだ会話なし)"])
+    ];
+  }
+
+  private toPromptMessageLine(message: ChatMessagePayload): string {
+    const speaker = message.source === "human"
+      ? "You"
+      : message.subagent?.trim() || message.sender;
+    const compactContent = message.content.replace(/\s+/g, " ").trim();
+    const preview = compactContent.length > 240 ? `${compactContent.slice(0, 237)}...` : compactContent;
+    return `- ${speaker}: ${preview || "(empty)"}`;
+  }
+
   private raiseRuntimeError(meetingId: string, message: string): void {
     const runtimeEvent: RuntimeEventPayload = {
       meetingId,
@@ -591,14 +700,13 @@ export class MeetingRoomDaemonApp {
   }
 
   private writeMeetingFlag(active: boolean): void {
-    const flagPath = path.resolve(this.repoRoot, ACTIVE_FLAG_RELATIVE_PATH);
-    fs.mkdirSync(path.dirname(flagPath), { recursive: true });
+    fs.mkdirSync(path.dirname(this.activeFile), { recursive: true });
     if (active) {
-      fs.writeFileSync(flagPath, "", "utf-8");
+      fs.writeFileSync(this.activeFile, "", "utf-8");
       return;
     }
-    if (fs.existsSync(flagPath)) {
-      fs.rmSync(flagPath);
+    if (fs.existsSync(this.activeFile)) {
+      fs.rmSync(this.activeFile);
     }
   }
 

@@ -26,7 +26,8 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 同じ会議コアを Node バックエンドとして単体起動し、ブラウザから操作する形です。
 
 - daemon: `services/meeting-room-daemon/`
-- browser client: `apps/web/client/`
+- browser source: `apps/web/src/`
+- built browser client: `apps/web/client/`
 - 入口 URL: `http://127.0.0.1:4417/web/index.html`
 
 ## 現在のアーキテクチャ
@@ -46,16 +47,17 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 
 | レイヤ | 主な責務 | ファイル |
 |--------|----------|----------|
-| Renderer | Setup / Meeting / Debug UI | `electron/src/renderer/App.tsx`, `electron/src/renderer/screens/*` |
+| Renderer shell | Setup / Meeting / Debug UI の共通本体 | `electron/src/renderer/MeetingRoomShell.tsx`, `electron/src/renderer/screens/*` |
+| Electron adapter | preload API を renderer shell へ渡す | `electron/src/renderer/App.tsx` |
 | Electron main | daemon 起動、IPC bridge、window 管理 | `electron/src/main/index.ts`, `electron/src/main/daemon/meeting-room-daemon-manager.ts` |
-| Meeting helper | init prompt 生成、agent profile、summary 保存 | `electron/src/main/meeting.ts` |
-| Daemon API | `/health`, `/api/meta`, `/api/events`, `/api/sessions`, `/api/commands` | `services/meeting-room-daemon/src/http/start-meeting-room-daemon-server.ts` |
+| Meeting helper / shared support | init prompt 生成、agent profile、summary 保存 | `electron/src/main/meeting.ts`, `packages/meeting-room-support/src/local-meeting-room-support.ts` |
+| Daemon API | `/health`, `/api/meta`, `/api/events`, `/api/sessions`, `/api/commands`, `/api/agents`, `/api/default-project-dir` | `services/meeting-room-daemon/src/http/start-meeting-room-daemon-server.ts` |
 | Daemon core | command 処理、event 発火、session 更新 | `services/meeting-room-daemon/src/app/meeting-room-daemon-app.ts` |
 | Runtime | Claude 起動、PTY I/O、init prompt flush | `services/meeting-room-daemon/src/runtime/meeting-runtime-manager.ts` |
 | Session persistence | durable event log、recovering 復元、chat/debug filtering | `services/meeting-room-daemon/src/sessions/meeting-session-store.ts`, `services/meeting-room-daemon/src/events/` |
 | Shared contracts | command / event / payload schema | `packages/shared-contracts/src/meeting-room-daemon.ts` |
 | Hooks | SendMessage / Stop / SubagentStop relay、approval gate | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
-| Browser client | daemon 操作用の薄い Web UI | `apps/web/client/app.js`, `apps/web/client/index.html` |
+| Browser client | daemon に直接接続する Web adapter | `apps/web/src/WebRootApp.tsx`, `apps/web/src/browser-meeting-room-client.ts` |
 
 ## 会議の基本フロー
 
@@ -96,9 +98,11 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 
 ### UI を触る時
 
-1. `electron/src/renderer/screens/SetupScreen.tsx`
-2. `electron/src/renderer/screens/MeetingScreen.tsx`
-3. `apps/web/client/app.js`
+1. `electron/src/renderer/MeetingRoomShell.tsx`
+2. `electron/src/renderer/screens/SetupScreen.tsx`
+3. `electron/src/renderer/screens/MeetingScreen.tsx`
+4. `apps/web/src/WebRootApp.tsx`
+5. `apps/web/src/browser-meeting-room-client.ts`
 
 ## 実行コマンド
 
@@ -107,13 +111,15 @@ npm --prefix electron install
 npm --prefix electron run dev
 npm --prefix electron run daemon:start
 npm --prefix electron run daemon:start:dev
+npm --prefix electron run e2e:web
 npm --prefix electron run verify:final
 ```
 
 補足:
 
-- `daemon:start` は build 後に daemon を起動する
-- `daemon:start:dev` は watch build + 自動再起動付き
+- `daemon:start` は build 後に daemon と Web client を起動対象へ揃える
+- `daemon:start:dev` は daemon / Web client の watch build + 自動再起動付き
+- `e2e:web` は browser client で新規会議開始から recovering / cleanup までを自動確認する
 - daemon のデフォルト host/port は `127.0.0.1:4417`
 - 必要なら `MEETING_ROOM_DAEMON_PORT`, `MEETING_ROOM_WS_PORT`, `MEETING_ROOM_DAEMON_TOKEN` を使う
 
