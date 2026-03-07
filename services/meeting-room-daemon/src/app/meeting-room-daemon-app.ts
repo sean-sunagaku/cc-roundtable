@@ -123,6 +123,10 @@ export class MeetingRoomDaemonApp {
     return this.support.defaultProjectDir();
   }
 
+  pickProjectDir(currentDir?: string): string | null {
+    return this.support.pickProjectDir(currentDir);
+  }
+
   listAgentProfiles(): AgentProfilePayload[] {
     return this.support.listAgentProfiles();
   }
@@ -272,13 +276,7 @@ export class MeetingRoomDaemonApp {
       return false;
     }
 
-    const prompt = [
-      "人間参加者からの入力です。内容を必ずチーム全体へ broadcast してください。",
-      "そのうえで、必要な検討と提案を続けてください。",
-      "",
-      "[Human Input]",
-      normalized
-    ].join("\n");
+    const prompt = this.buildHumanMessagePrompt(meetingId, normalized);
 
     if (!this.runtimes.writePrompt(meetingId, prompt)) {
       return false;
@@ -308,14 +306,7 @@ export class MeetingRoomDaemonApp {
     }
     this.updateApprovalGate(meetingId, "open");
     if (this.runtimes.hasRuntime(meetingId)) {
-      this.runtimes.writePrompt(
-        meetingId,
-        [
-          "ユーザーが直前の返答を確認して承認しました。",
-          "直前に承認待ちで止まった作業をそのまま再開してください。",
-          "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。"
-        ].join("\n")
-      );
+      this.runtimes.writePrompt(meetingId, this.buildApprovalResumePrompt(meetingId));
     }
     this.emitSessionViewUpdated(meetingId);
     return true;
@@ -324,7 +315,7 @@ export class MeetingRoomDaemonApp {
   private sendControlPrompt(meetingId: string, mode: "pause" | "resume"): boolean {
     const promptMap = {
       pause: "会議を一時停止し、現時点の要点を短くまとめてください。",
-      resume: "会議を再開してください。直前の要点を確認して続行してください。"
+      resume: this.buildResumePrompt(meetingId)
     };
     const ok = this.runtimes.writePrompt(meetingId, promptMap[mode]);
     if (!ok) {
@@ -596,6 +587,69 @@ export class MeetingRoomDaemonApp {
       createdAt: new Date().toISOString(),
       status: "running"
     };
+  }
+
+  private buildHumanMessagePrompt(meetingId: string, message: string): string {
+    return [
+      "人間参加者からの入力です。内容を必ずチーム全体へ broadcast してください。",
+      "会議コンテキストを再掲するので、これを前提に検討と提案を続けてください。",
+      ...this.buildMeetingContextLines(meetingId),
+      "",
+      "[Human Input]",
+      message
+    ].join("\n");
+  }
+
+  private buildApprovalResumePrompt(meetingId: string): string {
+    const view = this.sessions.getSessionView(meetingId);
+    const reason = view?.approvalGate.reason;
+    return [
+      "ユーザーが直前の返答を確認して承認しました。",
+      "以下の会議コンテキストを前提に、承認待ちで止まった作業をそのまま再開してください。",
+      ...(reason ? [`承認待ち理由: ${reason}`] : []),
+      ...this.buildMeetingContextLines(meetingId),
+      "",
+      "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。",
+      "会議コンテキストが不足しているとは扱わず、上の議題と直近の会話を前提に続行してください。"
+    ].join("\n");
+  }
+
+  private buildResumePrompt(meetingId: string): string {
+    return [
+      "会議を再開してください。",
+      "以下の会議コンテキストを確認し、直前の要点を踏まえて続行してください。",
+      ...this.buildMeetingContextLines(meetingId),
+      "",
+      "次の進捗は broadcast で共有してください。"
+    ].join("\n");
+  }
+
+  private buildMeetingContextLines(meetingId: string): string[] {
+    const view = this.sessions.getSessionView(meetingId);
+    if (!view) {
+      return ["議題: (不明)", "直近の会話: (取得不可)"];
+    }
+
+    const recentMessages = view.messages
+      .slice(-6)
+      .map((message) => this.toPromptMessageLine(message));
+
+    return [
+      `議題: ${view.tab.config.topic || "(未指定)"}`,
+      `project directory: ${view.tab.config.projectDir || "(未指定)"}`,
+      `参加 Agent: ${view.tab.config.members.length > 0 ? view.tab.config.members.join(", ") : "(未指定)"}`,
+      "直近の会話:",
+      ...(recentMessages.length > 0 ? recentMessages : ["- (まだ会話なし)"])
+    ];
+  }
+
+  private toPromptMessageLine(message: ChatMessagePayload): string {
+    const speaker = message.source === "human"
+      ? "You"
+      : message.subagent?.trim() || message.sender;
+    const compactContent = message.content.replace(/\s+/g, " ").trim();
+    const preview = compactContent.length > 240 ? `${compactContent.slice(0, 237)}...` : compactContent;
+    return `- ${speaker}: ${preview || "(empty)"}`;
   }
 
   private raiseRuntimeError(meetingId: string, message: string): void {

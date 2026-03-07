@@ -12,6 +12,7 @@ import {
   MEETING_ROOM_DAEMON_EVENTS_PATH,
   MEETING_ROOM_DAEMON_HEALTH_PATH,
   MEETING_ROOM_DAEMON_META_PATH,
+  MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH,
   MEETING_ROOM_DAEMON_SESSIONS_PATH
 } from "@contracts/meeting-room-daemon";
 import { SESSION_DEBUG_SUFFIX, SESSION_TERMINAL_SUFFIX, WEB_ROOT_PREFIX } from "../constants";
@@ -70,6 +71,18 @@ export async function startMeetingRoomDaemonServer(
     if (request.method === "GET" && requestUrl.pathname === MEETING_ROOM_DAEMON_DEFAULT_PROJECT_DIR_PATH) {
       if (!ensureAuthorized(request, response)) return;
       sendJson(response, 200, { defaultProjectDir: app.defaultProjectDir() });
+      return;
+    }
+
+    if (request.method === "POST" && requestUrl.pathname === MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH) {
+      if (!ensureAuthorized(request, response)) return;
+      try {
+        const body = await readJsonBody<{ currentDir?: string }>(request).catch(() => null);
+        sendJson(response, 200, { projectDir: app.pickProjectDir(body?.currentDir) });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Project directory picker failed";
+        sendJson(response, 400, { error: message });
+      }
       return;
     }
 

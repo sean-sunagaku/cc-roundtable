@@ -5,17 +5,25 @@ import { ObservatoryBackground } from "../components/ObservatoryBackground";
 interface Props {
   agents: AgentProfile[];
   defaultProjectDir: string;
+  agentsLoading?: boolean;
+  agentLoadError?: string;
+  projectDirLoadError?: string;
   onStart: (config: MeetingConfig) => Promise<void>;
   onSaveAgent: (input: AgentProfileInput) => Promise<AgentProfile>;
   onReloadAgents: () => Promise<void>;
+  onPickProjectDir: (currentDir?: string) => Promise<string | null>;
 }
 
 export function SetupScreen({
   agents,
   defaultProjectDir,
+  agentsLoading,
+  agentLoadError,
+  projectDirLoadError,
   onStart,
   onSaveAgent,
-  onReloadAgents
+  onReloadAgents,
+  onPickProjectDir
 }: Props): JSX.Element {
   const [topic, setTopic] = useState("タスク優先順位の再設計");
   const [projectDir, setProjectDir] = useState(defaultProjectDir);
@@ -30,6 +38,8 @@ export function SetupScreen({
   const [newAgentId, setNewAgentId] = useState("");
   const [newAgentDefault, setNewAgentDefault] = useState(false);
   const [agentError, setAgentError] = useState("");
+  const [projectDirPickerError, setProjectDirPickerError] = useState("");
+  const [pickingProjectDir, setPickingProjectDir] = useState(false);
 
   useEffect(() => {
     if (projectDirTouched) return;
@@ -118,6 +128,24 @@ export function SetupScreen({
     }
   };
 
+  const pickProjectDir = async () => {
+    setProjectDirPickerError("");
+    setPickingProjectDir(true);
+    try {
+      const nextProjectDir = await onPickProjectDir(projectDir || defaultProjectDir);
+      if (!nextProjectDir) {
+        return;
+      }
+      setProjectDirTouched(true);
+      setProjectDir(nextProjectDir);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "ディレクトリ選択に失敗しました";
+      setProjectDirPickerError(message);
+    } finally {
+      setPickingProjectDir(false);
+    }
+  };
+
   return (
     <>
       <ObservatoryBackground />
@@ -140,16 +168,27 @@ export function SetupScreen({
 
               <label>
                 プロジェクト
-                <input
-                  value={projectDir}
-                  onChange={(event) => {
-                    setProjectDirTouched(true);
-                    setProjectDir(event.target.value);
-                  }}
-                  required
-                />
+                <div className="setup-project-row">
+                  <input
+                    value={projectDir}
+                    onChange={(event) => {
+                      setProjectDirTouched(true);
+                      setProjectDir(event.target.value);
+                    }}
+                    required
+                  />
+                  <button type="button" onClick={() => void pickProjectDir()} disabled={pickingProjectDir}>
+                    {pickingProjectDir ? "選択中..." : "ディレクトリ選択"}
+                  </button>
+                </div>
               </label>
             </div>
+            {projectDirLoadError ? (
+              <p className="error-text">
+                既定の project directory を読み込めませんでした。必要なら手入力し、`再読み込み` も試してください。
+              </p>
+            ) : null}
+            {projectDirPickerError ? <p className="error-text">{projectDirPickerError}</p> : null}
           </section>
 
           <section className="setup-section">
@@ -157,6 +196,9 @@ export function SetupScreen({
               <div>
                 <strong>参加 Agent</strong>
                 <p className="setup-helper">サンプル Sub Agent を選択し、必要なら新規追加できます。</p>
+                {agentLoadError ? (
+                  <p className="error-text">Agent 定義の読み込みに失敗しました。daemon との接続先を確認して `再読み込み` を試してください。</p>
+                ) : null}
               </div>
               <div className="setup-actions">
                 <button type="button" onClick={() => void reloadAgents()} disabled={refreshingAgents}>
@@ -174,7 +216,9 @@ export function SetupScreen({
               </div>
             </div>
 
-            {agents.length === 0 ? (
+            {agentsLoading && agents.length === 0 ? (
+              <p className="subtle">Agent 定義を読み込んでいます...</p>
+            ) : agents.length === 0 ? (
               <p className="subtle">Agent 定義がありません。追加フォームから作成してください。</p>
             ) : (
               <div className="agent-grid">

@@ -34,6 +34,7 @@ const api: MeetingRoomApi = {
   saveAgent: (input: AgentProfileInput): Promise<AgentProfile> => ipc.invoke("meeting:save-agent", input),
   listTabs: (): Promise<MeetingTab[]> => ipc.invoke("meeting:list-tabs"),
   defaultProjectDir: (): Promise<string> => ipc.invoke("meeting:default-project-dir"),
+  pickProjectDir: (currentDir?: string): Promise<string | null> => ipc.invoke("meeting:pick-project-dir", currentDir),
   saveSummary: (payload: MeetingSummaryPayload): Promise<string> => ipc.invoke("meeting:save-summary", payload),
   retryMcp: (meetingId: string): Promise<boolean> => ipc.invoke("meeting:retry-mcp", meetingId),
   getSessionDebug: (meetingId: string): Promise<ClaudeSessionDebug> => ipc.invoke("meeting:get-session-debug", meetingId),

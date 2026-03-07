@@ -1,5 +1,6 @@
 import path from "node:path";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
+import type { OpenDialogOptions } from "electron";
 // #region agent log
 function _dbg(msg: string, data: Record<string, unknown>, hyp: string): void {
   fetch("http://127.0.0.1:7575/ingest/4b7c5fce-7a91-463a-ba06-c308da61067f", {
@@ -162,6 +163,20 @@ function registerIpc(): void {
   handleIpc("meeting:save-agent", (input) => helperMeetingService.saveAgentProfile(input));
   handleIpc("meeting:list-tabs", async () => refreshTabsFromDaemon());
   handleIpc("meeting:default-project-dir", () => helperMeetingService.defaultProjectDir());
+  handleIpc("meeting:pick-project-dir", async (currentDir) => {
+    const options: OpenDialogOptions = {
+      title: "Select project directory",
+      defaultPath: currentDir || helperMeetingService.defaultProjectDir(),
+      properties: ["openDirectory", "createDirectory"]
+    };
+    const selection = mainWindow
+      ? await dialog.showOpenDialog(mainWindow, options)
+      : await dialog.showOpenDialog(options);
+    if (selection.canceled) {
+      return null;
+    }
+    return selection.filePaths[0] ?? null;
+  });
   handleIpc("meeting:save-summary", (payload) => helperMeetingService.saveMeetingSummary(payload));
 
   handleIpc("meeting:retry-mcp", async (meetingId) => {

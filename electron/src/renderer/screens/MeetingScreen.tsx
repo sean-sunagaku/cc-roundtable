@@ -95,6 +95,9 @@ export function MeetingScreen({
           <ConnectionStatus connected={wsConnected} />
         </div>
         <div className="actions">
+          <button type="button" onClick={() => setDeveloperToolsVisible((value) => !value)}>
+            {developerToolsVisible ? "Debug を閉じる" : "Debug を開く"}
+          </button>
           <button type="button" onClick={() => onControl("pause")}>
             一時停止
           </button>

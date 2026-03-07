@@ -7,6 +7,7 @@ export const MEETING_ROOM_DAEMON_SESSIONS_PATH = "/api/sessions";
 export const MEETING_ROOM_DAEMON_META_PATH = "/api/meta";
 export const MEETING_ROOM_DAEMON_AGENTS_PATH = "/api/agents";
 export const MEETING_ROOM_DAEMON_DEFAULT_PROJECT_DIR_PATH = "/api/default-project-dir";
+export const MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH = "/api/pick-project-dir";
 
 export interface AgentProfilePayload {
   id: string;
@@ -29,6 +30,10 @@ export interface MeetingRoomDaemonAgentsResponse {
 
 export interface MeetingRoomDaemonDefaultProjectDirResponse {
   defaultProjectDir: string;
+}
+
+export interface MeetingRoomDaemonPickProjectDirResponse {
+  projectDir: string | null;
 }
 
 export interface MeetingConfigPayload {

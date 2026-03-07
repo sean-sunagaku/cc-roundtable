@@ -1,4 +1,6 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 export interface AgentProfileRecord {
@@ -99,6 +101,19 @@ export class LocalMeetingRoomSupport {
 
   defaultProjectDir(): string {
     return this.repoRoot;
+  }
+
+  pickProjectDir(currentDir?: string): string | null {
+    const initialDir = path.resolve(currentDir?.trim() || this.defaultProjectDir() || os.homedir());
+
+    switch (process.platform) {
+      case "darwin":
+        return this.pickProjectDirOnMac(initialDir);
+      case "win32":
+        return this.pickProjectDirOnWindows(initialDir);
+      default:
+        return this.pickProjectDirOnLinux(initialDir);
+    }
   }
 
   buildInitPrompt(config: MeetingConfigRecord): string {
@@ -246,6 +261,71 @@ export class LocalMeetingRoomSupport {
       };
       fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf-8");
     }
+  }
+
+  private pickProjectDirOnMac(initialDir: string): string | null {
+    const escapedInitialDir = initialDir.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const script = [
+      `set startFolder to POSIX file "${escapedInitialDir}"`,
+      "try",
+      'set selectedFolder to choose folder with prompt "Select project directory" default location startFolder',
+      "return POSIX path of selectedFolder",
+      "on error number -128",
+      'return ""',
+      "end try"
+    ].join("\n");
+    const output = execFileSync("osascript", ["-e", script], {
+      encoding: "utf-8"
+    }).trim();
+    return output || null;
+  }
+
+  private pickProjectDirOnWindows(initialDir: string): string | null {
+    const escapedInitialDir = initialDir.replace(/'/g, "''");
+    const script = [
+      "Add-Type -AssemblyName System.Windows.Forms",
+      "$dialog = New-Object System.Windows.Forms.FolderBrowserDialog",
+      `$dialog.SelectedPath = '${escapedInitialDir}'`,
+      '$dialog.Description = "Select project directory"',
+      "if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {",
+      "  $dialog.SelectedPath",
+      "} else {",
+      '  ""',
+      "}"
+    ].join(";");
+    const output = execFileSync("powershell.exe", ["-NoProfile", "-Command", script], {
+      encoding: "utf-8"
+    }).trim();
+    return output || null;
+  }
+
+  private pickProjectDirOnLinux(initialDir: string): string | null {
+    const pickers: Array<{ command: string; args: string[] }> = [
+      {
+        command: "zenity",
+        args: ["--file-selection", "--directory", "--filename", `${initialDir}${path.sep}`]
+      },
+      {
+        command: "kdialog",
+        args: ["--getexistingdirectory", initialDir]
+      }
+    ];
+
+    for (const picker of pickers) {
+      try {
+        const output = execFileSync(picker.command, picker.args, {
+          encoding: "utf-8"
+        }).trim();
+        return output || null;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (/ENOENT/.test(message)) {
+          continue;
+        }
+        return null;
+      }
+    }
+    return null;
   }
 
   private readAgentProfileFile(filePath: string): AgentProfileRecord | null {

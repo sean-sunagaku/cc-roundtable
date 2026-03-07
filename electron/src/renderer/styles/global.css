@@ -342,6 +342,13 @@ button:disabled {
   gap: var(--space-s);
 }
 
+.setup-project-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2xs);
+  align-items: center;
+}
+
 .setup-helper {
   margin: 4px 0 0;
   color: var(--color-text-muted);

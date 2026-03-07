@@ -8,6 +8,7 @@ import type {
   MeetingRoomDaemonCommandEnvelope,
   MeetingRoomDaemonDefaultProjectDirResponse,
   MeetingRoomDaemonMetaPayload,
+  MeetingRoomDaemonPickProjectDirResponse,
   MeetingRoomDaemonStreamFrame,
   MeetingSessionViewPayload,
   MeetingTabPayload
@@ -18,6 +19,7 @@ import {
   MEETING_ROOM_DAEMON_DEFAULT_PROJECT_DIR_PATH,
   MEETING_ROOM_DAEMON_EVENTS_PATH,
   MEETING_ROOM_DAEMON_META_PATH,
+  MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH,
   MEETING_ROOM_DAEMON_SESSIONS_PATH
 } from "@contracts/meeting-room-daemon";
 import type { MeetingControlMode } from "@shared/ipc";
@@ -195,6 +197,18 @@ export class BrowserMeetingRoomClient implements MeetingRoomClient {
       MEETING_ROOM_DAEMON_DEFAULT_PROJECT_DIR_PATH
     );
     return payload.defaultProjectDir;
+  }
+
+  async pickProjectDir(currentDir?: string): Promise<string | null> {
+    const payload = await this.request<MeetingRoomDaemonPickProjectDirResponse>(
+      MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentDir })
+      }
+    );
+    return payload.projectDir;
   }
 
   async saveSummary(_payload: MeetingSummaryPayload): Promise<string> {

@@ -21,6 +21,12 @@ import { SessionDebugWindow } from "./screens/SessionDebugWindow";
 const DEFAULT_PROJECT_DIR = "/";
 type AgentRunStatus = "active" | "completed";
 
+interface SetupLoadState {
+  loading: boolean;
+  agentError: string;
+  projectDirError: string;
+}
+
 interface Props {
   client: MeetingRoomClient;
   debugWindow?: boolean;
@@ -68,25 +74,85 @@ export function MeetingRoomShell({
   const [wsConnected, setWsConnected] = useState(false);
   const [ending, setEnding] = useState(false);
   const notifyRef = useRef<AudioContext | null>(null);
+  const currentTabIdRef = useRef(currentTabId);
+  const tabsRef = useRef(tabs);
+  const [setupLoadState, setSetupLoadState] = useState<SetupLoadState>({
+    loading: true,
+    agentError: "",
+    projectDirError: ""
+  });
 
   useEffect(() => {
-    void client.listAgents().then((list) => {
-      setAgents(list);
+    currentTabIdRef.current = currentTabId;
+  }, [currentTabId]);
+
+  useEffect(() => {
+    tabsRef.current = tabs;
+  }, [tabs]);
+
+  const loadSetupData = async () => {
+    setSetupLoadState({
+      loading: true,
+      agentError: "",
+      projectDirError: ""
     });
-    void client.listTabs().then((list) => {
-      setTabs(list);
-      if (!currentTabId && list[0]) setCurrentTabId(list[0].id);
+
+    const [agentsResult, tabsResult, projectDirResult, daemonMetaResult] = await Promise.allSettled([
+      client.listAgents(),
+      client.listTabs(),
+      client.defaultProjectDir(),
+      client.getDaemonMeta()
+    ]);
+
+    let agentError = "";
+    let projectDirError = "";
+
+    if (agentsResult.status === "fulfilled") {
+      setAgents(agentsResult.value);
+    } else {
+      agentError = agentsResult.reason instanceof Error
+        ? agentsResult.reason.message
+        : "Agent 一覧の取得に失敗しました";
+    }
+
+    if (tabsResult.status === "fulfilled") {
+      const nextTabs = tabsResult.value;
+      setTabs(nextTabs);
+      setCurrentTabId((prev) => {
+        if (nextTabs.some((tab) => tab.id === prev)) {
+          return prev;
+        }
+        return nextTabs[0]?.id ?? "";
+      });
+    }
+
+    if (projectDirResult.status === "fulfilled") {
+      if (projectDirResult.value) {
+        setDefaultProjectDir(projectDirResult.value);
+      }
+    } else {
+      projectDirError = projectDirResult.reason instanceof Error
+        ? projectDirResult.reason.message
+        : "既定 project directory の取得に失敗しました";
+    }
+
+    if (daemonMetaResult.status === "fulfilled") {
+      setDaemonMeta(daemonMetaResult.value);
+    }
+
+    setSetupLoadState({
+      loading: false,
+      agentError,
+      projectDirError
     });
-    void client.defaultProjectDir().then((dir) => {
-      if (dir) setDefaultProjectDir(dir);
-    });
-    void client.getDaemonMeta().then((meta) => {
-      setDaemonMeta(meta);
-    });
+  };
+
+  useEffect(() => {
+    void loadSetupData();
 
     const unsubRelay = client.onRelayMessage((incoming) => {
       if (incoming.type === "agent_status") {
-        const meetingId = incoming.meetingId || currentTabId || tabs[0]?.id;
+        const meetingId = incoming.meetingId || currentTabIdRef.current || tabsRef.current[0]?.id;
         if (!meetingId) return;
         setAgentStatusesByMeeting((prev) => ({
           ...prev,
@@ -99,7 +165,7 @@ export function MeetingRoomShell({
       }
       if (incoming.type !== "agent_message") return;
       setWsConnected(true);
-      const meetingId = incoming.meetingId || currentTabId || tabs[0]?.id;
+      const meetingId = incoming.meetingId || currentTabIdRef.current || tabsRef.current[0]?.id;
       if (!meetingId) return;
       beep();
       void client.getSessionView(meetingId).then((view) => {
@@ -129,7 +195,7 @@ export function MeetingRoomShell({
       unsubTabs();
       unsubRuntime();
     };
-  }, [client, currentTabId, tabs]);
+  }, [client]);
 
   useEffect(() => {
     if (!currentTabId) {
@@ -199,15 +265,19 @@ export function MeetingRoomShell({
   };
 
   const handleReloadAgents = async (): Promise<void> => {
-    const list = await client.listAgents();
-    setAgents(list);
+    await loadSetupData();
+  };
+
+  const handlePickProjectDir = async (currentDir?: string): Promise<string | null> => {
+    return client.pickProjectDir(currentDir);
   };
 
   const handleSend = async (message: string) => {
     if (!currentTabId) return;
-    const delivered = await client.sendHumanMessage(currentTabId, message);
+    const meetingId = currentTabId;
+    const optimisticId = `human_${Date.now()}`;
     const optimistic: ChatMessage = {
-      id: `human_${Date.now()}`,
+      id: optimisticId,
       sender: "You",
       content: message,
       timestamp: new Date().toISOString(),
@@ -215,20 +285,45 @@ export function MeetingRoomShell({
       status: "pending"
     };
     setMessagesByMeeting((prev) => {
-      return { ...prev, [currentTabId]: [...(prev[currentTabId] ?? []), optimistic] };
+      return { ...prev, [meetingId]: [...(prev[meetingId] ?? []), optimistic] };
     });
+
+    let delivered = false;
+    try {
+      delivered = await client.sendHumanMessage(meetingId, message);
+    } catch (error) {
+      setMessagesByMeeting((prev) => ({
+        ...prev,
+        [meetingId]: (prev[meetingId] ?? []).filter((entry) => entry.id !== optimisticId)
+      }));
+      throw error;
+    }
     setHealthByMeeting((prev) => ({
       ...prev,
-      [currentTabId]: {
-        ...prev[currentTabId],
-        inputDeliveredAt: delivered ? new Date().toISOString() : prev[currentTabId]?.inputDeliveredAt
+      [meetingId]: {
+        ...prev[meetingId],
+        inputDeliveredAt: delivered ? new Date().toISOString() : prev[meetingId]?.inputDeliveredAt
       }
     }));
+    if (!delivered) {
+      setMessagesByMeeting((prev) => ({
+        ...prev,
+        [meetingId]: (prev[meetingId] ?? []).filter((entry) => entry.id !== optimisticId)
+      }));
+      return;
+    }
     if (delivered) {
-      const view = await client.getSessionView(currentTabId);
+      const view = await client.getSessionView(meetingId);
       if (view) {
         hydrateSessionView(view);
+        return;
       }
+      setMessagesByMeeting((prev) => ({
+        ...prev,
+        [meetingId]: (prev[meetingId] ?? []).map((entry) => (
+          entry.id === optimisticId ? { ...entry, status: "confirmed" } : entry
+        ))
+      }));
     }
   };
 
@@ -313,9 +408,13 @@ export function MeetingRoomShell({
       <SetupScreen
         agents={agents}
         defaultProjectDir={defaultProjectDir}
+        agentsLoading={setupLoadState.loading}
+        agentLoadError={setupLoadState.agentError}
+        projectDirLoadError={setupLoadState.projectDirError}
         onStart={handleStart}
         onSaveAgent={handleSaveAgent}
         onReloadAgents={handleReloadAgents}
+        onPickProjectDir={handlePickProjectDir}
       />
     );
   }

@@ -21,6 +21,7 @@ export interface MeetingRoomClient {
   saveAgent: (input: AgentProfileInput) => Promise<AgentProfile>;
   listTabs: () => Promise<MeetingTab[]>;
   defaultProjectDir: () => Promise<string>;
+  pickProjectDir: (currentDir?: string) => Promise<string | null>;
   retryMcp: (meetingId: string) => Promise<boolean>;
   getSessionDebug: (meetingId: string) => Promise<ClaudeSessionDebug>;
   getSessionView: (meetingId: string) => Promise<MeetingSessionView | null>;
