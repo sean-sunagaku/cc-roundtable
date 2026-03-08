@@ -267,6 +267,15 @@ function buttonClickExpression(labelText) {
   })()`;
 }
 
+function checkboxClickExpression(ariaLabel) {
+  return `(() => {
+    const checkbox = document.querySelector(${json(`input[type="checkbox"][aria-label="${ariaLabel}"]`)});
+    if (!checkbox) return false;
+    checkbox.click();
+    return true;
+  })()`;
+}
+
 function fillByLabelExpression(labelText, value) {
   return `(() => {
     const setValue = (field, nextValue) => {
@@ -355,8 +364,12 @@ async function addAgentFromSetup() {
   }, "saved agent in daemon", 20_000, 750);
 }
 
-async function startMeetingFromSetup() {
-  await domAction(fillByLabelExpression("議題（ここを中心に議論）", topic), "fill topic");
+async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = false } = {}) {
+  await domAction(fillByLabelExpression("議題（ここを中心に議論）", meetingTopic), "fill topic");
+  if (bypassMode) {
+    await domAction(buttonClickExpression("進行モード設定"), "open flow mode settings");
+    await domAction(checkboxClickExpression("Bypass Mode"), "toggle bypass mode");
+  }
   await domAction(buttonClickExpression("会議を開始"), "start meeting");
 
   await waitForDom(
@@ -370,7 +383,7 @@ async function startMeetingFromSetup() {
     750
   );
 
-  return waitFor(() => currentMeetingIdByTitle(topic), "daemon session creation", 30_000, 750);
+  return waitFor(() => currentMeetingIdByTitle(meetingTopic), "daemon session creation", 30_000, 750);
 }
 
 async function sendHumanMessageAndVerify(meetingId) {

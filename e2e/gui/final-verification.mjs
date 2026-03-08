@@ -241,18 +241,31 @@ async function resetToSetupScreen() {
 async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = false } = {}) {
   const snap = snapshot();
   const topicRef = findRef(snap, "textbox", "議題（ここを中心に議論）");
-  const startRef = findRef(snap, "button", "会議を開始");
-  const bypassRef = findRef(snap, "checkbox", "Bypass Mode");
-  if (!topicRef || !startRef) {
+  if (!topicRef) {
     throw new Error(`Setup screen controls were not found.\n${snap}`);
   }
-  if (bypassMode && !bypassRef) {
-    throw new Error(`Bypass Mode checkbox was not found.\n${snap}`);
+  if (bypassMode && !findRef(snap, "button", "進行モード設定")) {
+    throw new Error(`Flow mode toggle button was not found.\n${snap}`);
   }
 
   runAgentBrowser("fill", `@${topicRef}`, meetingTopic);
-  if (bypassMode && bypassRef) {
+  if (bypassMode) {
+    const modeSettingsRef = findRef(snapshot(), "button", "進行モード設定");
+    if (!modeSettingsRef) {
+      throw new Error("Flow mode toggle button disappeared before expanding settings.");
+    }
+    runAgentBrowser("click", `@${modeSettingsRef}`);
+    await delay(500);
+    const expanded = snapshot();
+    const bypassRef = findRef(expanded, "checkbox", "Bypass Mode");
+    if (!bypassRef) {
+      throw new Error(`Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`);
+    }
     runAgentBrowser("click", `@${bypassRef}`);
+  }
+  const startRef = findRef(snapshot(), "button", "会議を開始");
+  if (!startRef) {
+    throw new Error("Start button was not found before launch.");
   }
   runAgentBrowser("click", `@${startRef}`);
 
