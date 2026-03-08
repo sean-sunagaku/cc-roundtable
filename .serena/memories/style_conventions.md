@@ -1,0 +1,15 @@
+# Style and conventions for cc-roundtable
+- Language: TypeScript across Electron main/renderer and daemon. Browser client is plain JavaScript.
+- Module style: ES module import syntax in source files, semicolons, double quotes, named exports are common.
+- Formatting pattern observed: 2-space indentation, concise helper functions, small focused classes for lifecycle/stateful services.
+- Naming:
+  - React components and screens use PascalCase filenames/functions.
+  - Backend/service files commonly use kebab-case filenames.
+  - Types/interfaces use descriptive PascalCase names.
+- React style: function components with hooks; keep UI state close to screen/component.
+- Backend style: responsibilities are separated into app/runtime/sessions/events/http folders; prefer extending the right layer instead of putting everything into one file.
+- Contracts-first mindset: check packages/shared-contracts/src/meeting-room-daemon.ts before changing daemon/client payloads.
+- Hooks/chat behavior: hook-relayed messages are the source of truth for chat display; do not reintroduce terminal-output reconstruction fallback.
+- Documentation convention: keep AGENTS.md / CLAUDE.md / docs/service-overview.md aligned when agent-facing project knowledge changes.
+- Rearchitecture docs convention: in docs/rearchitecture/content_rearchitecture_2026-03-06, keep .drawio files under each proposal's source/ subdirectory and only md/svg at proposal root.
+- No dedicated lint/format scripts are currently defined, so follow existing file-local style carefully.

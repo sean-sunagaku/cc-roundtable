@@ -1,0 +1,21 @@
+# cc-roundtable project overview
+- Purpose: Meeting Room is a local multi-agent meeting/orchestration service for discussing and implementing work against a local codebase.
+- Primary UX: Electron desktop app with Setup and Meeting screens. Secondary UX: standalone Node daemon plus browser client at /web/index.html.
+- Current architecture (as of 2026-03-06): daemon-first. Electron main starts and talks to the local meeting-room-daemon instead of directly owning the runtime lifecycle.
+- Meeting model: one meeting = topic + projectDir + selected agent profiles + one Claude PTY runtime + relayed chat/status events.
+- Persistence: durable event log keeps session state; active sessions are restored as recovering after restart.
+- Important docs: docs/service-overview.md, README.md, AGENTS.md, CLAUDE.md, hooks/README.md, docs/current-architecture-overview.svg.
+- Main code areas:
+  - electron/src/renderer: React UI screens/components.
+  - electron/src/main: Electron main process, IPC bridge, daemon manager, helper meeting service.
+  - services/meeting-room-daemon: local backend API, runtime lifecycle, eventing, persistence.
+  - packages/shared-contracts: command/event payload contracts shared between clients and daemon.
+  - apps/web/client: thin browser client for daemon mode.
+  - hooks: Python hook relays invoked from .claude/settings.json.
+- Key entrypoints:
+  - electron/src/main/index.ts
+  - electron/src/main/daemon/meeting-room-daemon-manager.ts
+  - services/meeting-room-daemon/src/http/start-meeting-room-daemon-server.ts
+  - services/meeting-room-daemon/src/app/meeting-room-daemon-app.ts
+  - services/meeting-room-daemon/src/runtime/meeting-runtime-manager.ts
+  - services/meeting-room-daemon/src/sessions/meeting-session-store.ts
