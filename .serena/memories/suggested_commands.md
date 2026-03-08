@@ -1,0 +1,15 @@
+# Suggested commands for cc-roundtable
+- Install dependencies: `npm --prefix electron install`
+- Run Electron app in dev: `npm --prefix electron run dev`
+- Run daemon once: `npm --prefix electron run daemon:start`
+- Run daemon with watch/restart: `npm --prefix electron run daemon:start:dev`
+- Final verification (required before completion): `npm --prefix electron run verify:final`
+- Typecheck only: `npm --prefix electron run typecheck`
+- Build production assets: `npm --prefix electron run build`
+- GUI E2E only: `npm --prefix electron run e2e:gui`
+- Regenerate architecture analysis: `npm --prefix electron run architecture`
+- Start daemon via script directly: `node scripts/start-daemon.mjs` or `node scripts/start-daemon.mjs --watch`
+- Official draw.io SVG export examples:
+  - `cd electron && ./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../docs/architecture.svg ../docs/architecture.drawio`
+  - `cd electron && ./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../docs/current-architecture-overview.svg ../docs/current-architecture-overview.drawio`
+- Handy Darwin shell tools commonly useful here: `git status`, `git diff --stat`, `rg`, `find`, `sed -n`, `lsof -nP -iTCP:<port> -sTCP:LISTEN`, `xmllint --noout docs/*.svg`
