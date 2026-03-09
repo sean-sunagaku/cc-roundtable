@@ -1,10 +1,13 @@
 .claude/agent-teams-log/
 .claude/meeting-room/.active
+.claude/meeting-room/approval/
 .claude/meeting-room/*.log
 .claude/meeting-room/*.jsonl
 .claude/meeting-room/summaries/
 .claude/meeting-room/daemon/
 .cursor/debug-*.log
+src/apps/desktop/dist/
+src/apps/web/client/
 src/daemon/dist/
 __pycache__/
 *.pyc

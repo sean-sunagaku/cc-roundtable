@@ -59,7 +59,7 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 - `MeetingService` は今も重要だが、主責務は Agent profile 管理、初回プロンプト生成、summary 保存などの補助側
 - 会議本体の start / pause / resume / end / sendHumanMessage は `index.ts` から daemon へ流れる
 
-### 3. meeting-room-daemon
+### 3. Daemon (`src/daemon`)
 
 - `/api/commands`, `/api/events`, `/api/sessions`, `/api/meta`, `/api/agents`, `/api/default-project-dir`, `/health` を提供するローカルバックエンド
 - Claude runtime 起動、terminal I/O、イベント永続化、SSE 配信、復元を担当する
@@ -67,7 +67,8 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 ### 5. Browser UI
 
-- `src/apps/web/src/` で Browser client を実装し、`src/apps/web/client/` に build して配信する
+- `src/apps/web/src/` で Browser client を実装し、`src/apps/web/client/` を生成して配信する
+- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/daemon/dist/` は生成物なので commit しない
 - `BrowserMeetingRoomClient` が daemon REST/SSE を直接叩き、`MeetingRoomShell` を再利用して Electron と同じ会議フローを表示する
 
 ### 4. Hooks / relay

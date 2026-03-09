@@ -23,6 +23,7 @@ Claude 系エージェント向けの入口です。正本は `AGENTS.md` に寄
 - Browser UI は `src/apps/web`
 - daemon は `src/daemon`
 - hooks は `src/packages/meeting-room-hooks`
+- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/daemon/dist/` は生成物なので commit しない
 
 ## よく使うコマンド
 

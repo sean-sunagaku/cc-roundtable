@@ -27,7 +27,7 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 
 - daemon: `src/daemon/`
 - browser source: `src/apps/web/src/`
-- built browser client: `src/apps/web/client/`
+- built browser client: `src/apps/web/client/`（生成物。commit 対象外）
 - 入口 URL: `http://127.0.0.1:4417/web/index.html`
 
 ## 現在のアーキテクチャ
