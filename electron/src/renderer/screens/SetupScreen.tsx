@@ -29,6 +29,8 @@ export function SetupScreen({
   const [projectDir, setProjectDir] = useState(defaultProjectDir);
   const [projectDirTouched, setProjectDirTouched] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [bypassMode, setBypassMode] = useState(false);
+  const [showFlowModeSettings, setShowFlowModeSettings] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savingAgent, setSavingAgent] = useState(false);
   const [refreshingAgents, setRefreshingAgents] = useState(false);
@@ -79,7 +81,8 @@ export function SetupScreen({
         id: `meeting_${Date.now()}`,
         topic,
         projectDir,
-        members: selectedMembers
+        members: selectedMembers,
+        bypassMode
       });
     } finally {
       setSubmitting(false);
@@ -189,6 +192,45 @@ export function SetupScreen({
               </p>
             ) : null}
             {projectDirPickerError ? <p className="error-text">{projectDirPickerError}</p> : null}
+          </section>
+
+          <section className="setup-section">
+            <div className="setup-inline">
+              <div>
+                <strong>進行モード</strong>
+                <p className="setup-helper">通常は承認付きで進行します。必要なときだけ Bypass Mode を開いて切り替えられます。</p>
+              </div>
+              <div className="setup-toggle-actions">
+                <span className={`mode-pill${bypassMode ? " bypass" : ""}`}>
+                  {bypassMode ? "Bypass Mode ON" : "Approval Step Mode"}
+                </span>
+                <button
+                  type="button"
+                  className="setup-toggle-button"
+                  aria-expanded={showFlowModeSettings}
+                  onClick={() => setShowFlowModeSettings((prev) => !prev)}
+                >
+                  進行モード設定
+                </button>
+              </div>
+            </div>
+
+            {showFlowModeSettings ? (
+              <div className="setup-collapsible-body">
+                <label className="setup-checkbox">
+                  <input
+                    type="checkbox"
+                    aria-label="Bypass Mode"
+                    checked={bypassMode}
+                    onChange={(event) => setBypassMode(event.target.checked)}
+                  />
+                  <span>
+                    Bypass Mode を有効にする
+                    <small>ON にすると approval hook で止めず、AI がそのまま継続します。</small>
+                  </span>
+                </label>
+              </div>
+            ) : null}
           </section>
 
           <section className="setup-section">

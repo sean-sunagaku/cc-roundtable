@@ -25,6 +25,74 @@ export interface MeetingRuntimeManagerOptions {
   log: (message: string) => void;
 }
 
+class InMemoryRuntimeProcess implements PtyLike {
+  private readonly dataHandlers: Array<(data: string) => void> = [];
+  private readonly exitHandlers: Array<(event: RuntimeExitEvent) => void> = [];
+  private killed = false;
+
+  constructor(private readonly meetingId: string, private readonly log: (message: string) => void) {
+    setTimeout(() => {
+      if (this.killed) {
+        return;
+      }
+      this.emitData("Meeting Room fallback runtime is active.\r\n❯ ");
+    }, 50);
+  }
+
+  write(data: string): void {
+    if (this.killed) {
+      return;
+    }
+    const normalized = data.replace(/\r/g, "").trim();
+    if (!normalized) {
+      return;
+    }
+    const preview = normalized.length > 160 ? `${normalized.slice(0, 157)}...` : normalized;
+    this.log(`[daemon] fallback runtime received input for ${this.meetingId}: ${preview}`);
+    if (normalized === "/mcp") {
+      setTimeout(() => {
+        if (!this.killed) {
+          this.emitData("\r\n[fallback runtime] MCP is not attached in fallback mode.\r\n");
+        }
+      }, 10);
+      return;
+    }
+    setTimeout(() => {
+      if (!this.killed) {
+        this.emitData("\r\n[fallback runtime] input accepted.\r\n");
+      }
+    }, 10);
+  }
+
+  resize(_cols: number, _rows: number): void {}
+
+  kill(): void {
+    if (this.killed) {
+      return;
+    }
+    this.killed = true;
+    queueMicrotask(() => {
+      for (const handler of this.exitHandlers) {
+        handler({ exitCode: 0 });
+      }
+    });
+  }
+
+  onData(handler: (data: string) => void): void {
+    this.dataHandlers.push(handler);
+  }
+
+  onExit(handler: (event: RuntimeExitEvent) => void): void {
+    this.exitHandlers.push(handler);
+  }
+
+  private emitData(data: string): void {
+    for (const handler of this.dataHandlers) {
+      handler(data);
+    }
+  }
+}
+
 export class MeetingRuntimeManager {
   private readonly runtimes = new Map<string, RuntimeHandle>();
 
@@ -128,17 +196,29 @@ export class MeetingRuntimeManager {
   }
 
   private spawnRuntimeProcess(meetingId: string, projectDir: string): RuntimeHandle {
-    const ptyModule = requireNodePty();
-    const shell = process.platform === "win32" ? "powershell.exe" : "/bin/zsh";
-    const args = buildClaudeLaunchArgs(shell, this.buildClaudeLaunchCommand());
-    const proc = ptyModule.spawn(shell, args, {
-      name: "xterm-color",
-      cols: 120,
-      rows: 28,
-      cwd: projectDir,
-      env: this.runtimeEnv(meetingId)
-    }) as PtyLike;
-    return { process: proc };
+    try {
+      const ptyModule = requireNodePty();
+      const shell = process.platform === "win32" ? "powershell.exe" : "/bin/zsh";
+      const args = buildClaudeLaunchArgs(shell, this.buildClaudeLaunchCommand());
+      const proc = ptyModule.spawn(shell, args, {
+        name: "xterm-color",
+        cols: 120,
+        rows: 28,
+        cwd: projectDir,
+        env: this.runtimeEnv(meetingId)
+      }) as PtyLike;
+      return { process: proc };
+    } catch (error) {
+      if (!this.isSpawnFallbackError(error)) {
+        throw error;
+      }
+      this.options.log(
+        `[daemon] PTY launch failed for ${meetingId}; switching to fallback runtime: ${String(error)}`
+      );
+      return {
+        process: new InMemoryRuntimeProcess(meetingId, this.options.log)
+      };
+    }
   }
 
   private runtimeEnv(meetingId: string): NodeJS.ProcessEnv {
@@ -168,5 +248,9 @@ export class MeetingRuntimeManager {
       ? ` --settings ${shellQuote(settingsPath)} --setting-sources user,project,local`
       : "";
     return `${baseCommand}${settingsArg}`;
+  }
+
+  private isSpawnFallbackError(error: unknown): boolean {
+    return error instanceof Error && /posix_spawnp failed/i.test(error.message);
   }
 }

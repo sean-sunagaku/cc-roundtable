@@ -9,8 +9,7 @@ import {
   collectDebugTail,
   filterVisibleTailLines,
   hasMcpFailureSignal,
-  isUsageLimitReached,
-  shouldDisplayAgentMessageContent
+  isUsageLimitReached
 } from "../runtime/terminal-utils";
 import type { DurableEvent } from "../types";
 import { deepClone } from "../utils";
@@ -50,15 +49,13 @@ export class MeetingSessionStore {
       return null;
     }
     if (!session.approvalGate) {
-      session.approvalGate = this.defaultApprovalGate();
+      session.approvalGate = this.defaultApprovalGate(session.tab.config.bypassMode);
+    } else {
+      session.approvalGate.bypassMode = Boolean(
+        session.approvalGate.bypassMode ?? session.tab.config.bypassMode
+      );
     }
     const view = deepClone(session);
-    view.messages = view.messages.filter((message) => {
-      if (message.source !== "agent") {
-        return true;
-      }
-      return shouldDisplayAgentMessageContent(message.content);
-    });
     view.sessionDebug.tail = filterVisibleTailLines(view.sessionDebug.tail);
     return view;
   }
@@ -89,7 +86,11 @@ export class MeetingSessionStore {
       return null;
     }
     if (!session.approvalGate) {
-      session.approvalGate = this.defaultApprovalGate();
+      session.approvalGate = this.defaultApprovalGate(session.tab.config.bypassMode);
+    } else {
+      session.approvalGate.bypassMode = Boolean(
+        session.approvalGate.bypassMode ?? session.tab.config.bypassMode
+      );
     }
     const gate = session.approvalGate;
     return gate ? deepClone(gate) : null;
@@ -122,6 +123,7 @@ export class MeetingSessionStore {
     switch (event.kind) {
       case "MeetingStarted": {
         const tab = deepClone(event.payload.tab);
+        tab.config.bypassMode = Boolean(tab.config.bypassMode);
         this.sessions.set(event.meetingId, {
           tab,
           messages: [],
@@ -136,6 +138,7 @@ export class MeetingSessionStore {
           },
           approvalGate: {
             mode: "open",
+            bypassMode: tab.config.bypassMode,
             updatedAt: event.at
           }
         });
@@ -155,9 +158,12 @@ export class MeetingSessionStore {
       case "ApprovalGateUpdated": {
         const session = this.sessions.get(event.meetingId);
         if (!session) return;
-        session.approvalGate = deepClone(event.payload.approvalGate);
+        session.approvalGate = {
+          ...deepClone(event.payload.approvalGate),
+          bypassMode: Boolean(event.payload.approvalGate.bypassMode ?? session.tab.config.bypassMode)
+        };
         if (session.tab.status !== "ended") {
-          if (event.payload.approvalGate.mode === "blocked") {
+          if (!session.approvalGate.bypassMode && event.payload.approvalGate.mode === "blocked") {
             session.tab.status = "awaiting_review";
           } else if (session.tab.status === "awaiting_review") {
             session.tab.status = "running";
@@ -237,7 +243,11 @@ export class MeetingSessionStore {
     }
     for (const session of this.sessions.values()) {
       if (!session.approvalGate) {
-        session.approvalGate = this.defaultApprovalGate();
+        session.approvalGate = this.defaultApprovalGate(session.tab.config.bypassMode);
+      } else {
+        session.approvalGate.bypassMode = Boolean(
+          session.approvalGate.bypassMode ?? session.tab.config.bypassMode
+        );
       }
       if (session.tab.status !== "ended") {
         session.tab.status = "recovering";
@@ -245,9 +255,10 @@ export class MeetingSessionStore {
     }
   }
 
-  private defaultApprovalGate(): ApprovalGatePayload {
+  private defaultApprovalGate(bypassMode = false): ApprovalGatePayload {
     return {
       mode: "open",
+      bypassMode,
       updatedAt: new Date(0).toISOString()
     };
   }

@@ -103,6 +103,7 @@ function registerIpc(): void {
       topic: config.topic,
       projectDir: config.projectDir,
       members: config.members,
+      bypassMode: config.bypassMode,
       initPrompt: helperMeetingService.buildInitPrompt(config)
     });
 
@@ -398,7 +399,8 @@ function toMeetingTab(tab: MeetingTabPayload): MeetingTab {
       id: tab.config.id,
       topic: tab.config.topic,
       projectDir: tab.config.projectDir,
-      members: [...tab.config.members]
+      members: [...tab.config.members],
+      bypassMode: Boolean(tab.config.bypassMode)
     },
     createdAt: tab.createdAt,
     status: tab.status
@@ -431,6 +433,7 @@ function toClaudeSessionDebug(debug: MeetingSessionViewPayload["sessionDebug"]):
 function toMeetingSessionView(view: MeetingSessionViewPayload): MeetingSessionView {
   const approvalGate = view.approvalGate ?? {
     mode: "open" as const,
+    bypassMode: Boolean(view.tab.config.bypassMode),
     updatedAt: new Date(0).toISOString()
   };
   return {
@@ -444,6 +447,7 @@ function toMeetingSessionView(view: MeetingSessionViewPayload): MeetingSessionVi
     sessionDebug: toClaudeSessionDebug(view.sessionDebug),
     approvalGate: {
       mode: approvalGate.mode,
+      bypassMode: Boolean(approvalGate.bypassMode),
       reason: approvalGate.reason,
       updatedAt: approvalGate.updatedAt
     }

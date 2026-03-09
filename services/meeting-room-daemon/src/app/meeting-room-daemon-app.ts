@@ -39,7 +39,6 @@ import { HooksRelayReceiver } from "../relay/hooks-relay-receiver";
 import {
   hasClaudeReadySignal,
   hasMcpFailureSignal,
-  shouldDisplayAgentMessageContent,
   isUsageLimitReached,
   stripAnsi
 } from "../runtime/terminal-utils";
@@ -219,7 +218,8 @@ export class MeetingRoomDaemonApp {
       id: command.meetingId,
       topic: command.topic,
       projectDir: command.projectDir,
-      members: [...command.members]
+      members: [...command.members],
+      bypassMode: command.bypassMode
     });
 
     this.sessions.append({
@@ -230,6 +230,7 @@ export class MeetingRoomDaemonApp {
     });
     this.writeApprovalGate(command.meetingId, {
       mode: "open",
+      bypassMode: command.bypassMode,
       updatedAt: new Date().toISOString()
     });
 
@@ -301,8 +302,13 @@ export class MeetingRoomDaemonApp {
   }
 
   private approveNextStep(meetingId: string): boolean {
-    if (!this.sessions.hasSession(meetingId)) {
+    const approvalGate = this.sessions.getApprovalGate(meetingId);
+    if (!approvalGate) {
       return false;
+    }
+    if (approvalGate.bypassMode || approvalGate.mode !== "blocked") {
+      this.emitSessionViewUpdated(meetingId);
+      return true;
     }
     this.updateApprovalGate(meetingId, "open");
     if (this.runtimes.hasRuntime(meetingId)) {
@@ -430,7 +436,7 @@ export class MeetingRoomDaemonApp {
       return;
     }
 
-    if (!shouldDisplayAgentMessageContent(payload.content)) {
+    if (!payload.content.trim()) {
       return;
     }
 
@@ -487,7 +493,9 @@ export class MeetingRoomDaemonApp {
       meetingId,
       payload: { message }
     });
-    this.updateApprovalGate(meetingId, "blocked", `agent:${message.sender}`);
+    if (!this.sessions.getApprovalGate(meetingId)?.bypassMode) {
+      this.updateApprovalGate(meetingId, "blocked", `agent:${message.sender}`);
+    }
     this.emitEvent({
       type: "message.received",
       eventId: createId("message_received"),
@@ -578,7 +586,8 @@ export class MeetingRoomDaemonApp {
       id: command.meetingId,
       topic: command.topic,
       projectDir: command.projectDir,
-      members: [...command.members]
+      members: [...command.members],
+      bypassMode: command.bypassMode
     };
     return {
       id: command.meetingId,
@@ -610,7 +619,8 @@ export class MeetingRoomDaemonApp {
       ...this.buildMeetingContextLines(meetingId),
       "",
       "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。",
-      "会議コンテキストが不足しているとは扱わず、上の議題と直近の会話を前提に続行してください。"
+      "会議コンテキストが不足しているとは扱わず、上の議題と直近の会話を前提に続行してください。",
+      "不足情報があっても AskUserQuestion は使わず、合理的な仮定を置いて進めてください。"
     ].join("\n");
   }
 
@@ -620,7 +630,8 @@ export class MeetingRoomDaemonApp {
       "以下の会議コンテキストを確認し、直前の要点を踏まえて続行してください。",
       ...this.buildMeetingContextLines(meetingId),
       "",
-      "次の進捗は broadcast で共有してください。"
+      "次の進捗は broadcast で共有してください。",
+      "不足情報があってもユーザー確認で止まらず、必要な仮定を置いて進めてください。"
     ].join("\n");
   }
 
@@ -712,12 +723,14 @@ export class MeetingRoomDaemonApp {
 
   private updateApprovalGate(meetingId: string, mode: ApprovalGatePayload["mode"], reason?: string): void {
     const current = this.sessions.getApprovalGate(meetingId);
-    if (current?.mode === mode && current.reason === reason) {
+    const bypassMode = current?.bypassMode ?? false;
+    if (current?.mode === mode && current.reason === reason && current.bypassMode === bypassMode) {
       return;
     }
 
     const approvalGate: ApprovalGatePayload = {
       mode,
+      bypassMode,
       reason,
       updatedAt: new Date().toISOString()
     };

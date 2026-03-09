@@ -41,6 +41,7 @@ export interface MeetingConfigPayload {
   topic: string;
   projectDir: string;
   members: string[];
+  bypassMode: boolean;
 }
 
 export interface MeetingTabPayload {
@@ -64,6 +65,7 @@ export interface ChatMessagePayload {
 
 export interface ApprovalGatePayload {
   mode: "open" | "blocked";
+  bypassMode: boolean;
   reason?: string;
   updatedAt: string;
 }
@@ -126,6 +128,7 @@ export interface StartMeetingCommand {
   topic: string;
   projectDir: string;
   members: string[];
+  bypassMode: boolean;
   initPrompt?: string;
 }
 

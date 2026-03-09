@@ -16,9 +16,12 @@ const wsPort = process.env.MEETING_ROOM_WS_PORT ?? "10117";
 const runId = `${Date.now()}`;
 const browserSession = `meeting-room-final-e2e-${runId}`;
 const topic = `GUI E2E final verification ${runId}`;
+const bypassTopic = `GUI E2E bypass verification ${runId}`;
 const humanMessage = "GUI E2E の自動確認です。状態を短く返してください。";
+const agentReplyTimeoutMs = 120_000;
 
 let electronProcess = null;
+let rendererCdp = null;
 
 function logStep(message) {
   console.log(`[gui-e2e] ${message}`);
@@ -121,6 +124,50 @@ async function currentMeetingView(meetingId) {
   return daemonJson(`/api/sessions/${encodeURIComponent(meetingId)}`);
 }
 
+async function connectRendererCdp() {
+  const target = await waitFor(async () => {
+    const response = await fetch(`http://127.0.0.1:${cdpPort}/json/list`);
+    if (!response.ok) {
+      return null;
+    }
+    const pages = await response.json();
+    return pages.find((page) => page.type === "page" && String(page.title).includes("Meeting Room")) ?? pages.find((page) => page.type === "page") ?? null;
+  }, "Electron renderer target", 30_000, 750);
+
+  rendererCdp = new CdpClient(target.webSocketDebuggerUrl);
+  await rendererCdp.connect();
+  await rendererCdp.send("Page.enable");
+  await rendererCdp.send("Runtime.enable");
+}
+
+async function evaluateRenderer(expression) {
+  if (!rendererCdp) {
+    throw new Error("Renderer CDP client is not connected");
+  }
+  const payload = await rendererCdp.send("Runtime.evaluate", {
+    expression,
+    awaitPromise: true,
+    returnByValue: true
+  });
+
+  if (payload.exceptionDetails) {
+    const description =
+      payload.exceptionDetails.exception?.description ||
+      payload.exceptionDetails.text ||
+      "Runtime.evaluate failed";
+    throw new Error(description);
+  }
+
+  if ("value" in payload.result) {
+    return payload.result.value;
+  }
+  return payload.result.unserializableValue ?? null;
+}
+
+async function waitForRendererDom(expression, description, timeoutMs = 30_000, intervalMs = 500) {
+  return waitFor(async () => evaluateRenderer(expression), description, timeoutMs, intervalMs);
+}
+
 async function connectBrowser() {
   await waitFor(() => {
     try {
@@ -179,6 +226,7 @@ async function launchElectron() {
 
   await connectBrowser();
   await focusMeetingRoomTab();
+  await connectRendererCdp();
   await waitFor(() => {
     const snap = snapshot();
     return isAnyKnownScreen(snap) ? snap : null;
@@ -199,6 +247,10 @@ async function stopElectron() {
 
   const child = electronProcess;
   electronProcess = null;
+  if (rendererCdp) {
+    await rendererCdp.close().catch(() => undefined);
+    rendererCdp = null;
+  }
 
   if (child.exitCode !== null) {
     return;
@@ -237,23 +289,43 @@ async function resetToSetupScreen() {
   throw new Error("Failed to return to setup screen");
 }
 
-async function startMeetingFromSetup() {
+async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = false } = {}) {
   const snap = snapshot();
   const topicRef = findRef(snap, "textbox", "議題（ここを中心に議論）");
-  const startRef = findRef(snap, "button", "会議を開始");
-  if (!topicRef || !startRef) {
+  if (!topicRef) {
     throw new Error(`Setup screen controls were not found.\n${snap}`);
   }
+  if (bypassMode && !findRef(snap, "button", "進行モード設定")) {
+    throw new Error(`Flow mode toggle button was not found.\n${snap}`);
+  }
 
-  runAgentBrowser("fill", `@${topicRef}`, topic);
+  runAgentBrowser("fill", `@${topicRef}`, meetingTopic);
+  if (bypassMode) {
+    const modeSettingsRef = findRef(snapshot(), "button", "進行モード設定");
+    if (!modeSettingsRef) {
+      throw new Error("Flow mode toggle button disappeared before expanding settings.");
+    }
+    runAgentBrowser("click", `@${modeSettingsRef}`);
+    await delay(500);
+    const expanded = snapshot();
+    const bypassRef = findRef(expanded, "checkbox", "Bypass Mode");
+    if (!bypassRef) {
+      throw new Error(`Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`);
+    }
+    runAgentBrowser("click", `@${bypassRef}`);
+  }
+  const startRef = findRef(snapshot(), "button", "会議を開始");
+  if (!startRef) {
+    throw new Error("Start button was not found before launch.");
+  }
   runAgentBrowser("click", `@${startRef}`);
 
   await waitFor(() => {
     const current = snapshot();
-    return isMeetingScreen(current, topic) ? current : null;
+    return isMeetingScreen(current, meetingTopic) ? current : null;
   }, "meeting screen after start", 30_000, 750);
 
-  return waitFor(() => currentMeetingIdByTitle(topic), "daemon session creation", 30_000, 750);
+  return waitFor(() => currentMeetingIdByTitle(meetingTopic), "daemon session creation", 30_000, 750);
 }
 
 async function sendHumanMessageAndVerify(meetingId) {
@@ -272,6 +344,82 @@ async function sendHumanMessageAndVerify(meetingId) {
     const view = await currentMeetingView(meetingId);
     return view.messages.some((message) => message.source === "human" && message.content === humanMessage) ? view : null;
   }, "human message persistence", 30_000, 750);
+}
+
+function isRenderableAgentMessage(message) {
+  if (!message || message.source !== "agent") {
+    return false;
+  }
+  const content = String(message.content ?? "").trim();
+  if (!content || content === humanMessage) {
+    return false;
+  }
+  if (/^(?:\/Users\/|\/home\/|[A-Za-z]:\\).+\.(?:jsonl|json|md|txt|log)$/u.test(content)) {
+    return false;
+  }
+  return true;
+}
+
+function normalizeText(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function buildExpectedAgentEntries(messages) {
+  return messages
+    .filter((message) => isRenderableAgentMessage(message))
+    .map((message) => ({
+      sender: normalizeText(message.subagent?.trim() || message.sender),
+      snippet: normalizeText(message.content).slice(0, 40)
+    }));
+}
+
+async function verifyAgentConversation(meetingId, label) {
+  const view = await waitFor(async () => {
+    const current = await currentMeetingView(meetingId);
+    if (!current.health?.lastAgentReplyAt) {
+      return null;
+    }
+    if (current.sessionDebug?.tail?.some((line) => /AskUserQuestion/i.test(String(line)))) {
+      throw new Error(`AskUserQuestion detected during ${label} flow`);
+    }
+    return current.messages.some((message) => isRenderableAgentMessage(message)) ? current : null;
+  }, `${label} agent message in daemon session`, agentReplyTimeoutMs, 1_000);
+
+  const expectedEntries = buildExpectedAgentEntries(view.messages);
+  if (expectedEntries.length === 0) {
+    throw new Error(`No renderable agent messages found for ${label}`);
+  }
+
+  await waitForRendererDom(
+    `(() => {
+      const bubbles = [...document.querySelectorAll(".bubble.agent")];
+      return bubbles.some((bubble) => {
+        const sender = bubble.querySelector(".sender")?.textContent?.trim() || "";
+        const body = bubble.querySelector(".bubble-body")?.textContent?.trim() || "";
+        return sender.length > 0 && body.length > 0 && !/\\.jsonl$/i.test(body);
+      });
+    })()`,
+    `${label} agent bubble in renderer`,
+    agentReplyTimeoutMs,
+    1_000
+  );
+
+  await waitForRendererDom(
+    `(() => {
+      const normalize = (value) => String(value ?? "").replace(/\\s+/g, " ").trim();
+      const expectedEntries = ${JSON.stringify(expectedEntries)};
+      const bubbles = [...document.querySelectorAll(".bubble.agent")].map((bubble) => ({
+        sender: normalize(bubble.querySelector(".sender")?.textContent),
+        body: normalize(bubble.querySelector(".bubble-body")?.textContent)
+      }));
+      return expectedEntries.every((expected) => bubbles.some((bubble) => {
+        return bubble.sender === expected.sender && bubble.body.includes(expected.snippet);
+      }));
+    })()`,
+    `${label} all agent messages in renderer`,
+    agentReplyTimeoutMs,
+    1_000
+  );
 }
 
 async function verifyPauseAndResume(meetingId) {
@@ -340,6 +488,100 @@ async function endMeetingAndVerifyCleared() {
   }, "empty session list after end", 30_000, 750);
 }
 
+async function verifyBypassModeStart() {
+  const meetingId = await startMeetingFromSetup({ meetingTopic: bypassTopic, bypassMode: true });
+
+  await waitFor(async () => {
+    const view = await currentMeetingView(meetingId);
+    return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true ? view : null;
+  }, "bypass mode session config", 30_000, 750);
+
+  await sendHumanMessageAndVerify(meetingId);
+  await verifyAgentConversation(meetingId, "bypass");
+
+  await endMeetingAndVerifyCleared();
+}
+
+class CdpClient {
+  constructor(wsUrl) {
+    this.wsUrl = wsUrl;
+    this.nextId = 1;
+    this.pending = new Map();
+    this.socket = null;
+  }
+
+  async connect() {
+    await new Promise((resolve, reject) => {
+      const socket = new WebSocket(this.wsUrl);
+      const timer = setTimeout(() => {
+        reject(new Error("CDP connection timed out"));
+      }, 10_000);
+
+      socket.addEventListener("open", () => {
+        clearTimeout(timer);
+        this.socket = socket;
+        resolve();
+      });
+
+      socket.addEventListener("message", (event) => {
+        try {
+          const payload = JSON.parse(String(event.data));
+          if (!payload.id) {
+            return;
+          }
+          const pending = this.pending.get(payload.id);
+          if (!pending) {
+            return;
+          }
+          this.pending.delete(payload.id);
+          if (payload.error) {
+            pending.reject(new Error(payload.error.message || "CDP error"));
+            return;
+          }
+          pending.resolve(payload.result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      socket.addEventListener("error", () => {
+        reject(new Error("CDP websocket error"));
+      });
+
+      socket.addEventListener("close", () => {
+        for (const pending of this.pending.values()) {
+          pending.reject(new Error("CDP websocket closed"));
+        }
+        this.pending.clear();
+      });
+    });
+  }
+
+  send(method, params = {}) {
+    if (!this.socket) {
+      throw new Error("CDP socket is not connected");
+    }
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      this.socket.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  async close() {
+    if (!this.socket) {
+      return;
+    }
+    const socket = this.socket;
+    this.socket = null;
+    await new Promise((resolve) => {
+      socket.addEventListener("close", () => resolve(), { once: true });
+      socket.close();
+      setTimeout(resolve, 1_000);
+    });
+  }
+}
+
 async function main() {
   logStep("launching Electron");
   await launchElectron();
@@ -354,6 +596,7 @@ async function main() {
 
     logStep("sending a human message");
     await sendHumanMessageAndVerify(meetingId);
+    await verifyAgentConversation(meetingId, "normal");
 
     logStep("verifying pause and resume");
     await verifyPauseAndResume(meetingId);
@@ -363,6 +606,9 @@ async function main() {
 
     logStep("ending meeting and confirming cleanup");
     await endMeetingAndVerifyCleared();
+
+    logStep("starting bypass mode meeting");
+    await verifyBypassModeStart();
 
     logStep("GUI E2E passed");
   } finally {

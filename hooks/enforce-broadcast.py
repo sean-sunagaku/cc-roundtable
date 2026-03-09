@@ -52,12 +52,11 @@ def parse_payload() -> dict[str, Any]:
 
 
 def extract_send_message_type(payload: dict[str, Any]) -> str | None:
-    for key in ("tool_input", "input"):
-        candidate = payload.get(key)
-        if isinstance(candidate, dict):
-            msg_type = candidate.get("type")
-            if isinstance(msg_type, str):
-                return msg_type
+    candidate = payload.get("tool_input")
+    if isinstance(candidate, dict):
+        msg_type = candidate.get("type")
+        if isinstance(msg_type, str):
+            return msg_type
 
     msg_type = payload.get("type")
     if isinstance(msg_type, str):

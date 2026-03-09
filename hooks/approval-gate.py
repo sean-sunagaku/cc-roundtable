@@ -73,6 +73,14 @@ def parse_approval_state(path: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def is_bypass_mode_enabled(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "on", "yes"}
+    return False
+
+
 def main() -> int:
     if not is_meeting_mode_active():
         return 0
@@ -86,6 +94,9 @@ def main() -> int:
     if not state:
         print(f"{BLOCK_MESSAGE} (承認状態を取得できません)", file=sys.stderr)
         return 2
+
+    if is_bypass_mode_enabled(state.get("bypassMode")):
+        return 0
 
     mode = state.get("mode")
     if mode == "open":

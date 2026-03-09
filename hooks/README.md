@@ -13,13 +13,13 @@
 ```bash
 touch .claude/meeting-room/.active
 python3 hooks/enforce-broadcast.py <<'EOF'
-{"tool_input":{"type":"message","content":"hello"}}
+{"toolInput":{"type":"message","content":"hello"}}
 EOF
 ```
 
 ```bash
 python3 hooks/ws-relay.py <<'EOF'
-{"tool_input":{"type":"broadcast","content":"hello team"},"metadata":{"agent":"product-manager","team":"feature-discussion"}}
+{"toolName":"SendMessage","toolInput":{"type":"broadcast","content":"hello team"},"toolResponse":{"success":true,"routing":{"sender":"product-manager","content":"hello team","target":"team"}},"agentId":"product-manager@team","metadata":{"meetingId":"meeting_test","team":"feature-discussion"}}
 EOF
 ```
 
@@ -29,10 +29,10 @@ If Electron WebSocket is not running, `ws-relay.py` appends to `.claude/meeting-
 
 `ws-relay.py` now resolves the sender from the actual `SendMessage` hook payload first:
 
-- `tool_response.routing.sender`
-- `tool_response.routing.target`
-- `tool_input.type`
-- `tool_input.content`
+- `toolResponse.routing.sender`
+- `toolResponse.routing.target`
+- `toolInput.type`
+- `toolInput.content`
 
 This matches the Agent Teams logger hook contract under:
 
