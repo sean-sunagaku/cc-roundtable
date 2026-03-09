@@ -8,14 +8,14 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-const electronNodeModules = path.join(rootDir, "electron", "node_modules");
+const electronNodeModules = path.join(rootDir, "src", "apps", "desktop", "node_modules");
 const require = createRequire(import.meta.url);
 
 let esbuild;
 try {
   esbuild = require(path.join(electronNodeModules, "esbuild"));
 } catch (error) {
-  console.error("esbuild が見つかりません。先に `npm --prefix electron install` を実行してください。");
+  console.error("esbuild が見つかりません。先に `npm --prefix src/apps/desktop install` を実行してください。");
   process.exit(error instanceof Error ? 1 : 1);
 }
 
@@ -26,10 +26,10 @@ if (args.has("--help") || args.has("-h")) {
 }
 
 const watch = args.has("--watch");
-const daemonEntry = path.join(rootDir, "services", "meeting-room-daemon", "dist", "index.js");
-const daemonSource = path.join(rootDir, "services", "meeting-room-daemon", "src", "index.ts");
-const daemonTsconfig = path.join(rootDir, "services", "meeting-room-daemon", "tsconfig.json");
-const daemonDistDir = path.join(rootDir, "services", "meeting-room-daemon", "dist");
+const daemonEntry = path.join(rootDir, "src", "daemon", "dist", "index.js");
+const daemonSource = path.join(rootDir, "src", "daemon", "src", "index.ts");
+const daemonTsconfig = path.join(rootDir, "src", "daemon", "tsconfig.json");
+const daemonDistDir = path.join(rootDir, "src", "daemon", "dist");
 const webBuilderScript = path.join(rootDir, "scripts", "build-web-client.mjs");
 const host = process.env.MEETING_ROOM_DAEMON_HOST?.trim() || "127.0.0.1";
 const port = process.env.MEETING_ROOM_DAEMON_PORT?.trim() || "4417";

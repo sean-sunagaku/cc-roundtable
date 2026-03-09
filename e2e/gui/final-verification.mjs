@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(__filename), "..", "..");
-const electronDir = path.resolve(repoRoot, "electron");
+const electronDir = path.resolve(repoRoot, "src", "apps", "desktop");
 const electronBin = path.resolve(electronDir, "node_modules", ".bin", "electron");
 const cdpPort = process.env.MEETING_ROOM_E2E_CDP_PORT ?? "9222";
 const daemonPort = process.env.MEETING_ROOM_DAEMON_PORT ?? "4467";

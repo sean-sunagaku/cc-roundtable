@@ -4,8 +4,8 @@
  * Generate Python constants from the TypeScript hook contract.
  *
  * Usage:
- *   node scripts/generate-hook-contracts.mjs          # generate hooks/contracts.py
- *   node scripts/generate-hook-contracts.mjs --check   # verify hooks/contracts.py is up-to-date
+ *   node scripts/generate-hook-contracts.mjs          # generate src/packages/meeting-room-hooks/contracts.py
+ *   node scripts/generate-hook-contracts.mjs --check   # verify src/packages/meeting-room-hooks/contracts.py is up-to-date
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
@@ -14,12 +14,12 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { transformSync } = require("../electron/node_modules/esbuild");
+const { transformSync } = require("../src/apps/desktop/node_modules/esbuild");
 
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(__filename), "..");
-const contractTsPath = resolve(repoRoot, "packages/shared-contracts/src/hook-contract.ts");
-const outputPath = resolve(repoRoot, "hooks/contracts.py");
+const contractTsPath = resolve(repoRoot, "src/packages/shared-contracts/src/hook-contract.ts");
+const outputPath = resolve(repoRoot, "src/packages/meeting-room-hooks/contracts.py");
 const checkMode = process.argv.includes("--check");
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ function upperSnakeToPascal(str) {
 // ---------------------------------------------------------------------------
 
 const lines = [
-  '"""Auto-generated from packages/shared-contracts/src/hook-contract.ts',
+  '"""Auto-generated from src/packages/shared-contracts/src/hook-contract.ts',
   "",
   "DO NOT EDIT MANUALLY. Run `make contracts` to regenerate.",
   '"""',
@@ -113,14 +113,14 @@ if (checkMode) {
   try {
     existing = readFileSync(outputPath, "utf-8");
   } catch {
-    console.error(`[contracts] hooks/contracts.py does not exist. Run: make contracts`);
+    console.error(`[contracts] src/packages/meeting-room-hooks/contracts.py does not exist. Run: make contracts`);
     process.exit(1);
   }
   if (existing !== output) {
-    console.error(`[contracts] hooks/contracts.py is out of date. Run: make contracts`);
+    console.error(`[contracts] src/packages/meeting-room-hooks/contracts.py is out of date. Run: make contracts`);
     process.exit(1);
   }
-  console.log("[contracts] hooks/contracts.py is up to date.");
+  console.log("[contracts] src/packages/meeting-room-hooks/contracts.py is up to date.");
 } else {
   writeFileSync(outputPath, output, "utf-8");
   console.log(`[contracts] Generated ${outputPath}`);

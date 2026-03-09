@@ -3,14 +3,14 @@ name: Hook Contracts Check
 on:
   push:
     paths:
-      - "packages/shared-contracts/src/hook-contract.ts"
-      - "hooks/**"
+      - "src/packages/shared-contracts/src/hook-contract.ts"
+      - "src/packages/meeting-room-hooks/**"
       - "scripts/generate-hook-contracts.mjs"
       - "scripts/check-hook-literals.mjs"
   pull_request:
     paths:
-      - "packages/shared-contracts/src/hook-contract.ts"
-      - "hooks/**"
+      - "src/packages/shared-contracts/src/hook-contract.ts"
+      - "src/packages/meeting-room-hooks/**"
       - "scripts/generate-hook-contracts.mjs"
       - "scripts/check-hook-literals.mjs"
 
@@ -25,7 +25,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm --prefix electron install
+        run: npm --prefix src/apps/desktop install
 
       - name: Check contracts.py is up to date
         run: node scripts/generate-hook-contracts.mjs --check

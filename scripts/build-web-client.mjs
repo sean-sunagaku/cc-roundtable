@@ -7,21 +7,21 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-const electronNodeModules = path.join(rootDir, "electron", "node_modules");
+const electronNodeModules = path.join(rootDir, "src", "apps", "desktop", "node_modules");
 const require = createRequire(import.meta.url);
 
 let esbuild;
 try {
   esbuild = require(path.join(electronNodeModules, "esbuild"));
 } catch (error) {
-  console.error("esbuild が見つかりません。先に `npm --prefix electron install` を実行してください。");
+  console.error("esbuild が見つかりません。先に `npm --prefix src/apps/desktop install` を実行してください。");
   process.exit(error instanceof Error ? 1 : 1);
 }
 
-const webEntry = path.join(rootDir, "apps", "web", "src", "main.tsx");
-const webTsconfig = path.join(rootDir, "apps", "web", "tsconfig.json");
-const webOutdir = path.join(rootDir, "apps", "web", "client");
-const htmlSource = path.join(rootDir, "apps", "web", "src", "index.html");
+const webEntry = path.join(rootDir, "src", "apps", "web", "src", "main.tsx");
+const webTsconfig = path.join(rootDir, "src", "apps", "web", "tsconfig.json");
+const webOutdir = path.join(rootDir, "src", "apps", "web", "client");
+const htmlSource = path.join(rootDir, "src", "apps", "web", "src", "index.html");
 const watch = process.argv.includes("--watch");
 
 function copyHtmlTemplate() {

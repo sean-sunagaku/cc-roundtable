@@ -38,23 +38,27 @@
 ## 推奨トップレベル構成
 
 ```text
-apps/
-  electron/
-    main/
-    renderer/
-  web/
-    client/          # 将来追加。iPhone から接続する Web UI
-services/
-  meeting-room-daemon/
-    application/
-    domain/
-    runtime/
-    events/
-    infrastructure/
-packages/
-  shared-contracts/
-  shared-types/
+src/
+  apps/
+    desktop/
+      src/main/
+      src/renderer/
+    web/
+      src/
+  daemon/
+    src/app/
+    src/runtime/
+    src/events/
+    src/http/
+  packages/
+    shared-contracts/
+    meeting-room-support/
+    meeting-room-hooks/
 ```
+
+補足:
+
+- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/daemon/dist/` は配信用または build 生成物で、repo では commit 対象外にする
 
 ## 推奨責務分割
 
@@ -72,7 +76,7 @@ packages/
 - daemon の起動または接続
 - ドメインロジックは持たない
 
-### Meeting Room Daemon
+### Meeting Room Daemon (`src/daemon`)
 
 - 会議ライフサイクル全体を管理
 - Claude session を管理
