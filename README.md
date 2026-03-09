@@ -151,6 +151,44 @@ node scripts/update-architecture-definitions.mjs
 
 `drawio -> svg` の再生成と、`docs/architecture-definitions/INDEX.md` の更新を一度に行います。
 
-Codex 側では `.codex/skills/architecture-doc-subagents/SKILL.md` を入口にして、各アーキテクチャ案ごとの prompt template から SubAgent を起動する運用を想定しています。Meeting Room 側でも `.claude/meeting-room/agents/architecture-*.json` の専用エージェントを選べます。
+### 自動更新の基本フロー
+
+1. `docs/architecture-definitions/<slug>/<slug>.md` を編集する
+2. `docs/architecture-definitions/<slug>/source/<slug>.drawio` を編集する
+3. 次を実行する
+
+```bash
+node scripts/update-architecture-definitions.mjs
+```
+
+または
+
+```bash
+make arch-update
+```
+
+これで次が一括更新されます。
+
+- 各案の `source/*.drawio`
+- 対応する `*.svg`
+- `docs/architecture-definitions/INDEX.md`
+
+特定の 1 案だけ更新したい時は次です。
+
+```bash
+node scripts/update-architecture-definitions.mjs --slug local-daemon-bff
+```
+
+Electron workspace の script から叩きたい時はこれも使えます。
+
+```bash
+npm --prefix src/apps/desktop run architecture:update-docs
+```
+
+### Codex / Meeting Room での更新
+
+- Codex では `.codex/skills/architecture-doc-subagents/SKILL.md` を入口にして、各アーキテクチャ案ごとの prompt template から SubAgent を起動します
+- Meeting Room では `.claude/meeting-room/agents/architecture-*.json` の専用エージェントを選び、案ごとの観点を分担して議論できます
+- 実務的には、Meeting Room で論点を出し、Codex でファイルへ反映し、最後に `update-architecture-definitions.mjs` で SVG と INDEX を更新する流れが扱いやすいです
 
 運用の詳細は `docs/architecture-definitions/08_subagent-usage.md` にまとめています。
