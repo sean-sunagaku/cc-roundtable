@@ -1,0 +1,6 @@
+{
+  "id": "architecture-local-daemon-bff",
+  "name": "Architecture - Local Daemon BFF",
+  "description": "daemon-first の主系アーキテクチャを担当し、renderer / main / daemon / runtime / storage の境界を docs/architecture-definitions 配下へ落とし込む",
+  "enabledByDefault": false
+}

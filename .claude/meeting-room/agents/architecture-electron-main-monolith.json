@@ -1,0 +1,6 @@
+{
+  "id": "architecture-electron-main-monolith",
+  "name": "Architecture - Electron Main Monolith",
+  "description": "Electron main に責務を寄せる案を担当し、docs/architecture-definitions 配下の MD / draw.io / SVG を monolith 観点で整理する",
+  "enabledByDefault": false
+}

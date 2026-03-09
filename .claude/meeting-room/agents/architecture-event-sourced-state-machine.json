@@ -1,0 +1,6 @@
+{
+  "id": "architecture-event-sourced-state-machine",
+  "name": "Architecture - Event Sourced State Machine",
+  "description": "command / event / projection と状態遷移を中心に案を整理し、重要フローの図と説明を docs/architecture-definitions 配下へ作成する",
+  "enabledByDefault": false
+}
