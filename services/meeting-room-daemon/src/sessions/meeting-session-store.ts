@@ -9,8 +9,7 @@ import {
   collectDebugTail,
   filterVisibleTailLines,
   hasMcpFailureSignal,
-  isUsageLimitReached,
-  shouldDisplayAgentMessageContent
+  isUsageLimitReached
 } from "../runtime/terminal-utils";
 import type { DurableEvent } from "../types";
 import { deepClone } from "../utils";
@@ -57,12 +56,6 @@ export class MeetingSessionStore {
       );
     }
     const view = deepClone(session);
-    view.messages = view.messages.filter((message) => {
-      if (message.source !== "agent") {
-        return true;
-      }
-      return shouldDisplayAgentMessageContent(message.content);
-    });
     view.sessionDebug.tail = filterVisibleTailLines(view.sessionDebug.tail);
     return view;
   }
