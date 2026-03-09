@@ -1,10 +1,11 @@
 import { WebSocketServer } from "ws";
 import type { AgentMessagePayload } from "@shared/types";
+import { RESPONSE_MARKERS } from "@contracts/hook-contract";
 
 export type RelayHandler = (payload: AgentMessagePayload) => void;
 
-const RESPONSE_MARKER_START = "[[[MEETING_ROOM_RESPONSE_START]]]";
-const RESPONSE_MARKER_END = "[[[MEETING_ROOM_RESPONSE_END]]]";
+const RESPONSE_MARKER_START = RESPONSE_MARKERS.start;
+const RESPONSE_MARKER_END = RESPONSE_MARKERS.end;
 
 function extractMarkedContent(content: string): string {
   const start = content.indexOf(RESPONSE_MARKER_START);

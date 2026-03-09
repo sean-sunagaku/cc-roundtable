@@ -14,8 +14,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+from contracts import (
+    AgentStatusValues as S,
+    HookEnvVars as E,
+    RelayPayloadFields as F,
+    RelayPayloadTypes as T,
+)
+
+
 def _candidate_active_paths() -> list[Path]:
-    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    env_path = os.environ.get(E.ACTIVE_FILE)
     paths: list[Path] = []
     if env_path:
         paths.append(Path(env_path).expanduser())
@@ -71,10 +79,10 @@ def _build_ws_frame(payload: bytes) -> bytes:
 
 
 def send_json(payload: dict) -> None:
-    host = os.environ.get("MEETING_ROOM_WS_HOST", "127.0.0.1")
-    port = int(os.environ.get("MEETING_ROOM_WS_PORT", "9999"))
-    ws_path = os.environ.get("MEETING_ROOM_WS_PATH", "/")
-    timeout = float(os.environ.get("MEETING_ROOM_WS_TIMEOUT", "0.8"))
+    host = os.environ.get(E.WS_HOST, "127.0.0.1")
+    port = int(os.environ.get(E.WS_PORT, "9999"))
+    ws_path = os.environ.get(E.WS_PATH, "/")
+    timeout = float(os.environ.get(E.WS_TIMEOUT, "0.8"))
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
     guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -99,7 +107,7 @@ def send_json(payload: dict) -> None:
 
 
 def fallback_log(payload: dict) -> None:
-    log_path = os.environ.get("MEETING_ROOM_STATUS_LOG")
+    log_path = os.environ.get(E.STATUS_LOG)
     if not log_path:
         log_path = os.path.join(os.getcwd(), ".claude", "meeting-room", "status.log.jsonl")
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
@@ -115,20 +123,20 @@ def main() -> int:
     if not payload:
         return 0
     sender = os.environ.get("CLAUDE_SUBAGENT_NAME") or os.environ.get("CLAUDE_AGENT_NAME") or "agent"
-    meeting_id = os.environ.get("MEETING_ROOM_MEETING_ID")
+    meeting_id = os.environ.get(E.MEETING_ID)
     if not isinstance(meeting_id, str) or not meeting_id.strip():
         meeting_id = None
     else:
         meeting_id = meeting_id.strip()
     event = {
-        "type": "agent_status",
-        "id": f"status_{int(datetime.now(tz=timezone.utc).timestamp())}_{sender}",
-        "sender": sender,
-        "content": "completed",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "team": os.environ.get("CLAUDE_TEAM_NAME", "unknown"),
-        "meetingId": meeting_id,
-        "status": "completed"
+        F.TYPE: T.AGENT_STATUS,
+        F.ID: f"status_{int(datetime.now(tz=timezone.utc).timestamp())}_{sender}",
+        F.SENDER: sender,
+        F.CONTENT: S.COMPLETED,
+        F.TIMESTAMP: datetime.now(timezone.utc).isoformat(),
+        F.TEAM: os.environ.get("CLAUDE_TEAM_NAME", "unknown"),
+        F.MEETING_ID: meeting_id,
+        F.STATUS: S.COMPLETED,
     }
     try:
         send_json(event)

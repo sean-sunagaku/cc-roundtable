@@ -10,12 +10,17 @@ from pathlib import Path
 from typing import Any
 
 
+from contracts import (
+    ApprovalGateFields as AG,
+    HookEnvVars as E,
+)
+
 BLOCK_MESSAGE = "[Meeting Room] 承認待ちです。ユーザーが確認してから次へ進めてください。"
 APPROVAL_DIR_RELATIVE = Path(".claude") / "meeting-room" / "approval"
 
 
 def _candidate_active_paths() -> list[Path]:
-    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    env_path = os.environ.get(E.ACTIVE_FILE)
     paths: list[Path] = []
     if env_path:
         paths.append(Path(env_path).expanduser())
@@ -31,11 +36,11 @@ def is_meeting_mode_active() -> bool:
 
 
 def resolve_repo_root() -> Path:
-    settings_path = os.environ.get("MEETING_ROOM_SETTINGS_FILE", "").strip()
+    settings_path = os.environ.get(E.SETTINGS_FILE, "").strip()
     if settings_path:
         return Path(settings_path).expanduser().resolve().parent.parent
 
-    hooks_dir = os.environ.get("MEETING_ROOM_HOOKS_DIR", "").strip()
+    hooks_dir = os.environ.get(E.HOOKS_DIR, "").strip()
     if hooks_dir:
         return Path(hooks_dir).expanduser().resolve().parent
 
@@ -47,15 +52,15 @@ def resolve_repo_root() -> Path:
 
 
 def resolve_approval_file() -> Path | None:
-    direct = os.environ.get("MEETING_ROOM_APPROVAL_FILE", "").strip()
+    direct = os.environ.get(E.APPROVAL_FILE, "").strip()
     if direct:
         return Path(direct).expanduser()
 
-    meeting_id = os.environ.get("MEETING_ROOM_MEETING_ID", "").strip()
+    meeting_id = os.environ.get(E.MEETING_ID, "").strip()
     if not meeting_id:
         return None
 
-    approval_dir = os.environ.get("MEETING_ROOM_APPROVAL_DIR", "").strip()
+    approval_dir = os.environ.get(E.APPROVAL_DIR, "").strip()
     if approval_dir:
         return Path(approval_dir).expanduser() / f"{meeting_id}.json"
 
@@ -95,14 +100,14 @@ def main() -> int:
         print(f"{BLOCK_MESSAGE} (承認状態を取得できません)", file=sys.stderr)
         return 2
 
-    if is_bypass_mode_enabled(state.get("bypassMode")):
+    if is_bypass_mode_enabled(state.get(AG.BYPASS_MODE)):
         return 0
 
-    mode = state.get("mode")
+    mode = state.get(AG.MODE)
     if mode == "open":
         return 0
 
-    reason = state.get("reason")
+    reason = state.get(AG.REASON)
     if isinstance(reason, str) and reason.strip():
         print(f"{BLOCK_MESSAGE}\nReason: {reason.strip()}", file=sys.stderr)
         return 2

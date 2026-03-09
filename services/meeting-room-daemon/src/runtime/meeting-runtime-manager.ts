@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { HOOKS_WS_PORT } from "../constants";
+import { HOOK_ENV_VARS } from "@contracts/hook-contract";
 import type { PtyLike, RuntimeHandle } from "../types";
 import { buildClaudeLaunchArgs, requireNodePty, shellQuote } from "../utils";
 
@@ -227,16 +228,16 @@ export class MeetingRuntimeManager {
       SHELL: process.env.SHELL || "zsh",
       HOME: process.env.HOME || os.homedir(),
       PATH: process.env.PATH || "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-      MEETING_ROOM_MEETING_ID: meetingId,
-      MEETING_ROOM_ACTIVE_FILE: this.options.activeFile,
-      MEETING_ROOM_APPROVAL_DIR: this.options.approvalDir,
-      MEETING_ROOM_APPROVAL_FILE: path.resolve(this.options.approvalDir, `${meetingId}.json`),
-      MEETING_ROOM_SETTINGS_FILE: path.resolve(this.options.repoRoot, ".claude/settings.json"),
-      MEETING_ROOM_HOOKS_DIR: path.resolve(this.options.repoRoot, "hooks"),
-      MEETING_ROOM_FALLBACK_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/discussion.log.jsonl"),
-      MEETING_ROOM_STOP_DEBUG_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/stop-hook.log.jsonl"),
-      MEETING_ROOM_WS_DEBUG_LOG: path.resolve(this.options.repoRoot, ".claude/meeting-room/ws-hook.log.jsonl"),
-      MEETING_ROOM_WS_PORT: `${HOOKS_WS_PORT}`
+      [HOOK_ENV_VARS.meetingId]: meetingId,
+      [HOOK_ENV_VARS.activeFile]: this.options.activeFile,
+      [HOOK_ENV_VARS.approvalDir]: this.options.approvalDir,
+      [HOOK_ENV_VARS.approvalFile]: path.resolve(this.options.approvalDir, `${meetingId}.json`),
+      [HOOK_ENV_VARS.settingsFile]: path.resolve(this.options.repoRoot, ".claude/settings.json"),
+      [HOOK_ENV_VARS.hooksDir]: path.resolve(this.options.repoRoot, "hooks"),
+      [HOOK_ENV_VARS.fallbackLog]: path.resolve(this.options.repoRoot, ".claude/meeting-room/discussion.log.jsonl"),
+      [HOOK_ENV_VARS.stopDebugLog]: path.resolve(this.options.repoRoot, ".claude/meeting-room/stop-hook.log.jsonl"),
+      [HOOK_ENV_VARS.wsDebugLog]: path.resolve(this.options.repoRoot, ".claude/meeting-room/ws-hook.log.jsonl"),
+      [HOOK_ENV_VARS.wsPort]: `${HOOKS_WS_PORT}`
     };
   }
 

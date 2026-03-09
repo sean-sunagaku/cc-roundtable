@@ -5,9 +5,10 @@ import type {
   MeetingTabPayload,
   RuntimeEventPayload
 } from "@contracts/meeting-room-daemon";
+import type { RELAY_PAYLOAD_TYPES } from "@contracts/hook-contract";
 
 export type RelayPayload = {
-  type: "agent_message" | "agent_status";
+  type: typeof RELAY_PAYLOAD_TYPES[keyof typeof RELAY_PAYLOAD_TYPES];
   id: string;
   sender: string;
   subagent?: string;
@@ -15,6 +16,7 @@ export type RelayPayload = {
   timestamp: string;
   team: string;
   meetingId?: string;
+  rawType?: string;
   status?: "active" | "completed";
 };
 

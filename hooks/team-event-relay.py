@@ -15,17 +15,23 @@ from pathlib import Path
 from typing import Any
 
 
+from contracts import (
+    HookEnvVars as E,
+    RelayPayloadFields as F,
+    RelayPayloadTypes as T,
+)
+
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-WS_HOST = os.environ.get("MEETING_ROOM_WS_HOST", "127.0.0.1")
-WS_PORT = int(os.environ.get("MEETING_ROOM_WS_PORT", "9999"))
-WS_PATH = os.environ.get("MEETING_ROOM_WS_PATH", "/")
-WS_TIMEOUT = float(os.environ.get("MEETING_ROOM_WS_TIMEOUT", "0.8"))
+WS_HOST = os.environ.get(E.WS_HOST, "127.0.0.1")
+WS_PORT = int(os.environ.get(E.WS_PORT, "9999"))
+WS_PATH = os.environ.get(E.WS_PATH, "/")
+WS_TIMEOUT = float(os.environ.get(E.WS_TIMEOUT, "0.8"))
 
 EVENT_TOOL_NAMES = {"teamcreate", "create_team", "create-team", "task"}
 
 
 def _candidate_active_paths() -> list[Path]:
-    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    env_path = os.environ.get(E.ACTIVE_FILE)
     paths: list[Path] = []
     if env_path:
         paths.append(Path(env_path).expanduser())
@@ -110,7 +116,7 @@ def should_emit(payload: dict[str, Any]) -> tuple[bool, str]:
 def build_event_message(payload: dict[str, Any], normalized_tool_name: str) -> dict[str, Any]:
     sender = "system"
     team = os.environ.get("CLAUDE_TEAM_NAME", "").strip() or "meeting-room"
-    meeting_id = os.environ.get("MEETING_ROOM_MEETING_ID", "").strip() or None
+    meeting_id = os.environ.get(E.MEETING_ID, "").strip() or None
     timestamp = datetime.now(timezone.utc).isoformat()
     msg_id = f"team_event_{int(datetime.now(tz=timezone.utc).timestamp())}_{secrets.token_hex(3)}"
 
@@ -129,14 +135,14 @@ def build_event_message(payload: dict[str, Any], normalized_tool_name: str) -> d
             content = "### Team Event\n- Task を作成"
 
     return {
-        "type": "agent_message",
-        "id": msg_id,
-        "sender": sender,
-        "content": content,
-        "timestamp": timestamp,
-        "team": team,
-        "meetingId": meeting_id,
-        "rawType": normalized_tool_name,
+        F.TYPE: T.AGENT_MESSAGE,
+        F.ID: msg_id,
+        F.SENDER: sender,
+        F.CONTENT: content,
+        F.TIMESTAMP: timestamp,
+        F.TEAM: team,
+        F.MEETING_ID: meeting_id,
+        F.RAW_TYPE: normalized_tool_name,
     }
 
 
@@ -195,7 +201,7 @@ def send_ws_json(message: dict[str, Any]) -> None:
 
 
 def fallback_log(message: dict[str, Any]) -> None:
-    path_env = os.environ.get("MEETING_ROOM_FALLBACK_LOG")
+    path_env = os.environ.get(E.FALLBACK_LOG)
     if path_env:
         log_path = Path(path_env).expanduser()
     else:

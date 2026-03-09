@@ -1,5 +1,6 @@
 import path from "node:path";
 import { createRequire } from "node:module";
+import { RELAY_PAYLOAD_TYPES } from "@contracts/hook-contract";
 import { HOOKS_WS_PORT } from "../constants";
 import { extractMarkedContent } from "../runtime/terminal-utils";
 import type { RelayPayload } from "../types";
@@ -29,10 +30,10 @@ export class HooksRelayReceiver {
       socket.on("message", (buffer) => {
         try {
           const payload = JSON.parse(buffer.toString()) as RelayPayload;
-          if (!payload || (payload.type !== "agent_message" && payload.type !== "agent_status")) {
+          if (!payload || (payload.type !== RELAY_PAYLOAD_TYPES.agentMessage && payload.type !== RELAY_PAYLOAD_TYPES.agentStatus)) {
             return;
           }
-          if (payload.type === "agent_message") {
+          if (payload.type === RELAY_PAYLOAD_TYPES.agentMessage) {
             payload.content = extractMarkedContent(payload.content ?? "");
             if (!payload.content.trim()) {
               return;

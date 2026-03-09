@@ -1,4 +1,4 @@
-.PHONY: help install dev daemon daemon-dev typecheck build verify verify-web arch
+.PHONY: help install dev daemon daemon-dev typecheck build verify verify-web arch contracts contracts-check
 
 help: ## コマンド一覧を表示
 	@grep -E '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -21,11 +21,18 @@ typecheck: ## 全パッケージの型チェック
 build: ## 全体ビルド (web + daemon + main + renderer)
 	npm --prefix electron run build
 
-verify: ## typecheck + build + e2e:gui (リリース前に必ず実行)
+verify: contracts-check ## typecheck + build + contracts-check + e2e:gui (リリース前に必ず実行)
 	npm --prefix electron run verify:final
 
 verify-web: ## Web UI の e2e テスト
 	npm --prefix electron run e2e:web
+
+contracts: ## TS → Python Hook 定数を生成 (hooks/contracts.py)
+	node scripts/generate-hook-contracts.mjs
+
+contracts-check: ## contracts.py が最新か + Hook に文字列直書きがないか検証
+	node scripts/generate-hook-contracts.mjs --check
+	node scripts/check-hook-literals.mjs
 
 arch: ## アーキテクチャ図を生成
 	npm --prefix electron run architecture

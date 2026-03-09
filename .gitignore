@@ -6,3 +6,5 @@
 .claude/meeting-room/daemon/
 .cursor/debug-*.log
 services/meeting-room-daemon/dist/
+__pycache__/
+*.pyc

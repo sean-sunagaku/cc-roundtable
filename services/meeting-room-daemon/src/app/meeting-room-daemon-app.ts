@@ -27,6 +27,7 @@ import type {
   SessionViewUpdatedEvent,
   TerminalChunkEvent
 } from "@contracts/meeting-room-daemon";
+import { HOOK_ENV_VARS, RELAY_PAYLOAD_TYPES } from "@contracts/hook-contract";
 import { LocalMeetingRoomSupport } from "../../../../packages/meeting-room-support/src/local-meeting-room-support";
 import {
   ACTIVE_FLAG_RELATIVE_PATH,
@@ -53,10 +54,10 @@ export class MeetingRoomDaemonApp {
     process.env.MEETING_ROOM_DAEMON_DATA_DIR?.trim() ||
     path.resolve(this.repoRoot, ".claude/meeting-room/daemon");
   private readonly approvalDir =
-    process.env.MEETING_ROOM_APPROVAL_DIR?.trim() ||
+    process.env[HOOK_ENV_VARS.approvalDir]?.trim() ||
     path.resolve(this.repoRoot, APPROVAL_STATE_RELATIVE_DIR);
   private readonly activeFile =
-    process.env.MEETING_ROOM_ACTIVE_FILE?.trim() ||
+    process.env[HOOK_ENV_VARS.activeFile]?.trim() ||
     path.resolve(this.repoRoot, ACTIVE_FLAG_RELATIVE_PATH);
   private readonly relayReceiver = new HooksRelayReceiver();
   private readonly eventStream = new DaemonEventStream();
@@ -412,7 +413,7 @@ export class MeetingRoomDaemonApp {
       return;
     }
 
-    if (payload.type === "agent_status") {
+    if (payload.type === RELAY_PAYLOAD_TYPES.agentStatus) {
       this.sessions.append({
         kind: "AgentStatusChanged",
         at: payload.timestamp || new Date().toISOString(),
