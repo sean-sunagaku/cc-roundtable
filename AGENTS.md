@@ -2,6 +2,12 @@
 
 AI エージェント（Cursor/Claude）がこのプロジェクトを編集・調査する際のコンテキストです。
 
+## ドキュメントの役割
+
+- `AGENTS.md`: エージェント向けの正本。実装ルール、既知不具合、調査起点をまとめる
+- `CLAUDE.md`: Claude 系エージェント向けの短い入口
+- `docs/design/meeting-room-product-design.md`: プロダクト設計資料の正本
+
 ## サービス概要
 
 Meeting Room は、ローカルのコードベースを題材に複数 Agent で議論・実装を進めるための実験用サービスです。
@@ -20,23 +26,23 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 1. `docs/service-overview.md`
 2. `README.md`
-3. `packages/shared-contracts/src/meeting-room-daemon.ts`
-4. `hooks/README.md`
+3. `src/packages/shared-contracts/src/meeting-room-daemon.ts`
+4. `src/packages/meeting-room-hooks/README.md`
 5. `docs/current-architecture-overview.svg`
 
 実装詳細が必要になったら次を読むと早いです。
 
 | 関心 | 最初に見るファイル |
 |------|--------------------|
-| Electron から daemon をどう叩いているか | `electron/src/main/index.ts`, `electron/src/main/daemon/meeting-room-daemon-manager.ts` |
-| 会議開始、初回プロンプト、Agent 構成 | `electron/src/main/meeting.ts` |
-| daemon 側の API とライフサイクル | `services/meeting-room-daemon/src/http/start-meeting-room-daemon-server.ts`, `services/meeting-room-daemon/src/app/meeting-room-daemon-app.ts` |
-| Claude runtime / PTY / ready 検出 | `services/meeting-room-daemon/src/runtime/meeting-runtime-manager.ts`, `electron/src/main/pty-manager.ts` |
-| 会話・状態の永続化と復元 | `services/meeting-room-daemon/src/sessions/meeting-session-store.ts`, `services/meeting-room-daemon/src/events/` |
-| ブラウザ UI | `apps/web/src/WebRootApp.tsx`, `apps/web/src/browser-meeting-room-client.ts`, `apps/web/src/index.html` |
-| Electron renderer UI | `electron/src/renderer/screens/SetupScreen.tsx`, `electron/src/renderer/screens/MeetingScreen.tsx` |
-| 契約型 / API surface | `packages/shared-contracts/src/meeting-room-daemon.ts`, `electron/src/shared/types.ts` |
-| Hook relay の挙動 | `.claude/settings.json`, `hooks/README.md`, `hooks/*.py` |
+| Electron から daemon をどう叩いているか | `src/apps/desktop/src/main/index.ts`, `src/apps/desktop/src/main/daemon/meeting-room-daemon-manager.ts` |
+| 会議開始、初回プロンプト、Agent 構成 | `src/apps/desktop/src/main/meeting.ts` |
+| daemon 側の API とライフサイクル | `src/daemon/src/http/start-meeting-room-daemon-server.ts`, `src/daemon/src/app/meeting-room-daemon-app.ts` |
+| Claude runtime / PTY / ready 検出 | `src/daemon/src/runtime/meeting-runtime-manager.ts`, `src/apps/desktop/src/main/pty-manager.ts` |
+| 会話・状態の永続化と復元 | `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/` |
+| ブラウザ UI | `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/browser-meeting-room-client.ts`, `src/apps/web/src/index.html` |
+| Electron renderer UI | `src/apps/desktop/src/renderer/screens/SetupScreen.tsx`, `src/apps/desktop/src/renderer/screens/MeetingScreen.tsx` |
+| 契約型 / API surface | `src/packages/shared-contracts/src/meeting-room-daemon.ts`, `src/apps/desktop/src/shared/types.ts` |
+| Hook relay の挙動 | `.claude/settings.json`, `src/packages/meeting-room-hooks/README.md`, `src/packages/meeting-room-hooks/*.py` |
 | GUI 最終検証 | `e2e/gui/final-verification.mjs` |
 
 ## 現在の構成
@@ -45,7 +51,7 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 - Setup 画面で議題・projectDir・参加 Agent を選ぶ
 - Meeting 画面で chat / terminal / runtime diagnostics を表示する
-- 共通 UI 本体は `electron/src/renderer/MeetingRoomShell.tsx`、Electron 側の入口は `electron/src/renderer/App.tsx`
+- 共通 UI 本体は `src/apps/desktop/src/renderer/MeetingRoomShell.tsx`、Electron 側の入口は `src/apps/desktop/src/renderer/App.tsx`
 
 ### 2. Electron main
 
@@ -61,12 +67,12 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 ### 5. Browser UI
 
-- `apps/web/src/` で Browser client を実装し、`apps/web/client/` に build して配信する
+- `src/apps/web/src/` で Browser client を実装し、`src/apps/web/client/` に build して配信する
 - `BrowserMeetingRoomClient` が daemon REST/SSE を直接叩き、`MeetingRoomShell` を再利用して Electron と同じ会議フローを表示する
 
 ### 4. Hooks / relay
 
-- `.claude/settings.json` から `hooks/run-hook.sh` 経由で Python hooks を起動する
+- `.claude/settings.json` から `src/packages/meeting-room-hooks/run-hook.sh` 経由で Python hooks を起動する
 - `approval-gate.py` が `SendMessage` / `Task` / `TeamCreate` を承認待ち中にブロックする
 - `SendMessage`, `SubagentStop`, `Stop`, `TeamCreate`, `Task` を relay し、chat 表示や状態更新に使う
 - terminal 生ログから会話を再構成する fallback は廃止済みで、hook 起点の payload が正系
@@ -74,9 +80,9 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 ## Project knowledge の取り方
 
 - まず `docs/service-overview.md` を読めば、概要・起動方法・責務分割・調査起点が一通りわかります
-- 契約を先に掴みたい場合は `packages/shared-contracts/src/meeting-room-daemon.ts` を起点にすると、API と event の全体像を短時間で把握できます
+- 契約を先に掴みたい場合は `src/packages/shared-contracts/src/meeting-room-daemon.ts` を起点にすると、API と event の全体像を短時間で把握できます
 - 「なぜ今こうなっているか」を知りたい時は `docs/rearchitecture/content_rearchitecture_2026-03-06/` を読むと設計意図の比較材料があります
-- Hook relay の表示仕様やノイズ除去ルールは `hooks/README.md` が一次情報です
+- Hook relay の表示仕様やノイズ除去ルールは `src/packages/meeting-room-hooks/README.md` が一次情報です
 - エージェント向けドキュメントを更新する時は、`AGENTS.md` / `CLAUDE.md` / `docs/service-overview.md` をセットで同期してください
 - この環境で Project memory を使えるエージェントは、project overview / commands / completion notes も参照してください
 
@@ -170,14 +176,14 @@ setTimeout(() => {
 **原因**: draw.io 固有の `foreignObject` / text fallback / レイアウト処理の再現度が不十分な変換器がある。
 
 **方針**: `.drawio` から `.svg` を作る時は、`draw.io / diagrams.net desktop` の **公式 export 経路**を使う。  
-このリポジトリでは `electron/package.json` の devDependencies に入っている `@hhhtj/draw.io` を使う。
+このリポジトリでは `src/apps/desktop/package.json` の devDependencies に入っている `@hhhtj/draw.io` を使う。
 
 **コマンド例**:
 
 ```bash
-cd electron
-./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../docs/architecture.svg ../docs/architecture.drawio
-./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../docs/current-architecture-overview.svg ../docs/current-architecture-overview.drawio
+cd src/apps/desktop
+./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../../../docs/architecture.svg ../../../docs/architecture.drawio
+./node_modules/.bin/electron ./node_modules/@hhhtj/draw.io --export --format svg --output ../../../docs/current-architecture-overview.svg ../../../docs/current-architecture-overview.drawio
 ```
 
 **補足**:
@@ -221,8 +227,8 @@ cd electron
 **実行コマンド**:
 
 ```bash
-npm --prefix electron run verify:final
-npm --prefix electron run e2e:web
+npm --prefix src/apps/desktop run verify:final
+npm --prefix src/apps/desktop run e2e:web
 ```
 
 **内容**:
@@ -249,11 +255,11 @@ npm --prefix electron run e2e:web
 
 | 責務 | ファイル |
 |------|----------|
-| PTY 管理・claude 起動・--settings 付与 | `electron/src/main/pty-manager.ts` |
-| 会議ライフサイクル・submitPrompt | `electron/src/main/meeting.ts` |
-| ready 検出・flush トリガー | `electron/src/main/index.ts` (`ptyManager.on("data")`) |
+| PTY 管理・claude 起動・--settings 付与 | `src/apps/desktop/src/main/pty-manager.ts` |
+| 会議ライフサイクル・submitPrompt | `src/apps/desktop/src/main/meeting.ts` |
+| ready 検出・flush トリガー | `src/apps/desktop/src/main/index.ts` (`ptyManager.on("data")`) |
 | Hook 設定 | `.claude/settings.json` |
-| draw.io 公式 export 用依存 | `electron/package.json` (`@hhhtj/draw.io`) |
+| draw.io 公式 export 用依存 | `src/apps/desktop/package.json` (`@hhhtj/draw.io`) |
 | 元図 | `docs/architecture.drawio`, `docs/current-architecture-overview.drawio` |
 | 生成 SVG | `docs/architecture.svg`, `docs/current-architecture-overview.svg` |
 | rearchitecture 文書群 | `docs/rearchitecture/content_rearchitecture_2026-03-06/` |

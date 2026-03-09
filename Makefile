@@ -4,30 +4,30 @@ help: ## コマンド一覧を表示
 	@grep -E '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 install: ## 依存パッケージをインストール
-	npm --prefix electron install
+	npm --prefix src/apps/desktop install
 
 dev: ## Electron アプリを起動 (開発モード)
-	npm --prefix electron run dev
+	npm --prefix src/apps/desktop run dev
 
 daemon: ## daemon 単体を起動 → http://127.0.0.1:4417/web/index.html
-	npm --prefix electron run daemon:start
+	npm --prefix src/apps/desktop run daemon:start
 
 daemon-dev: ## daemon 単体を起動 (watch / 自動再起動)
-	npm --prefix electron run daemon:start:dev
+	npm --prefix src/apps/desktop run daemon:start:dev
 
 typecheck: ## 全パッケージの型チェック
-	npm --prefix electron run typecheck
+	npm --prefix src/apps/desktop run typecheck
 
 build: ## 全体ビルド (web + daemon + main + renderer)
-	npm --prefix electron run build
+	npm --prefix src/apps/desktop run build
 
 verify: contracts-check ## typecheck + build + contracts-check + e2e:gui (リリース前に必ず実行)
-	npm --prefix electron run verify:final
+	npm --prefix src/apps/desktop run verify:final
 
 verify-web: ## Web UI の e2e テスト
-	npm --prefix electron run e2e:web
+	npm --prefix src/apps/desktop run e2e:web
 
-contracts: ## TS → Python Hook 定数を生成 (hooks/contracts.py)
+contracts: ## TS → Python Hook 定数を生成 (src/packages/meeting-room-hooks/contracts.py)
 	node scripts/generate-hook-contracts.mjs
 
 contracts-check: ## contracts.py が最新か + Hook に文字列直書きがないか検証
@@ -35,4 +35,4 @@ contracts-check: ## contracts.py が最新か + Hook に文字列直書きがな
 	node scripts/check-hook-literals.mjs
 
 arch: ## アーキテクチャ図を生成
-	npm --prefix electron run architecture
+	npm --prefix src/apps/desktop run architecture

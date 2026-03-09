@@ -2,53 +2,53 @@
   "generatedAt": "2026-03-05T10:32:35.679Z",
   "renderer": {
     "files": [
-      "electron/src/renderer/App.tsx",
-      "electron/src/renderer/components/ChatView.tsx",
-      "electron/src/renderer/components/ConnectionStatus.tsx",
-      "electron/src/renderer/components/InputBar.tsx",
-      "electron/src/renderer/components/MessageBubble.tsx",
-      "electron/src/renderer/components/TerminalPane.tsx",
-      "electron/src/renderer/global.d.ts",
-      "electron/src/renderer/main.tsx",
-      "electron/src/renderer/screens/MeetingScreen.tsx",
-      "electron/src/renderer/screens/SessionDebugWindow.tsx",
-      "electron/src/renderer/screens/SetupScreen.tsx"
+      "src/apps/desktop/src/renderer/App.tsx",
+      "src/apps/desktop/src/renderer/components/ChatView.tsx",
+      "src/apps/desktop/src/renderer/components/ConnectionStatus.tsx",
+      "src/apps/desktop/src/renderer/components/InputBar.tsx",
+      "src/apps/desktop/src/renderer/components/MessageBubble.tsx",
+      "src/apps/desktop/src/renderer/components/TerminalPane.tsx",
+      "src/apps/desktop/src/renderer/global.d.ts",
+      "src/apps/desktop/src/renderer/main.tsx",
+      "src/apps/desktop/src/renderer/screens/MeetingScreen.tsx",
+      "src/apps/desktop/src/renderer/screens/SessionDebugWindow.tsx",
+      "src/apps/desktop/src/renderer/screens/SetupScreen.tsx"
     ],
     "imports": {
-      "electron/src/renderer/App.tsx": [
+      "src/apps/desktop/src/renderer/App.tsx": [
         "react",
         "@shared/types",
         "./screens/SetupScreen",
         "./screens/MeetingScreen",
         "./screens/SessionDebugWindow"
       ],
-      "electron/src/renderer/components/ChatView.tsx": [
+      "src/apps/desktop/src/renderer/components/ChatView.tsx": [
         "@shared/types",
         "./MessageBubble"
       ],
-      "electron/src/renderer/components/ConnectionStatus.tsx": [],
-      "electron/src/renderer/components/InputBar.tsx": [
+      "src/apps/desktop/src/renderer/components/ConnectionStatus.tsx": [],
+      "src/apps/desktop/src/renderer/components/InputBar.tsx": [
         "react"
       ],
-      "electron/src/renderer/components/MessageBubble.tsx": [
+      "src/apps/desktop/src/renderer/components/MessageBubble.tsx": [
         "react",
         "marked",
         "@shared/types"
       ],
-      "electron/src/renderer/components/TerminalPane.tsx": [
+      "src/apps/desktop/src/renderer/components/TerminalPane.tsx": [
         "react",
         "@xterm/xterm",
         "@xterm/addon-fit"
       ],
-      "electron/src/renderer/global.d.ts": [
+      "src/apps/desktop/src/renderer/global.d.ts": [
         "../main/preload"
       ],
-      "electron/src/renderer/main.tsx": [
+      "src/apps/desktop/src/renderer/main.tsx": [
         "react",
         "react-dom/client",
         "./App"
       ],
-      "electron/src/renderer/screens/MeetingScreen.tsx": [
+      "src/apps/desktop/src/renderer/screens/MeetingScreen.tsx": [
         "react",
         "@shared/types",
         "../components/ChatView",
@@ -56,11 +56,11 @@
         "../components/InputBar",
         "../components/TerminalPane"
       ],
-      "electron/src/renderer/screens/SessionDebugWindow.tsx": [
+      "src/apps/desktop/src/renderer/screens/SessionDebugWindow.tsx": [
         "react",
         "@shared/types"
       ],
-      "electron/src/renderer/screens/SetupScreen.tsx": [
+      "src/apps/desktop/src/renderer/screens/SetupScreen.tsx": [
         "react",
         "@shared/types"
       ]
@@ -68,14 +68,14 @@
   },
   "main": {
     "files": [
-      "electron/src/main/index.ts",
-      "electron/src/main/meeting.ts",
-      "electron/src/main/preload.ts",
-      "electron/src/main/pty-manager.ts",
-      "electron/src/main/ws-server.ts"
+      "src/apps/desktop/src/main/index.ts",
+      "src/apps/desktop/src/main/meeting.ts",
+      "src/apps/desktop/src/main/preload.ts",
+      "src/apps/desktop/src/main/pty-manager.ts",
+      "src/apps/desktop/src/main/ws-server.ts"
     ],
     "imports": {
-      "electron/src/main/index.ts": [
+      "src/apps/desktop/src/main/index.ts": [
         "node:path",
         "node:fs",
         "electron",
@@ -84,7 +84,7 @@
         "./meeting",
         "@shared/types"
       ],
-      "electron/src/main/meeting.ts": [
+      "src/apps/desktop/src/main/meeting.ts": [
         "node:fs",
         "node:path",
         "node:os",
@@ -92,17 +92,17 @@
         "@shared/types",
         "./pty-manager"
       ],
-      "electron/src/main/preload.ts": [
+      "src/apps/desktop/src/main/preload.ts": [
         "electron",
         "@shared/types"
       ],
-      "electron/src/main/pty-manager.ts": [
+      "src/apps/desktop/src/main/pty-manager.ts": [
         "node:os",
         "node:path",
         "node:events",
         "node-pty"
       ],
-      "electron/src/main/ws-server.ts": [
+      "src/apps/desktop/src/main/ws-server.ts": [
         "ws",
         "@shared/types"
       ]
@@ -110,7 +110,7 @@
   },
   "shared": {
     "files": [
-      "electron/src/shared/types.ts"
+      "src/apps/desktop/src/shared/types.ts"
     ],
     "types": [
       "MessageStatus",
@@ -130,9 +130,9 @@
   },
   "hooks": {
     "files": [
-      "hooks/enforce-broadcast.py",
-      "hooks/subagent-status-relay.py",
-      "hooks/ws-relay.py"
+      "src/packages/meeting-room-hooks/enforce-broadcast.py",
+      "src/packages/meeting-room-hooks/subagent-status-relay.py",
+      "src/packages/meeting-room-hooks/ws-relay.py"
     ]
   },
   "ipcChannels": [
@@ -166,7 +166,7 @@
           "hooks": [
             {
               "type": "command",
-              "command": "python3 \"$PWD/hooks/enforce-broadcast.py\""
+              "command": "python3 \"$PWD/src/packages/meeting-room-hooks/enforce-broadcast.py\""
             }
           ]
         }
@@ -177,7 +177,7 @@
           "hooks": [
             {
               "type": "command",
-              "command": "python3 \"$PWD/hooks/ws-relay.py\""
+              "command": "python3 \"$PWD/src/packages/meeting-room-hooks/ws-relay.py\""
             }
           ]
         },
@@ -186,7 +186,7 @@
           "hooks": [
             {
               "type": "command",
-              "command": "python3 \"$PWD/hooks/subagent-status-relay.py\""
+              "command": "python3 \"$PWD/src/packages/meeting-room-hooks/subagent-status-relay.py\""
             }
           ]
         }

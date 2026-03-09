@@ -16,12 +16,12 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { transformSync } = require("../electron/node_modules/esbuild");
+const { transformSync } = require("../src/apps/desktop/node_modules/esbuild");
 
 const __filename = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(__filename), "..");
-const hooksDir = resolve(repoRoot, "hooks");
-const contractTsPath = resolve(repoRoot, "packages/shared-contracts/src/hook-contract.ts");
+const hooksDir = resolve(repoRoot, "src/packages/meeting-room-hooks");
+const contractTsPath = resolve(repoRoot, "src/packages/shared-contracts/src/hook-contract.ts");
 
 // ---------------------------------------------------------------------------
 // 1. Load contract values

@@ -39,7 +39,7 @@
 
 ```text
 apps/
-  electron/
+  src/apps/desktop/
     main/
     renderer/
   web/
