@@ -15,6 +15,7 @@ const chromeAppName = process.env.MEETING_ROOM_WEB_E2E_CHROME_APP ?? "Google Chr
 const runId = `${Date.now()}`;
 const topic = `Web E2E final verification ${runId}`;
 const humanMessage = "Web E2E の自動確認です。状態を短く返してください。";
+const bypassTopic = `Web E2E bypass verification ${runId}`;
 const webUrl = `http://127.0.0.1:${daemonPort}/web/index.html?runId=${runId}`;
 const e2eStateDir = path.join(os.tmpdir(), `meeting-room-web-e2e-${runId}`);
 const daemonDataDir = path.join(e2eStateDir, "daemon");
@@ -396,6 +397,82 @@ async function sendHumanMessageAndVerify(meetingId) {
   }, "human message persistence", 30_000, 750);
 }
 
+function isRenderableAgentMessage(message) {
+  if (!message || message.source !== "agent") {
+    return false;
+  }
+  const content = String(message.content ?? "").trim();
+  if (!content || content === humanMessage) {
+    return false;
+  }
+  if (/^(?:\/Users\/|\/home\/|[A-Za-z]:\\).+\.(?:jsonl|json|md|txt|log)$/u.test(content)) {
+    return false;
+  }
+  return true;
+}
+
+function normalizeText(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function buildExpectedAgentEntries(messages) {
+  return messages
+    .filter((message) => isRenderableAgentMessage(message))
+    .map((message) => ({
+      sender: normalizeText(message.subagent?.trim() || message.sender),
+      snippet: normalizeText(message.content).slice(0, 40)
+    }));
+}
+
+async function verifyAgentConversation(meetingId, label) {
+  const view = await waitFor(async () => {
+    const current = await currentMeetingView(meetingId);
+    if (!current.health?.lastAgentReplyAt) {
+      return null;
+    }
+    if (current.sessionDebug?.tail?.some((line) => /AskUserQuestion/i.test(String(line)))) {
+      throw new Error(`AskUserQuestion detected during ${label} flow`);
+    }
+    return current.messages.some((message) => isRenderableAgentMessage(message)) ? current : null;
+  }, `${label} agent message in daemon session`, 120_000, 1_000);
+
+  const expectedEntries = buildExpectedAgentEntries(view.messages);
+  if (expectedEntries.length === 0) {
+    throw new Error(`No renderable agent messages found for ${label}`);
+  }
+
+  await waitForDom(
+    `(() => {
+      const bubbles = [...document.querySelectorAll(".bubble.agent")];
+      return bubbles.some((bubble) => {
+        const sender = bubble.querySelector(".sender")?.textContent?.trim() || "";
+        const body = bubble.querySelector(".bubble-body")?.textContent?.trim() || "";
+        return sender.length > 0 && body.length > 0 && !/\\.jsonl$/i.test(body);
+      });
+    })()`,
+    `${label} agent bubble in DOM`,
+    120_000,
+    1_000
+  );
+
+  await waitForDom(
+    `(() => {
+      const normalize = (value) => String(value ?? "").replace(/\\s+/g, " ").trim();
+      const expectedEntries = ${json(expectedEntries)};
+      const bubbles = [...document.querySelectorAll(".bubble.agent")].map((bubble) => ({
+        sender: normalize(bubble.querySelector(".sender")?.textContent),
+        body: normalize(bubble.querySelector(".bubble-body")?.textContent)
+      }));
+      return expectedEntries.every((expected) => bubbles.some((bubble) => {
+        return bubble.sender === expected.sender && bubble.body.includes(expected.snippet);
+      }));
+    })()`,
+    `${label} all agent messages in DOM`,
+    120_000,
+    1_000
+  );
+}
+
 async function verifyPauseAndResume(meetingId) {
   await domAction(buttonClickExpression("一時停止"), "pause meeting");
   await waitFor(async () => {
@@ -456,6 +533,18 @@ async function endMeetingAndVerifyCleared() {
     const summaries = fs.readdirSync(summariesDir).filter((name) => name.endsWith(".md"));
     return summaries.length > 0 ? summaries : null;
   }, "saved meeting summary", 10_000, 500);
+}
+
+async function verifyBypassConversation() {
+  const meetingId = await startMeetingFromSetup({ meetingTopic: bypassTopic, bypassMode: true });
+  await waitFor(async () => {
+    const view = await currentMeetingView(meetingId);
+    return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true ? view : null;
+  }, "bypass mode session config", 30_000, 750);
+
+  await sendHumanMessageAndVerify(meetingId);
+  await verifyAgentConversation(meetingId, "bypass");
+  await endMeetingAndVerifyCleared();
 }
 
 class CdpClient {
@@ -555,6 +644,7 @@ async function main() {
 
     logStep("sending a human message");
     await sendHumanMessageAndVerify(meetingId);
+    await verifyAgentConversation(meetingId, "normal");
 
     logStep("verifying pause and resume");
     await verifyPauseAndResume(meetingId);
@@ -564,6 +654,9 @@ async function main() {
 
     logStep("ending meeting and confirming cleanup");
     await endMeetingAndVerifyCleared();
+
+    logStep("starting bypass mode meeting");
+    await verifyBypassConversation();
 
     logStep("Web E2E passed");
   } finally {

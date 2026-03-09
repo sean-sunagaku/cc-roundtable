@@ -11,6 +11,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
 import socket
 import sys
@@ -80,6 +81,9 @@ class ResolvedMessage:
     sender_source: str
 
 
+PATH_ONLY_PATTERN = r"^(?:/Users/|/home/|[A-Za-z]:\\).+\.(?:jsonl|json|md|txt|log)$"
+
+
 def _candidate_active_paths() -> list[Path]:
     env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
     paths: list[Path] = []
@@ -111,8 +115,28 @@ def parse_payload() -> SendMessageHookPayload:
     return {}
 
 
+def _extract_mapping(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    value = payload.get(key)
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
 def _as_str(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
+
+
+def _is_valid_message_content(value: str) -> bool:
+    if not value.strip():
+        return False
+    compact = value.strip()
+    if compact.startswith("[[[MEETING_ROOM_RESPONSE_START]]]"):
+        return False
+    if compact.startswith("@") and "❯" in compact and "\n" not in compact:
+        return False
+    if re.match(PATH_ONLY_PATTERN, compact):
+        return False
+    return True
 
 
 def _sender_from_agent_id(agent_id: str) -> str:
@@ -122,10 +146,10 @@ def _sender_from_agent_id(agent_id: str) -> str:
 
 
 def _resolve_message(payload: SendMessageHookPayload) -> ResolvedMessage:
-    tool_input = payload.get("tool_input") or {}
-    response = payload.get("tool_response") or {}
-    routing = response.get("routing") or {}
-    metadata = payload.get("metadata") or {}
+    tool_input = _extract_mapping(payload, "tool_input")
+    response = _extract_mapping(payload, "tool_response")
+    routing = _extract_mapping(response, "routing")
+    metadata = _extract_mapping(payload, "metadata")
 
     routing_sender = _as_str(routing.get("sender"))
     env_subagent = _as_str(os.environ.get("CLAUDE_SUBAGENT_NAME"))
@@ -158,9 +182,14 @@ def _resolve_message(payload: SendMessageHookPayload) -> ResolvedMessage:
             sender = "leader"
             sender_source = "fallback"
 
-    content = _as_str(response.get("content")) or _as_str(routing.get("content")) or _as_str(tool_input.get("content"))
+    content_candidates = [
+        _as_str(routing.get("content")),
+        _as_str(response.get("content")),
+        _as_str(tool_input.get("content")),
+    ]
+    content = next((candidate for candidate in content_candidates if _is_valid_message_content(candidate)), "")
     team = _as_str(metadata.get("team")) or _as_str(os.environ.get("CLAUDE_TEAM_NAME")) or "unknown"
-    meeting_id = _as_str(metadata.get("meetingId")) or _as_str(os.environ.get("MEETING_ROOM_MEETING_ID")) or None
+    meeting_id = _as_str(metadata.get("meeting_id")) or _as_str(os.environ.get("MEETING_ROOM_MEETING_ID")) or None
     raw_type = _as_str(tool_input.get("type")) or "message"
 
     return ResolvedMessage(
@@ -181,9 +210,9 @@ def write_debug(payload: SendMessageHookPayload, resolved: ResolvedMessage) -> N
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "payloadKeys": sorted(payload.keys()),
-        "toolInputKeys": sorted((payload.get("tool_input") or {}).keys()),
-        "toolResponseKeys": sorted((payload.get("tool_response") or {}).keys()),
-        "routingKeys": sorted(((payload.get("tool_response") or {}).get("routing") or {}).keys()),
+        "toolInputKeys": sorted(_extract_mapping(payload, "tool_input").keys()),
+        "toolResponseKeys": sorted(_extract_mapping(payload, "tool_response").keys()),
+        "routingKeys": sorted(_extract_mapping(_extract_mapping(payload, "tool_response"), "routing").keys()),
         "envSubagent": _as_str(os.environ.get("CLAUDE_SUBAGENT_NAME")),
         "envAgent": _as_str(os.environ.get("CLAUDE_AGENT_NAME")),
         "resolvedSender": resolved.sender,
@@ -288,13 +317,17 @@ def main() -> int:
     payload = parse_payload()
     if not payload:
         return 0
+    if _as_str(payload.get("hook_event_name")).lower() != "posttooluse":
+        return 0
+    if _as_str(payload.get("tool_name")).lower() != "sendmessage":
+        return 0
 
     resolved = _resolve_message(payload)
     try:
         write_debug(payload, resolved)
     except Exception:
         pass
-    if not resolved.content:
+    if not _is_valid_message_content(resolved.content):
         return 0
 
     message = build_message(resolved)

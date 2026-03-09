@@ -61,7 +61,9 @@ def parse_payload() -> dict[str, Any]:
 
 def _extract_dict(payload: dict[str, Any], key: str) -> dict[str, Any]:
     value = payload.get(key)
-    return value if isinstance(value, dict) else {}
+    if isinstance(value, dict):
+        return value
+    return {}
 
 
 def _extract_tool_name(payload: dict[str, Any]) -> str:
@@ -212,6 +214,9 @@ def main() -> int:
 
     payload = parse_payload()
     if not payload:
+        return 0
+    hook_event = str(payload.get("hook_event_name") or "").strip().lower()
+    if hook_event != "posttooluse":
         return 0
 
     should, normalized = should_emit(payload)

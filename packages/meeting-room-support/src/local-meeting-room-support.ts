@@ -81,7 +81,7 @@ const DEFAULT_AGENT_PROFILES: Array<Omit<AgentProfileRecord, "source">> = [
   {
     id: "user-liaison",
     name: "User Liaison",
-    description: "前提不足や曖昧さを見つけたら、ユーザーに確認すべき論点を整理して共有する",
+    description: "前提不足や曖昧さを見つけたら、合理的な仮定と追加論点を整理してチームへ共有する",
     enabledByDefault: true
   }
 ];
@@ -140,7 +140,8 @@ export class LocalMeetingRoomSupport {
       "- Team 編成や再編成の際も同じです。常に broadcast 可能な general-purpose タイプだけで構成してください。",
       "- 会議中の SendMessage は必ず type: \"broadcast\" のみを使ってください。directed は禁止です。",
       "- すべての重要な検討結果は、チャット欄に表示されるよう broadcast で共有してください。",
-      "- 前提不足や未確定事項がある場合は、user-liaison の役割でユーザーへの確認事項を整理し、先に確認を優先してください。",
+      "- 前提不足や未確定事項があっても AskUserQuestion は使わず、合理的な仮定を明示して議論を前進させてください。",
+      "- user-liaison は不足前提を検出したら、ユーザーへの質問ではなく『仮定 / 不確実性 / 後で確認すべき論点』として broadcast で共有してください。",
       "- 返答は一度に広げすぎず、次に人間が判断できる粒度で区切ってください。",
       "- 返答は『結論 / 根拠 / 次アクション』の順で簡潔に整理してください。",
       "",
@@ -151,7 +152,7 @@ export class LocalMeetingRoomSupport {
       "最初に実行すること:",
       "1. 相談内容から Team 構成案を作る",
       "2. Team 構成は general-purpose タイプのみで確定し、その方針を broadcast で共有する",
-      "3. 初期分析を broadcast で共有し、必要ならユーザーへの確認事項を出す",
+      "3. 初期分析を broadcast で共有し、必要なら仮定と不確実性を併記する",
       "4. broadcast ができないエージェント種別は採用しない。必要なら general-purpose で再作成する"
     ].join("\n");
   }

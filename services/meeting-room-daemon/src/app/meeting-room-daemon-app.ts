@@ -39,7 +39,6 @@ import { HooksRelayReceiver } from "../relay/hooks-relay-receiver";
 import {
   hasClaudeReadySignal,
   hasMcpFailureSignal,
-  shouldDisplayAgentMessageContent,
   isUsageLimitReached,
   stripAnsi
 } from "../runtime/terminal-utils";
@@ -437,7 +436,7 @@ export class MeetingRoomDaemonApp {
       return;
     }
 
-    if (!shouldDisplayAgentMessageContent(payload.content)) {
+    if (!payload.content.trim()) {
       return;
     }
 
@@ -620,7 +619,8 @@ export class MeetingRoomDaemonApp {
       ...this.buildMeetingContextLines(meetingId),
       "",
       "必要なら失敗した SendMessage / Task / TeamCreate をやり直し、次の進捗を broadcast で共有してください。",
-      "会議コンテキストが不足しているとは扱わず、上の議題と直近の会話を前提に続行してください。"
+      "会議コンテキストが不足しているとは扱わず、上の議題と直近の会話を前提に続行してください。",
+      "不足情報があっても AskUserQuestion は使わず、合理的な仮定を置いて進めてください。"
     ].join("\n");
   }
 
@@ -630,7 +630,8 @@ export class MeetingRoomDaemonApp {
       "以下の会議コンテキストを確認し、直前の要点を踏まえて続行してください。",
       ...this.buildMeetingContextLines(meetingId),
       "",
-      "次の進捗は broadcast で共有してください。"
+      "次の進捗は broadcast で共有してください。",
+      "不足情報があってもユーザー確認で止まらず、必要な仮定を置いて進めてください。"
     ].join("\n");
   }
 

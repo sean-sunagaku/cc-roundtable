@@ -100,15 +100,6 @@ function isUiNoiseLine(line: string): boolean {
   return false;
 }
 
-function isSuppressedChatMessage(line: string): boolean {
-  const compact = compactWhitespace(line);
-  if (!compact) return true;
-  if (/^#{1,6}\s*Team Event\b/i.test(compact)) return true;
-  if (/TeamCreate を実行/.test(compact)) return true;
-  if (/Task を作成/.test(compact)) return true;
-  return isUiNoiseLine(compact);
-}
-
 export function collectDebugTail(existing: string[], chunk: string): string[] {
   const next = [...existing];
   for (const rawLine of chunk.split(/[\r\n]+/)) {
@@ -139,5 +130,5 @@ export function filterVisibleTailLines(lines: string[]): string[] {
 }
 
 export function shouldDisplayAgentMessageContent(content: string): boolean {
-  return !isSuppressedChatMessage(content);
+  return compactWhitespace(content).length > 0;
 }
