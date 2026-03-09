@@ -1,4 +1,4 @@
-.PHONY: help install dev daemon daemon-dev typecheck build verify verify-web arch arch-new contracts contracts-check
+.PHONY: help install dev daemon daemon-dev typecheck build verify verify-web arch arch-new arch-update contracts contracts-check
 
 help: ## コマンド一覧を表示
 	@grep -E '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -39,3 +39,6 @@ arch: ## アーキテクチャ図を生成
 
 arch-new: ## アーキテクチャ案の雛形を作成 (slug と title は直接 script に渡す)
 	@echo '例: node scripts/scaffold-architecture-definition.mjs current-daemon "Current Daemon Architecture" local-daemon-bff'
+
+arch-update: ## docs/architecture-definitions の SVG と INDEX を一括更新
+	node scripts/update-architecture-definitions.mjs

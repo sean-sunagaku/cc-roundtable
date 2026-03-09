@@ -23,6 +23,23 @@ node scripts/scaffold-architecture-definition.mjs <slug> "<title>" [architecture
 node scripts/scaffold-architecture-definition.mjs current-daemon "Current Daemon Architecture" local-daemon-bff
 ```
 
+## 既存の案を一括更新する
+
+```bash
+node scripts/update-architecture-definitions.mjs
+```
+
+これで次をまとめて更新します。
+
+- 各 `source/*.drawio` から対応する `*.svg` を再生成
+- `docs/architecture-definitions/INDEX.md` を再生成
+
+特定の 1 案だけ更新したい時は次です。
+
+```bash
+node scripts/update-architecture-definitions.mjs --slug local-daemon-bff
+```
+
 ## 作られるもの
 
 - `Markdown` テンプレート

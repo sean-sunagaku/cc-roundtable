@@ -143,6 +143,14 @@ node scripts/scaffold-architecture-definition.mjs current-daemon "Current Daemon
 - `docs/architecture-definitions/current-daemon/source/current-daemon.drawio`
 - `docs/architecture-definitions/current-daemon/current-daemon_subagent-prompt.md`
 
+既存のアーキテクチャ文書をまとめて更新したい時はこれです。
+
+```bash
+node scripts/update-architecture-definitions.mjs
+```
+
+`drawio -> svg` の再生成と、`docs/architecture-definitions/INDEX.md` の更新を一度に行います。
+
 Codex 側では `.codex/skills/architecture-doc-subagents/SKILL.md` を入口にして、各アーキテクチャ案ごとの prompt template から SubAgent を起動する運用を想定しています。Meeting Room 側でも `.claude/meeting-room/agents/architecture-*.json` の専用エージェントを選べます。
 
 運用の詳細は `docs/architecture-definitions/08_subagent-usage.md` にまとめています。
