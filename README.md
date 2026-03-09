@@ -127,3 +127,22 @@ npm --prefix src/apps/desktop run e2e:web
 
 - browser client を Chrome で開き、CDP 経由の DOM 操作で確認する
 - 新規会議開始、手動送信、一時停止 / 再開、daemon 再起動後の recovering、会議終了を確認する
+
+## Architecture Docs
+
+アーキテクチャ案を `Markdown` / `draw.io` / `SVG` で増やしたい時は、`docs/architecture-definitions/` を使います。
+
+```bash
+node scripts/scaffold-architecture-definition.mjs current-daemon "Current Daemon Architecture" local-daemon-bff
+```
+
+これで次をまとめて作成します。
+
+- `docs/architecture-definitions/current-daemon/current-daemon.md`
+- `docs/architecture-definitions/current-daemon/current-daemon.svg`
+- `docs/architecture-definitions/current-daemon/source/current-daemon.drawio`
+- `docs/architecture-definitions/current-daemon/current-daemon_subagent-prompt.md`
+
+Codex 側では `.codex/skills/architecture-doc-subagents/SKILL.md` を入口にして、各アーキテクチャ案ごとの prompt template から SubAgent を起動する運用を想定しています。Meeting Room 側でも `.claude/meeting-room/agents/architecture-*.json` の専用エージェントを選べます。
+
+運用の詳細は `docs/architecture-definitions/08_subagent-usage.md` にまとめています。

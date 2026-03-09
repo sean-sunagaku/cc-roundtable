@@ -1,0 +1,6 @@
+{
+  "id": "architecture-hexagonal-plugin",
+  "name": "Architecture - Hexagonal Plugin",
+  "description": "port / adapter 分離の観点で Claude / PTY / hooks / storage の責務を整理し、docs/architecture-definitions 配下の成果物へ反映する",
+  "enabledByDefault": false
+}

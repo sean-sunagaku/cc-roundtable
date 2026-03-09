@@ -23,7 +23,8 @@
     "e2e:gui": "node ../../../e2e/gui/final-verification.mjs",
     "e2e:web": "node ../../../e2e/web/final-verification.mjs",
     "verify:final": "npm run typecheck && npm run build && npm run e2e:gui",
-    "architecture": "node ../../../scripts/generate-architecture.mjs"
+    "architecture": "node ../../../scripts/generate-architecture.mjs",
+    "architecture:new": "node ../../../scripts/scaffold-architecture-definition.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",

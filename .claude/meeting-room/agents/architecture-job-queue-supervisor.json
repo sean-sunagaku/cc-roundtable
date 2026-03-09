@@ -1,0 +1,6 @@
+{
+  "id": "architecture-job-queue-supervisor",
+  "name": "Architecture - Job Queue Supervisor",
+  "description": "queue / supervisor / worker モデルの適用可能性を評価し、採用条件とリスクを docs/architecture-definitions 配下の図と文書にまとめる",
+  "enabledByDefault": false
+}
