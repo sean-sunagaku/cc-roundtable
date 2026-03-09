@@ -1,0 +1,34 @@
+name: Hook Contracts Check
+
+on:
+  push:
+    paths:
+      - "packages/shared-contracts/src/hook-contract.ts"
+      - "hooks/**"
+      - "scripts/generate-hook-contracts.mjs"
+      - "scripts/check-hook-literals.mjs"
+  pull_request:
+    paths:
+      - "packages/shared-contracts/src/hook-contract.ts"
+      - "hooks/**"
+      - "scripts/generate-hook-contracts.mjs"
+      - "scripts/check-hook-literals.mjs"
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm --prefix electron install
+
+      - name: Check contracts.py is up to date
+        run: node scripts/generate-hook-contracts.mjs --check
+
+      - name: Check no hardcoded literals in hooks
+        run: node scripts/check-hook-literals.mjs

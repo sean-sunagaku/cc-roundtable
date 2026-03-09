@@ -21,11 +21,18 @@ from pathlib import Path
 from typing import Any, TypedDict
 
 
+from contracts import (
+    HookEnvVars as E,
+    RelayPayloadFields as F,
+    RelayPayloadTypes as T,
+    ResponseMarkers as M,
+)
+
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-WS_HOST = os.environ.get("MEETING_ROOM_WS_HOST", "127.0.0.1")
-WS_PORT = int(os.environ.get("MEETING_ROOM_WS_PORT", "9999"))
-WS_PATH = os.environ.get("MEETING_ROOM_WS_PATH", "/")
-WS_TIMEOUT = float(os.environ.get("MEETING_ROOM_WS_TIMEOUT", "0.8"))
+WS_HOST = os.environ.get(E.WS_HOST, "127.0.0.1")
+WS_PORT = int(os.environ.get(E.WS_PORT, "9999"))
+WS_PATH = os.environ.get(E.WS_PATH, "/")
+WS_TIMEOUT = float(os.environ.get(E.WS_TIMEOUT, "0.8"))
 DEFAULT_DEBUG_LOG = Path.cwd() / ".claude" / "meeting-room" / "ws-hook.log.jsonl"
 
 
@@ -85,7 +92,7 @@ PATH_ONLY_PATTERN = r"^(?:/Users/|/home/|[A-Za-z]:\\).+\.(?:jsonl|json|md|txt|lo
 
 
 def _candidate_active_paths() -> list[Path]:
-    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    env_path = os.environ.get(E.ACTIVE_FILE)
     paths: list[Path] = []
     if env_path:
         paths.append(Path(env_path).expanduser())
@@ -130,7 +137,7 @@ def _is_valid_message_content(value: str) -> bool:
     if not value.strip():
         return False
     compact = value.strip()
-    if compact.startswith("[[[MEETING_ROOM_RESPONSE_START]]]"):
+    if compact.startswith(M.START):
         return False
     if compact.startswith("@") and "❯" in compact and "\n" not in compact:
         return False
@@ -189,7 +196,7 @@ def _resolve_message(payload: SendMessageHookPayload) -> ResolvedMessage:
     ]
     content = next((candidate for candidate in content_candidates if _is_valid_message_content(candidate)), "")
     team = _as_str(metadata.get("team")) or _as_str(os.environ.get("CLAUDE_TEAM_NAME")) or "unknown"
-    meeting_id = _as_str(metadata.get("meeting_id")) or _as_str(os.environ.get("MEETING_ROOM_MEETING_ID")) or None
+    meeting_id = _as_str(metadata.get("meeting_id")) or _as_str(os.environ.get(E.MEETING_ID)) or None
     raw_type = _as_str(tool_input.get("type")) or "message"
 
     return ResolvedMessage(
@@ -204,7 +211,7 @@ def _resolve_message(payload: SendMessageHookPayload) -> ResolvedMessage:
 
 
 def write_debug(payload: SendMessageHookPayload, resolved: ResolvedMessage) -> None:
-    path = os.environ.get("MEETING_ROOM_WS_DEBUG_LOG", "").strip()
+    path = os.environ.get(E.WS_DEBUG_LOG, "").strip()
     debug_path = Path(path).expanduser() if path else DEFAULT_DEBUG_LOG
     debug_path.parent.mkdir(parents=True, exist_ok=True)
     entry = {
@@ -218,8 +225,8 @@ def write_debug(payload: SendMessageHookPayload, resolved: ResolvedMessage) -> N
         "resolvedSender": resolved.sender,
         "resolvedSubagent": resolved.subagent,
         "senderSource": resolved.sender_source,
-        "meetingId": resolved.meeting_id,
-        "rawType": resolved.raw_type,
+        F.MEETING_ID: resolved.meeting_id,
+        F.RAW_TYPE: resolved.raw_type,
         "contentPreview": resolved.content[:200],
     }
     with debug_path.open("a", encoding="utf-8") as fh:
@@ -231,15 +238,15 @@ def build_message(resolved: ResolvedMessage) -> dict[str, Any]:
     msg_id = f"msg_{int(datetime.now(tz=timezone.utc).timestamp())}_{resolved.sender.replace(' ', '_')}"
 
     return {
-        "type": "agent_message",
-        "id": msg_id,
-        "sender": resolved.sender,
-        "subagent": resolved.subagent,
-        "content": resolved.content,
-        "timestamp": timestamp,
-        "team": resolved.team,
-        "meetingId": resolved.meeting_id,
-        "rawType": resolved.raw_type,
+        F.TYPE: T.AGENT_MESSAGE,
+        F.ID: msg_id,
+        F.SENDER: resolved.sender,
+        F.SUBAGENT: resolved.subagent,
+        F.CONTENT: resolved.content,
+        F.TIMESTAMP: timestamp,
+        F.TEAM: resolved.team,
+        F.MEETING_ID: resolved.meeting_id,
+        F.RAW_TYPE: resolved.raw_type,
     }
 
 
@@ -299,7 +306,7 @@ def send_ws_json(message: dict[str, Any]) -> None:
 
 
 def fallback_log(message: dict[str, Any]) -> None:
-    path_env = os.environ.get("MEETING_ROOM_FALLBACK_LOG")
+    path_env = os.environ.get(E.FALLBACK_LOG)
     if path_env:
         log_path = Path(path_env).expanduser()
     else:

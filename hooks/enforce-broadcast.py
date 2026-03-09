@@ -14,13 +14,15 @@ from pathlib import Path
 from typing import Any
 
 
+from contracts import HookEnvVars as E
+
 BLOCK_MESSAGE = """[Meeting Room] directed メッセージは禁止です。
 type: "broadcast" を使って全員に共有してください。
 会議室モードでは全メッセージが全員に見えます。"""
 
 
 def _candidate_active_paths() -> list[Path]:
-    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    env_path = os.environ.get(E.ACTIVE_FILE)
     paths: list[Path] = []
     if env_path:
         paths.append(Path(env_path).expanduser())

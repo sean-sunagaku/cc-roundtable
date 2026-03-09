@@ -16,20 +16,25 @@ from pathlib import Path
 from typing import Any
 
 
-GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-WS_HOST = os.environ.get("MEETING_ROOM_WS_HOST", "127.0.0.1")
-WS_PORT = int(os.environ.get("MEETING_ROOM_WS_PORT", "9999"))
-WS_PATH = os.environ.get("MEETING_ROOM_WS_PATH", "/")
-WS_TIMEOUT = float(os.environ.get("MEETING_ROOM_WS_TIMEOUT", "0.8"))
+from contracts import (
+    HookEnvVars as E,
+    RelayPayloadFields as F,
+    RelayPayloadTypes as T,
+    ResponseMarkers as M,
+)
 
-RESPONSE_MARKER_START = "[[[MEETING_ROOM_RESPONSE_START]]]"
-RESPONSE_MARKER_END = "[[[MEETING_ROOM_RESPONSE_END]]]"
+GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+WS_HOST = os.environ.get(E.WS_HOST, "127.0.0.1")
+WS_PORT = int(os.environ.get(E.WS_PORT, "9999"))
+WS_PATH = os.environ.get(E.WS_PATH, "/")
+WS_TIMEOUT = float(os.environ.get(E.WS_TIMEOUT, "0.8"))
+
 DEFAULT_DEBUG_LOG = Path.cwd() / ".claude" / "meeting-room" / "stop-hook.log.jsonl"
 PATH_ONLY_PATTERN = re.compile(r"^(?:/Users/|/home/|[A-Za-z]:\\).+\.(?:jsonl|json|md|txt|log)$")
 
 
 def _candidate_active_paths() -> list[Path]:
-    env_path = os.environ.get("MEETING_ROOM_ACTIVE_FILE")
+    env_path = os.environ.get(E.ACTIVE_FILE)
     paths: list[Path] = []
     if env_path:
         paths.append(Path(env_path).expanduser())
@@ -266,7 +271,7 @@ def extract_assistant_response(payload: dict[str, Any]) -> str:
 
 
 def write_debug(payload: dict[str, Any], content: str) -> None:
-    path = os.environ.get("MEETING_ROOM_STOP_DEBUG_LOG", "").strip()
+    path = os.environ.get(E.STOP_DEBUG_LOG, "").strip()
     debug_path = Path(path).expanduser() if path else DEFAULT_DEBUG_LOG
     debug_path.parent.mkdir(parents=True, exist_ok=True)
     entry = {
@@ -335,7 +340,7 @@ def send_ws_json(message: dict[str, Any]) -> None:
 
 
 def fallback_log(message: dict[str, Any]) -> None:
-    path_env = os.environ.get("MEETING_ROOM_FALLBACK_LOG")
+    path_env = os.environ.get(E.FALLBACK_LOG)
     if path_env:
         log_path = Path(path_env).expanduser()
     else:
@@ -349,21 +354,21 @@ def fallback_log(message: dict[str, Any]) -> None:
 def build_message(content: str) -> dict[str, Any]:
     sender = os.environ.get("CLAUDE_AGENT_NAME", "").strip() or "leader"
     team = os.environ.get("CLAUDE_TEAM_NAME", "").strip() or "leader"
-    meeting_id = os.environ.get("MEETING_ROOM_MEETING_ID", "").strip() or None
+    meeting_id = os.environ.get(E.MEETING_ID, "").strip() or None
     timestamp = datetime.now(timezone.utc).isoformat()
     msg_id = f"stop_{int(datetime.now(tz=timezone.utc).timestamp())}_{sender.replace(' ', '_')}"
 
-    marked_content = f"{RESPONSE_MARKER_START}\n{content.strip()}\n{RESPONSE_MARKER_END}"
+    marked_content = f"{M.START}\n{content.strip()}\n{M.END}"
 
     return {
-        "type": "agent_message",
-        "id": msg_id,
-        "sender": sender,
-        "content": marked_content,
-        "timestamp": timestamp,
-        "team": team,
-        "meetingId": meeting_id,
-        "rawType": "stop",
+        F.TYPE: T.AGENT_MESSAGE,
+        F.ID: msg_id,
+        F.SENDER: sender,
+        F.CONTENT: marked_content,
+        F.TIMESTAMP: timestamp,
+        F.TEAM: team,
+        F.MEETING_ID: meeting_id,
+        F.RAW_TYPE: "stop",
     }
 
 
