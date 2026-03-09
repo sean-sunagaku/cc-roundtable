@@ -289,29 +289,30 @@ async function resetToSetupScreen() {
   throw new Error("Failed to return to setup screen");
 }
 
-async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = false } = {}) {
+async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true } = {}) {
   const snap = snapshot();
   const topicRef = findRef(snap, "textbox", "議題（ここを中心に議論）");
   if (!topicRef) {
     throw new Error(`Setup screen controls were not found.\n${snap}`);
   }
-  if (bypassMode && !findRef(snap, "button", "進行モード設定")) {
+  if (!findRef(snap, "button", "進行モード設定")) {
     throw new Error(`Flow mode toggle button was not found.\n${snap}`);
   }
 
   runAgentBrowser("fill", `@${topicRef}`, meetingTopic);
-  if (bypassMode) {
-    const modeSettingsRef = findRef(snapshot(), "button", "進行モード設定");
-    if (!modeSettingsRef) {
-      throw new Error("Flow mode toggle button disappeared before expanding settings.");
-    }
-    runAgentBrowser("click", `@${modeSettingsRef}`);
-    await delay(500);
-    const expanded = snapshot();
-    const bypassRef = findRef(expanded, "checkbox", "Bypass Mode");
-    if (!bypassRef) {
-      throw new Error(`Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`);
-    }
+  const modeSettingsRef = findRef(snapshot(), "button", "進行モード設定");
+  if (!modeSettingsRef) {
+    throw new Error("Flow mode toggle button disappeared before expanding settings.");
+  }
+  runAgentBrowser("click", `@${modeSettingsRef}`);
+  await delay(500);
+  const expanded = snapshot();
+  const bypassRef = findRef(expanded, "checkbox", "Bypass Mode");
+  if (!bypassRef) {
+    throw new Error(`Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`);
+  }
+  const bypassChecked = /\[x\]\s+checkbox\s+"Bypass Mode"/.test(expanded);
+  if (bypassChecked !== bypassMode) {
     runAgentBrowser("click", `@${bypassRef}`);
   }
   const startRef = findRef(snapshot(), "button", "会議を開始");
@@ -591,7 +592,7 @@ async function main() {
     await resetToSetupScreen();
 
     logStep("starting a new meeting from setup");
-    const meetingId = await startMeetingFromSetup();
+    const meetingId = await startMeetingFromSetup({ bypassMode: false });
     logStep(`meeting started: ${meetingId}`);
 
     logStep("sending a human message");

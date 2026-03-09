@@ -565,7 +565,7 @@ function toRuntimeEvent(event: RuntimeEvent): RuntimeEvent {
 function toMeetingSessionView(view: MeetingSessionViewPayload): MeetingSessionView {
   const approvalGate = view.approvalGate ?? {
     mode: "open" as const,
-    bypassMode: false,
+    bypassMode: Boolean(view.tab.config.bypassMode),
     updatedAt: new Date(0).toISOString()
   };
   return {

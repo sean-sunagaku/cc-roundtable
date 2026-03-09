@@ -365,10 +365,18 @@ async function addAgentFromSetup() {
   }, "saved agent in daemon", 20_000, 750);
 }
 
-async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = false } = {}) {
+async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true } = {}) {
   await domAction(fillByLabelExpression("議題（ここを中心に議論）", meetingTopic), "fill topic");
-  if (bypassMode) {
-    await domAction(buttonClickExpression("進行モード設定"), "open flow mode settings");
+  await domAction(buttonClickExpression("進行モード設定"), "open flow mode settings");
+  const isBypassChecked = await evaluate(
+    `(() => {
+      const input = [...document.querySelectorAll('input[type="checkbox"]')].find((node) =>
+        node.getAttribute("aria-label") === "Bypass Mode"
+      );
+      return Boolean(input?.checked);
+    })()`
+  );
+  if (Boolean(isBypassChecked) !== bypassMode) {
     await domAction(checkboxClickExpression("Bypass Mode"), "toggle bypass mode");
   }
   await domAction(buttonClickExpression("会議を開始"), "start meeting");
@@ -639,7 +647,7 @@ async function main() {
     await openWebClient();
 
     logStep("starting a new meeting");
-    const meetingId = await startMeetingFromSetup();
+    const meetingId = await startMeetingFromSetup({ bypassMode: false });
     logStep(`meeting started: ${meetingId}`);
 
     logStep("sending a human message");
