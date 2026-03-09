@@ -29,7 +29,7 @@ export function SetupScreen({
   const [projectDir, setProjectDir] = useState(defaultProjectDir);
   const [projectDirTouched, setProjectDirTouched] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
-  const [bypassMode, setBypassMode] = useState(false);
+  const [bypassMode, setBypassMode] = useState(true);
   const [showFlowModeSettings, setShowFlowModeSettings] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savingAgent, setSavingAgent] = useState(false);
@@ -198,7 +198,7 @@ export function SetupScreen({
             <div className="setup-inline">
               <div>
                 <strong>進行モード</strong>
-                <p className="setup-helper">通常は承認付きで進行します。必要なときだけ Bypass Mode を開いて切り替えられます。</p>
+                <p className="setup-helper">デフォルトは Bypass Mode です。承認付きで進めたい場合だけ設定を開いて切り替えます。</p>
               </div>
               <div className="setup-toggle-actions">
                 <span className={`mode-pill${bypassMode ? " bypass" : ""}`}>
