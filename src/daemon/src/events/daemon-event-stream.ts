@@ -1,9 +1,10 @@
 import type { ServerResponse } from "node:http";
 import type { MeetingRoomDaemonEvent, MeetingRoomDaemonStreamFrame } from "@contracts/meeting-room-daemon";
-import type { SseClient } from "../types";
+import type { EventFrameListener, SseClient } from "../types";
 
 export class DaemonEventStream {
   private readonly clients = new Map<string, SseClient>();
+  private readonly listeners = new Map<string, EventFrameListener>();
   private cursor = 0;
 
   addClient(response: ServerResponse): void {
@@ -27,9 +28,28 @@ export class DaemonEventStream {
       event
     };
     const payload = `data: ${JSON.stringify(frame)}\n\n`;
-    for (const client of this.clients.values()) {
-      client.response.write(payload);
+    for (const [id, client] of this.clients.entries()) {
+      try {
+        client.response.write(payload);
+      } catch {
+        this.clients.delete(id);
+      }
     }
+    for (const [id, listener] of this.listeners.entries()) {
+      try {
+        listener(frame);
+      } catch {
+        this.listeners.delete(id);
+      }
+    }
+  }
+
+  subscribe(listener: EventFrameListener): () => void {
+    const id = `listener_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    this.listeners.set(id, listener);
+    return () => {
+      this.listeners.delete(id);
+    };
   }
 
   closeAll(): void {
@@ -41,5 +61,6 @@ export class DaemonEventStream {
       }
     }
     this.clients.clear();
+    this.listeners.clear();
   }
 }

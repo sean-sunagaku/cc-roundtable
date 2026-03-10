@@ -17,6 +17,7 @@ import type {
   MeetingRoomDaemonCommandEnvelope,
   MeetingRoomDaemonEvent,
   MeetingRoomDaemonMetaPayload,
+  MeetingRoomDaemonStreamFrame,
   MeetingSessionViewPayload,
   MeetingStartedEvent,
   MeetingTabPayload,
@@ -47,6 +48,7 @@ import { MeetingRuntimeManager } from "../runtime/meeting-runtime-manager";
 import { MeetingSessionStore } from "../sessions/meeting-session-store";
 import type { RelayPayload } from "../types";
 import { createId, ensureWorkspaceTrustAccepted, resolveRepoRoot } from "../utils";
+import type { EventFrameListener } from "../types";
 
 export class MeetingRoomDaemonApp {
   private shuttingDown = false;
@@ -165,6 +167,10 @@ export class MeetingRoomDaemonApp {
 
   addSseClient(response: ServerResponse): void {
     this.eventStream.addClient(response);
+  }
+
+  subscribeToEventFrames(listener: EventFrameListener): () => void {
+    return this.eventStream.subscribe(listener);
   }
 
   async handleCommand(envelope: MeetingRoomDaemonCommandEnvelope): Promise<MeetingRoomDaemonCommandAck> {

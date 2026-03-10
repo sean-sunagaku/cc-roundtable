@@ -103,3 +103,37 @@
 - 2026-03-07: W4/W6 reviewed by subagent (Cicero) - build/serve/e2e/docs 整合性に blocking issue なし。
 - 2026-03-07: W5.1 completed - `npm --prefix src/apps/desktop run e2e:web` 成功、`npm --prefix src/apps/desktop run verify:final` 成功。
 - 2026-03-07: W5.2 completed - ユーザー了承のもと、Chrome CDP 経由の DOM 操作で Web UI の start/send/pause/resume/end を確認。
+
+## Public Share Gateway (2026-03-10)
+
+### Status Summary
+- Goal: `ngrok free` 向けの短期公開用 thin gateway を追加し、固定デモ会議だけを安全に公開する。
+- Overall status: done
+- Current focus: validation / docs / final verification completed
+
+### Execution Order
+1. P1 tracker / daemon gateway
+2. P2 public share UI
+3. P3 validation / docs / final review
+
+### Tracker
+
+| ID | Title | Status | Owner | Depends On | File | Notes |
+|---|---|---|---|---|---|---|
+| P1 | Implement daemon-side public share gateway | done | main | - | `plans/tasks/public-share-gateway/P1-daemon-gateway.md` | fixed share config / bootstrap / relay / startup wiring |
+| P2 | Build public share web UI | done | main | P1 | `plans/tasks/public-share-gateway/P2-public-web-ui.md` | original Meeting Room に寄せた thin UI と public client を実装 |
+| P3 | Validate public share flow and sync docs | done | main | P1, P2 | `plans/tasks/public-share-gateway/P3-validation-docs.md` | smoke/browser/manual/required E2E/docs sync 完了 |
+
+### Active Blockers
+- None
+
+### Ready Queue
+- None
+
+### Done Log
+- 2026-03-10: Public share gateway tracker initialized from approved plan. P1 started.
+- 2026-03-10: P1 completed. Gateway bootstrap, filtered relay, and separate public port verified with fake runtime smoke.
+- 2026-03-10: Dedicated public share API smoke script added and passing.
+- 2026-03-10: P2 completed. Public share UI を Meeting Room の visual language に寄せつつ、固定会議専用の操作だけに絞った。
+- 2026-03-10: P3 completed. public payload のサニタイズ、recovering 再起動、gateway fail-fast、SSE close/listener isolation を追加し、`smoke:public-share` / `e2e:web` / `verify:final` を通過。
+- 2026-03-10: `public-share:start*` を追加し、fixed demo + ngrok の起動を 1 コマンドで扱えるようにした。

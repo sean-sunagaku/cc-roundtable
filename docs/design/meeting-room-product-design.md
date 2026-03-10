@@ -320,7 +320,8 @@ root/
       │   │       └── shared/
       │   └── web/
       │       ├── src/
-      │       └── client/
+      │       ├── client/
+      │       └── share-client/
       ├── daemon/
       │   ├── src/app/
       │   ├── src/http/
@@ -340,7 +341,8 @@ root/
 - Browser UI は `src/apps/web`
 - daemon は `src/daemon`
 - hooks は `src/packages/meeting-room-hooks`
-- 生成物は `src/apps/desktop/dist`, `src/apps/web/client`, `src/daemon/dist`
+- Public Share UI は fixed demo 用 thin gateway として `src/apps/web/share-client` を使う
+- 生成物は `src/apps/desktop/dist`, `src/apps/web/client`, `src/apps/web/share-client`, `src/daemon/dist`
 - 生成物は Git に commit せず、必要時に build で再生成する
 
 ## Hook 設定

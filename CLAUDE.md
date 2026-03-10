@@ -21,9 +21,10 @@ Claude 系エージェント向けの入口です。正本は `AGENTS.md` に寄
 - 主系は daemon-first
 - Electron は `src/apps/desktop`
 - Browser UI は `src/apps/web`
+- Public share の build 生成物は `src/apps/web/share-client/`
 - daemon は `src/daemon`
 - hooks は `src/packages/meeting-room-hooks`
-- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/daemon/dist/` は生成物なので commit しない
+- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/apps/web/share-client/`, `src/daemon/dist/` は生成物なので commit しない
 
 ## よく使うコマンド
 

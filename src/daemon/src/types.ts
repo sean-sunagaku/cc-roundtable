@@ -1,7 +1,11 @@
-import type { ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
   ApprovalGatePayload,
   ChatMessagePayload,
+  MeetingRoomDaemonCommand,
+  MeetingRoomDaemonCommandAck,
+  MeetingRoomDaemonCommandEnvelope,
+  MeetingRoomDaemonStreamFrame,
   MeetingTabPayload,
   RuntimeEventPayload
 } from "@contracts/meeting-room-daemon";
@@ -55,14 +59,57 @@ export interface SseClient {
   response: ServerResponse;
 }
 
+export type EventFrameListener = (frame: MeetingRoomDaemonStreamFrame) => void;
+
 export interface MeetingRoomDaemonServerOptions {
   host?: string;
   port?: number;
   log?: (message: string) => void;
 }
 
+export interface PublicShareDemoConfig {
+  shareId: string;
+  meetingId: string;
+  topic: string;
+  projectDir: string;
+  members: string[];
+  bypassMode: boolean;
+  host: string;
+  port: number;
+}
+
+export interface PublicShareGatewayOptions {
+  config: PublicShareDemoConfig;
+  log?: (message: string) => void;
+}
+
+export interface PublicShareGatewayHandle {
+  host: string;
+  port: number;
+  sharePath: string;
+  stop: () => Promise<void>;
+}
+
 export interface MeetingRoomDaemonServerHandle {
   host: string;
   port: number;
+  publicShare?: {
+    host: string;
+    port: number;
+    sharePath: string;
+  };
   stop: () => Promise<void>;
 }
+
+export interface InternalCommandDispatcher {
+  handleCommand: (envelope: MeetingRoomDaemonCommandEnvelope) => Promise<MeetingRoomDaemonCommandAck>;
+  isAuthorized: (request: IncomingMessage) => boolean;
+  listTabs: () => MeetingTabPayload[];
+  getSessionView: (meetingId: string) => unknown;
+  subscribeToEventFrames: (listener: EventFrameListener) => () => void;
+}
+
+export type PublicRelayCommand = Extract<
+  MeetingRoomDaemonCommand,
+  { type: "startMeeting" | "sendHumanMessage" | "pauseMeeting" | "resumeMeeting" | "retryMcp" | "endMeeting" }
+>;

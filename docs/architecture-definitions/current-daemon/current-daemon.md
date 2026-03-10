@@ -6,35 +6,51 @@
 
 ## 概要
 
-- 現在の cc-roundtable は、`meeting-room-daemon` を会議セッションの主系に置き、Electron と Browser UI がその状態を表示・操作する `daemon-first` 構成です。
+- 現在の cc-roundtable は、`meeting-room-daemon` を会議セッションの主系に置き、Electron、Browser UI、固定デモ向け Public Share gateway がその状態を表示・操作する `daemon-first` 構成です。
 - Electron main は daemon の起動補助や OS 連携に寄り、会議ライフサイクル、イベント永続化、SSE 配信、runtime orchestration は daemon 側へ集約されています。
 - これは将来の Web UI、recovering、長寿命 session host を見据えた現実的な形であり、設計上は `Local Daemon BFF` をすでに採用し始めている状態といえます。
 
 ## 一言要約
 
-- いまの主系は「daemon が会議の実体を持ち、Electron と Browser はクライアントになる」構成です。
+- いまの主系は「daemon が会議の実体を持ち、Electron と Browser / Public Share はクライアントになる」構成です。
 - 今後の論点は新しい境界を足すことより、この daemon-first 構成をどこまで明確に磨き込むかにあります。
 
 ## 想定コンポーネント
 
-- Frontend: `src/apps/desktop/src/renderer/MeetingRoomShell.tsx`, `src/apps/desktop/src/renderer/screens/*`, `src/apps/web/src/WebRootApp.tsx`
-- Backend / Daemon: `src/daemon/src/http/start-meeting-room-daemon-server.ts`, `src/daemon/src/app/meeting-room-daemon-app.ts`
+- Frontend: `src/apps/desktop/src/renderer/MeetingRoomShell.tsx`, `src/apps/desktop/src/renderer/screens/*`, `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/PublicShareApp.tsx`
+- Backend / Daemon: `src/daemon/src/http/start-meeting-room-daemon-server.ts`, `src/daemon/src/app/meeting-room-daemon-app.ts`, `src/daemon/src/public-share/create-public-share-http-app.ts`
 - Runtime: `src/daemon/src/runtime/meeting-runtime-manager.ts`, `src/apps/desktop/src/main/daemon/meeting-room-daemon-manager.ts`
 - Storage: `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/`, `.claude/meeting-room/summaries/`
 - Hooks / Relay: `.claude/settings.json`, `src/packages/meeting-room-hooks/*.py`, `src/daemon/src/relay/hooks-relay-receiver.ts`
 
 ## 主要フロー
 
-1. Setup 画面または Browser UI から `startMeeting`、`sendHumanMessage`、`pauseMeeting` などの command が送られる
-2. Electron main は daemon command への橋渡しを行い、Browser UI は daemon REST/SSE に直接接続する
+1. Setup 画面、Browser UI、または Public Share UI から `startMeeting`、`sendHumanMessage`、`pauseMeeting` などの command が送られる
+2. Electron main は daemon command への橋渡しを行い、Browser UI は daemon REST/SSE に直接接続し、Public Share gateway は固定デモ会議だけを絞って relay する
 3. daemon が command を処理して session 状態を更新し、必要なら `MeetingRuntimeManager` 経由で Claude runtime を起動する
 4. hook relay、terminal event、runtime warning を daemon が受け取り、message / status / diagnostics として正規化する
 5. daemon が event log と session view を更新し、SSE で UI に配信する
 6. UI は chat / terminal / approval gate / diagnostics を再描画し、再起動時は recovering 状態から復元する
 
+## Browser UI と Public Share の責務差
+
+### Frontend
+
+- Browser UI は full client で、setup、会議開始、terminal、debug、approval、recovering まで担当する
+- Public Share UI は restricted client で、固定会議の chat 表示と限定操作だけを担当する
+- Browser UI は daemon の full session model を読む
+- Public Share UI は public 向けにサニタイズされた session projection だけを読む
+
+### Backend
+
+- daemon は source of truth として session lifecycle、runtime orchestration、hook relay、event persistence を担当する
+- Public Share gateway は daemon の前に立つ thin BFF で、固定会議 bootstrap と safe command relay を担当する
+- daemon は内部向けの full API を持つ
+- Public Share gateway は public 向けの最小 API に絞り、`projectDir` / terminal / debug を出さない
+
 ## メリット
 
-- daemon が source of truth を持つため、Electron 再起動後の recovering と Browser UI 追加が自然に成立する
+- daemon が source of truth を持つため、Electron 再起動後の recovering、Browser UI、Public Share UI の追加が自然に成立する
 - 会議ライフサイクル、runtime health、relay 正規化、永続化が 1 か所に集約され、責務が見えやすい
 - shared contracts を軸に Electron と Web が同じ会議モデルを使える
 - session host を Mac 上の daemon に置く前提がすでにできており、将来の remote UI へ伸ばしやすい
@@ -65,3 +81,5 @@
 - `src/daemon/src/runtime/meeting-runtime-manager.ts`
 - `src/daemon/src/sessions/meeting-session-store.ts`
 - `src/apps/web/src/browser-meeting-room-client.ts`
+- `src/apps/web/src/PublicShareApp.tsx`
+- `src/daemon/src/public-share/create-public-share-http-app.ts`
