@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    Concept: "Borromean Knot"
+    Three rings woven over-under like Borromean rings.
+    The interlock creates ONE unified knot — remove any ring and it falls apart.
+    This IS the metaphor: agents are interdependent, the meeting only exists
+    because all participants are woven together.
+    No decoration. The weave pattern IS the design.
+  -->
+  <defs>
+    <!-- Masks to create over/under weaving effect -->
+    <mask id="mask-top">
+      <rect width="128" height="128" fill="white"/>
+      <!-- Cut where bottom-right passes OVER top ring -->
+      <circle cx="78" cy="54" r="7" fill="black"/>
+    </mask>
+    <mask id="mask-bl">
+      <rect width="128" height="128" fill="white"/>
+      <!-- Cut where top passes OVER bottom-left ring -->
+      <circle cx="50" cy="54" r="7" fill="black"/>
+    </mask>
+    <mask id="mask-br">
+      <rect width="128" height="128" fill="white"/>
+      <!-- Cut where bottom-left passes OVER bottom-right -->
+      <circle cx="64" cy="82" r="7" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Ring 1: Top — each agent is a thick, confident stroke -->
+  <circle cx="64" cy="44" r="26" fill="none" stroke="#0D9488" stroke-width="8" mask="url(#mask-top)"/>
+  <!-- Ring 2: Bottom-left -->
+  <circle cx="46" cy="76" r="26" fill="none" stroke="#14B8A6" stroke-width="8" mask="url(#mask-bl)"/>
+  <!-- Ring 3: Bottom-right -->
+  <circle cx="82" cy="76" r="26" fill="none" stroke="#0F766E" stroke-width="8" mask="url(#mask-br)"/>
+</svg>

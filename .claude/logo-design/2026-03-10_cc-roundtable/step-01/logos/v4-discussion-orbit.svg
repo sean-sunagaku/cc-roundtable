@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .center { fill: #0F172A; }
+      .arc { fill: none; stroke: #0D9488; stroke-width: 12; stroke-linecap: round; }
+    </style>
+  </defs>
+  <!-- Central dot (the codebase/topic) -->
+  <circle class="center" cx="64" cy="64" r="12"/>
+  <!-- Three orbiting arcs at 120-degree intervals, clockwise rotation feel -->
+  <!-- Arc 1: top-right -->
+  <path class="arc" d="M82,26 C98,34 108,50 108,64"/>
+  <!-- Arc 2: bottom -->
+  <path class="arc" d="M46,102 C34,92 26,78 26,64"/>
+  <!-- Arc 3: left -->
+  <path class="arc" d="M82,102 C78,108 62,112 46,102"/>
+</svg>

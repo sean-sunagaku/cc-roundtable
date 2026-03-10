@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Three overlapping filled circles (roundtables) with agent dots -->
+  <!-- Table 1: top -->
+  <circle cx="64" cy="42" r="28" fill="#0D9488" opacity="0.5"/>
+  <!-- Table 2: bottom-left -->
+  <circle cx="44" cy="76" r="28" fill="#0D9488" opacity="0.5"/>
+  <!-- Table 3: bottom-right -->
+  <circle cx="84" cy="76" r="28" fill="#0D9488" opacity="0.5"/>
+  <!-- Agent dots on each table's outer edge -->
+  <!-- Table 1 agents -->
+  <circle cx="64" cy="16" r="6" fill="#0F172A"/>
+  <circle cx="42" cy="30" r="6" fill="#0F172A"/>
+  <circle cx="86" cy="30" r="6" fill="#0F172A"/>
+  <!-- Table 2 agents -->
+  <circle cx="22" cy="68" r="6" fill="#0F172A"/>
+  <circle cx="28" cy="96" r="6" fill="#0F172A"/>
+  <!-- Table 3 agents -->
+  <circle cx="106" cy="68" r="6" fill="#0F172A"/>
+  <circle cx="100" cy="96" r="6" fill="#0F172A"/>
+  <!-- Center room marker -->
+  <circle cx="64" cy="64" r="5" fill="#FFFFFF"/>
+</svg>

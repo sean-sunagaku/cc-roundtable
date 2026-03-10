@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Two roundtables overlapping — intersection = the room -->
+  <circle cx="48" cy="64" r="38" fill="#0D9488" opacity="0.7"/>
+  <circle cx="80" cy="64" r="38" fill="#0F172A" opacity="0.7"/>
+  <!-- Overlap zone highlight — the "room" -->
+  <clipPath id="clip1">
+    <circle cx="48" cy="64" r="38"/>
+  </clipPath>
+  <circle cx="80" cy="64" r="38" fill="#FFFFFF" opacity="0.3" clip-path="url(#clip1)"/>
+</svg>

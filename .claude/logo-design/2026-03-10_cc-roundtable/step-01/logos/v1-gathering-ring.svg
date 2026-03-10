@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .ring { fill: none; stroke: #0F172A; stroke-width: 10; stroke-linecap: round; }
+      .dot { fill: #0D9488; }
+    </style>
+  </defs>
+  <!-- The table ring -->
+  <circle class="ring" cx="64" cy="64" r="40"/>
+  <!-- 5 agent dots at 72-degree intervals -->
+  <circle class="dot" cx="64" cy="24" r="10"/>
+  <circle class="dot" cx="100.2" cy="51.7" r="10"/>
+  <circle class="dot" cx="86.3" cy="96.1" r="10"/>
+  <circle class="dot" cx="41.7" cy="96.1" r="10"/>
+  <circle class="dot" cx="27.8" cy="51.7" r="10"/>
+</svg>

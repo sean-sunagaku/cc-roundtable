@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    cc-roundtable: Final app icon — full color on transparent.
+    Three gradient arcs (teal→amber) converging on warm center.
+    Perfect 3-fold rotational symmetry.
+  -->
+  <defs>
+    <path id="arc" fill="none" stroke-width="10" stroke-linecap="round"
+      d="M 44.5,36.2 A 34,34 0 0,1 94.8,49.6"/>
+    <linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="44.5" y1="36.2" x2="94.8" y2="49.6">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="g2" gradientUnits="userSpaceOnUse" x1="44.5" y1="36.2" x2="94.8" y2="49.6" gradientTransform="rotate(120, 64, 64)">
+      <stop offset="0%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="g3" gradientUnits="userSpaceOnUse" x1="44.5" y1="36.2" x2="94.8" y2="49.6" gradientTransform="rotate(240, 64, 64)">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="10" fill="#FDE68A"/>
+  <use href="#arc" stroke="url(#g1)" transform="rotate(0, 64, 64)"/>
+  <use href="#arc" stroke="url(#g2)" transform="rotate(120, 64, 64)"/>
+  <use href="#arc" stroke="url(#g3)" transform="rotate(240, 64, 64)"/>
+</svg>

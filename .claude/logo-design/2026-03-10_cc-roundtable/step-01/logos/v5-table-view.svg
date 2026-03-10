@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .table { fill: #0D9488; }
+      .seat { fill: #0F172A; rx: 4; }
+      .code { fill: none; stroke: #FFFFFF; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <!-- Round table (top-down view) -->
+  <circle class="table" cx="64" cy="64" r="38"/>
+  <!-- 4 seats at cardinal positions -->
+  <!-- Top seat -->
+  <rect class="seat" x="52" y="10" width="24" height="10" rx="5"/>
+  <!-- Right seat -->
+  <rect class="seat" x="108" y="52" width="10" height="24" rx="5"/>
+  <!-- Bottom seat -->
+  <rect class="seat" x="52" y="108" width="24" height="10" rx="5"/>
+  <!-- Left seat -->
+  <rect class="seat" x="10" y="52" width="10" height="24" rx="5"/>
+  <!-- Code symbol < > in center -->
+  <path class="code" d="M54,58 L46,64 L54,70"/>
+  <path class="code" d="M74,58 L82,64 L74,70"/>
+</svg>

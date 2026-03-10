@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    V2: Longer arcs (140°) that cross through center area.
+    Where they cross = the bloom. Perfect 3-fold symmetry via rotate.
+  -->
+  <defs>
+    <path id="arc2" fill="none" stroke-width="9" stroke-linecap="round"
+      d="M 44.5,36.2 A 34,34 0 0,1 96.8,72.8"/>
+  </defs>
+  <!-- Bloom at center — emerges from crossing -->
+  <circle cx="64" cy="64" r="11" fill="#5EEAD4"/>
+  <!-- Three long arcs crossing through center -->
+  <use href="#arc2" stroke="#0D9488" transform="rotate(0, 64, 64)"/>
+  <use href="#arc2" stroke="#14B8A6" transform="rotate(120, 64, 64)"/>
+  <use href="#arc2" stroke="#0F766E" transform="rotate(240, 64, 64)"/>
+</svg>

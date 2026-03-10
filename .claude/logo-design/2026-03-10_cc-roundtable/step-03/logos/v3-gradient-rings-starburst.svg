@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Claude-inspired starburst shape -->
+    <g id="claude-star">
+      <path d="M0,-7 C1,-2 2,-1 7,0 C2,1 1,2 0,7 C-1,2 -2,1 -7,0 C-2,-1 -1,-2 0,-7 Z" fill="#FB923C"/>
+    </g>
+  </defs>
+  <!-- Three overlapping bright rings -->
+  <circle cx="64" cy="40" r="30" fill="none" stroke="#2DD4BF" stroke-width="7"/>
+  <circle cx="44" cy="76" r="30" fill="none" stroke="#34D399" stroke-width="7"/>
+  <circle cx="84" cy="76" r="30" fill="none" stroke="#5EEAD4" stroke-width="7"/>
+  <!-- Claude starburst marks — one per ring, at their outer positions -->
+  <use href="#claude-star" transform="translate(64,12) scale(1.2)"/>
+  <use href="#claude-star" transform="translate(22,92) scale(1.2)"/>
+  <use href="#claude-star" transform="translate(106,92) scale(1.2)"/>
+  <!-- Small bright center mark where all three meet -->
+  <circle cx="64" cy="64" r="4" fill="#FDE68A"/>
+</svg>

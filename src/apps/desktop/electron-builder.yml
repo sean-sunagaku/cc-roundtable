@@ -4,6 +4,8 @@ directories:
   output: release
 files:
   - dist/**
+  - assets/**
   - package.json
 mac:
   target: dmg
+  icon: assets/icon.icns
