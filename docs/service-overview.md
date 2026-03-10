@@ -153,21 +153,26 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 ## 実行コマンド
 
 ```bash
-npm --prefix src/apps/desktop install
-npm --prefix src/apps/desktop run dev
-npm --prefix src/apps/desktop run daemon:start
-npm --prefix src/apps/desktop run daemon:start:dev
-npm --prefix src/apps/desktop run public-share:start
-npm --prefix src/apps/desktop run public-share:start:ngrok
-npm --prefix src/apps/desktop run e2e:web
-npm --prefix src/apps/desktop run verify:final
+make help
+make install
+make dev
+make daemon
+make daemon-dev
+make public-share
+make public-share-ngrok
+make public-share-smoke
+make public-share-api
+make verify-web
+make verify
 ```
 
 補足:
 
+- `make help` で短い運用コマンド一覧を見られる
 - `daemon:start` は build 後に daemon と Web client を起動対象へ揃える
 - `daemon:start:dev` は daemon / Web client / public share client の watch build + 自動再起動付き
 - `public-share:start*` は固定 demo 設定を入れた thin gateway 起動ラッパー
+- `make public-share-check` は Public Share の主要スモークだけをまとめて流す
 - `e2e:web` は browser client で新規会議開始から recovering / cleanup までを自動確認する
 - daemon のデフォルト host/port は `127.0.0.1:4417`
 - 必要なら `MEETING_ROOM_DAEMON_PORT`, `MEETING_ROOM_WS_PORT`, `MEETING_ROOM_DAEMON_TOKEN` を使う

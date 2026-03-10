@@ -1,7 +1,7 @@
-.PHONY: help install dev daemon daemon-dev typecheck build verify verify-web arch arch-new arch-update contracts contracts-check
+.PHONY: help install dev daemon daemon-dev public-share public-share-dev public-share-ngrok public-share-ngrok-dev public-share-smoke public-share-api public-share-check typecheck build verify verify-web arch arch-new arch-update contracts contracts-check
 
 help: ## コマンド一覧を表示
-	@grep -E '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2}'
 
 install: ## 依存パッケージをインストール
 	npm --prefix src/apps/desktop install
@@ -14,6 +14,28 @@ daemon: ## daemon 単体を起動 → http://127.0.0.1:4417/web/index.html
 
 daemon-dev: ## daemon 単体を起動 (watch / 自動再起動)
 	npm --prefix src/apps/desktop run daemon:start:dev
+
+public-share: ## Public Share Demo をローカル起動 → http://127.0.0.1:4427/share/demo-share
+	npm --prefix src/apps/desktop run public-share:start
+
+public-share-dev: ## Public Share Demo を watch 付きで起動
+	npm --prefix src/apps/desktop run public-share:start:dev
+
+public-share-ngrok: ## Public Share Demo を ngrok 付きで起動
+	npm --prefix src/apps/desktop run public-share:start:ngrok
+
+public-share-ngrok-dev: ## Public Share Demo を watch + ngrok 付きで起動
+	npm --prefix src/apps/desktop run public-share:start:ngrok:dev
+
+public-share-smoke: ## Public Share の軽い疎通確認
+	npm --prefix src/apps/desktop run smoke:public-share
+
+public-share-api: ## Public Share API の個別スモーク確認
+	node e2e/public-share/api-smoke.mjs
+
+public-share-check: ## Public Share の主要スモークをまとめて実行
+	npm --prefix src/apps/desktop run smoke:public-share
+	node e2e/public-share/api-smoke.mjs
 
 typecheck: ## 全パッケージの型チェック
 	npm --prefix src/apps/desktop run typecheck
