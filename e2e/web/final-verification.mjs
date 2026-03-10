@@ -123,6 +123,7 @@ async function startDaemon({ resetState = false } = {}) {
     ...process.env,
     MEETING_ROOM_DAEMON_PORT: daemonPort,
     MEETING_ROOM_WS_PORT: wsPort,
+    MEETING_ROOM_E2E_FAKE_RUNTIME: "1",
     MEETING_ROOM_DAEMON_DATA_DIR: daemonDataDir,
     MEETING_ROOM_APPROVAL_DIR: approvalDir,
     MEETING_ROOM_ACTIVE_FILE: activeFile,

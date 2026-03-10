@@ -22,14 +22,17 @@
     "typecheck": "tsc -p ../../daemon/tsconfig.json --noEmit && tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit && tsc -p ../web/tsconfig.json --noEmit",
     "e2e:gui": "node ../../../e2e/gui/final-verification.mjs",
     "e2e:web": "node ../../../e2e/web/final-verification.mjs",
+    "smoke:runtime:real": "node ../../../scripts/real-runtime-smoke.mjs",
     "verify:final": "npm run typecheck && npm run build && npm run e2e:gui",
     "architecture": "node ../../../scripts/generate-architecture.mjs",
     "architecture:new": "node ../../../scripts/scaffold-architecture-definition.mjs",
     "architecture:update-docs": "node ../../../scripts/update-architecture-definitions.mjs"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.11",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
+    "hono": "^4.12.5",
     "lucide-react": "^0.577.0",
     "marked": "^15.0.7",
     "node-pty": "^1.0.0",

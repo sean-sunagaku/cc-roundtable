@@ -12,7 +12,12 @@
     "typeRoots": ["../apps/desktop/node_modules/@types"],
     "baseUrl": "../..",
     "paths": {
-      "@contracts/*": ["src/packages/shared-contracts/src/*"]
+      "@contracts/*": ["src/packages/shared-contracts/src/*"],
+      "hono": ["src/apps/desktop/node_modules/hono"],
+      "hono/*": ["src/apps/desktop/node_modules/hono/*"],
+      "@hono/node-server": ["src/apps/desktop/node_modules/@hono/node-server"],
+      "@hono/node-server/*": ["src/apps/desktop/node_modules/@hono/node-server/*"],
+      "@hono/node-server/utils/*": ["src/apps/desktop/node_modules/@hono/node-server/dist/utils/*"]
     }
   },
   "include": ["src/**/*.ts", "../packages/shared-contracts/src/**/*.ts"]
