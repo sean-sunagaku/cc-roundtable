@@ -58,7 +58,7 @@ src/
 
 補足:
 
-- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/daemon/dist/` は配信用または build 生成物で、repo では commit 対象外にする
+- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/apps/web/share-client/`, `src/daemon/dist/` は配信用または build 生成物で、repo では commit 対象外にする
 
 ## 推奨責務分割
 

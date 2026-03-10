@@ -1,5 +1,6 @@
 export const MEETING_ROOM_DAEMON_DEFAULT_HOST = "127.0.0.1";
 export const MEETING_ROOM_DAEMON_DEFAULT_PORT = 4417;
+export const MEETING_ROOM_PUBLIC_SHARE_DEFAULT_PORT = 4427;
 export const MEETING_ROOM_DAEMON_HEALTH_PATH = "/health";
 export const MEETING_ROOM_DAEMON_COMMANDS_PATH = "/api/commands";
 export const MEETING_ROOM_DAEMON_EVENTS_PATH = "/api/events";
@@ -8,6 +9,9 @@ export const MEETING_ROOM_DAEMON_META_PATH = "/api/meta";
 export const MEETING_ROOM_DAEMON_AGENTS_PATH = "/api/agents";
 export const MEETING_ROOM_DAEMON_DEFAULT_PROJECT_DIR_PATH = "/api/default-project-dir";
 export const MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH = "/api/pick-project-dir";
+export const MEETING_ROOM_PUBLIC_SHARE_ROOT_PATH = "/share";
+export const MEETING_ROOM_PUBLIC_SHARE_API_ROOT_PATH = "/share-api";
+export const MEETING_ROOM_PUBLIC_SHARE_ASSETS_ROOT_PATH = "/share-assets";
 
 export interface AgentProfilePayload {
   id: string;
@@ -120,6 +124,58 @@ export interface MeetingRoomDaemonMetaPayload {
   accessPolicy: DaemonAccessPolicyPayload;
   reconnectPolicy: DaemonReconnectPolicyPayload;
   browserClientPath: string;
+}
+
+export type PublicShareControlAction = "pause" | "resume" | "retryMcp" | "endMeeting";
+
+export interface MeetingRoomPublicShareTabPayload {
+  id: string;
+  title: string;
+  createdAt: string;
+  status: MeetingTabPayload["status"];
+}
+
+export interface MeetingRoomPublicShareSessionPayload {
+  tab: MeetingRoomPublicShareTabPayload;
+  messages: ChatMessagePayload[];
+  agentStatuses: Record<string, "active" | "completed">;
+  runtimeEvents: RuntimeEventPayload[];
+  approvalGate: ApprovalGatePayload;
+}
+
+export interface MeetingRoomPublicShareBootstrapPayload {
+  shareId: string;
+  meetingId: string;
+  session: MeetingRoomPublicShareSessionPayload;
+  allowedActions: PublicShareControlAction[];
+  eventsPath: string;
+  messagePath: string;
+  controlPath: string;
+}
+
+export interface MeetingRoomPublicShareMessagePayload {
+  message: string;
+}
+
+export interface MeetingRoomPublicShareControlPayload {
+  action: PublicShareControlAction;
+}
+
+export interface MeetingRoomPublicShareSessionUpdatedEvent {
+  type: "public.session.updated";
+  eventId: string;
+  emittedAt: string;
+  meetingId: string;
+  payload: {
+    session: MeetingRoomPublicShareSessionPayload;
+  };
+}
+
+export type MeetingRoomPublicShareEvent = MeetingRoomPublicShareSessionUpdatedEvent;
+
+export interface MeetingRoomPublicShareStreamFrame {
+  cursor: string;
+  event: MeetingRoomPublicShareEvent;
 }
 
 export interface StartMeetingCommand {

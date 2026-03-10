@@ -8,6 +8,7 @@
 .cursor/debug-*.log
 src/apps/desktop/dist/
 src/apps/web/client/
+src/apps/web/share-client/
 src/daemon/dist/
 __pycache__/
 *.pyc

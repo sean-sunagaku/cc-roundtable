@@ -19,35 +19,38 @@ try {
 }
 
 const webEntry = path.join(rootDir, "src", "apps", "web", "src", "main.tsx");
+const publicShareEntry = path.join(rootDir, "src", "apps", "web", "src", "public-share-main.tsx");
 const webTsconfig = path.join(rootDir, "src", "apps", "web", "tsconfig.json");
 const webOutdir = path.join(rootDir, "src", "apps", "web", "client");
+const publicShareOutdir = path.join(rootDir, "src", "apps", "web", "share-client");
 const htmlSource = path.join(rootDir, "src", "apps", "web", "src", "index.html");
+const publicShareHtmlSource = path.join(rootDir, "src", "apps", "web", "src", "public-share.html");
 const watch = process.argv.includes("--watch");
 
-function copyHtmlTemplate() {
-  fs.mkdirSync(webOutdir, { recursive: true });
-  fs.copyFileSync(htmlSource, path.join(webOutdir, "index.html"));
+function copyHtmlTemplate(sourcePath, outdir) {
+  fs.mkdirSync(outdir, { recursive: true });
+  fs.copyFileSync(sourcePath, path.join(outdir, "index.html"));
 }
 
-function removeStaleSourceMaps() {
+function removeStaleSourceMaps(outdir) {
   for (const fileName of ["app.js.map", "app.css.map"]) {
-    const filePath = path.join(webOutdir, fileName);
+    const filePath = path.join(outdir, fileName);
     if (fs.existsSync(filePath)) {
       fs.rmSync(filePath);
     }
   }
 }
 
-export function createWebBuildOptions(plugins = []) {
+export function createWebBuildOptions(entryPoint, outdir, plugins = []) {
   return {
-    entryPoints: [webEntry],
+    entryPoints: [entryPoint],
     bundle: true,
     platform: "browser",
     format: "esm",
     sourcemap: watch,
     minify: !watch,
     tsconfig: webTsconfig,
-    outfile: path.join(webOutdir, "app.js"),
+    outfile: path.join(outdir, "app.js"),
     logLevel: "info",
     nodePaths: [electronNodeModules],
     alias: {
@@ -58,29 +61,42 @@ export function createWebBuildOptions(plugins = []) {
 }
 
 export async function buildWebClient() {
-  await esbuild.build(createWebBuildOptions());
-  copyHtmlTemplate();
-  removeStaleSourceMaps();
+  await Promise.all([
+    buildTarget(webEntry, webOutdir, htmlSource),
+    buildTarget(publicShareEntry, publicShareOutdir, publicShareHtmlSource)
+  ]);
 }
 
 export async function watchWebClient() {
-  const copyPlugin = {
-    name: "copy-web-index",
+  const copyPlugin = (sourcePath, outdir) => ({
+    name: `copy-web-index-${path.basename(outdir)}`,
     setup(build) {
       build.onEnd((result) => {
         if (result.errors.length === 0) {
-          copyHtmlTemplate();
+          copyHtmlTemplate(sourcePath, outdir);
           if (!watch) {
-            removeStaleSourceMaps();
+            removeStaleSourceMaps(outdir);
           }
         }
       });
     }
+  });
+
+  const contexts = await Promise.all([
+    watchTarget(webEntry, webOutdir, htmlSource, copyPlugin(htmlSource, webOutdir)),
+    watchTarget(
+      publicShareEntry,
+      publicShareOutdir,
+      publicShareHtmlSource,
+      copyPlugin(publicShareHtmlSource, publicShareOutdir)
+    )
+  ]);
+
+  return {
+    dispose: async () => {
+      await Promise.all(contexts.map((context) => context.dispose()));
+    }
   };
-  copyHtmlTemplate();
-  const context = await esbuild.context(createWebBuildOptions([copyPlugin]));
-  await context.watch();
-  return context;
 }
 
 async function main() {
@@ -96,4 +112,17 @@ if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
     console.error(error);
     process.exit(1);
   });
+}
+
+async function buildTarget(entryPoint, outdir, sourcePath) {
+  await esbuild.build(createWebBuildOptions(entryPoint, outdir));
+  copyHtmlTemplate(sourcePath, outdir);
+  removeStaleSourceMaps(outdir);
+}
+
+async function watchTarget(entryPoint, outdir, sourcePath, plugin) {
+  copyHtmlTemplate(sourcePath, outdir);
+  const context = await esbuild.context(createWebBuildOptions(entryPoint, outdir, [plugin]));
+  await context.watch();
+  return context;
 }

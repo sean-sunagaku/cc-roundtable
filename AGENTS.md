@@ -40,6 +40,7 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 | Claude runtime / PTY / ready 検出 | `src/daemon/src/runtime/meeting-runtime-manager.ts`, `src/apps/desktop/src/main/pty-manager.ts` |
 | 会話・状態の永続化と復元 | `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/` |
 | ブラウザ UI | `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/browser-meeting-room-client.ts`, `src/apps/web/src/index.html` |
+| Public share gateway / UI | `src/daemon/src/public-share/create-public-share-http-app.ts`, `src/apps/web/src/PublicShareApp.tsx`, `src/apps/web/src/public-share-client.ts` |
 | Electron renderer UI | `src/apps/desktop/src/renderer/screens/SetupScreen.tsx`, `src/apps/desktop/src/renderer/screens/MeetingScreen.tsx` |
 | 契約型 / API surface | `src/packages/shared-contracts/src/meeting-room-daemon.ts`, `src/apps/desktop/src/shared/types.ts` |
 | Hook relay の挙動 | `.claude/settings.json`, `src/packages/meeting-room-hooks/README.md`, `src/packages/meeting-room-hooks/*.py` |
@@ -62,14 +63,26 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 ### 3. Daemon (`src/daemon`)
 
 - `/api/commands`, `/api/events`, `/api/sessions`, `/api/meta`, `/api/agents`, `/api/default-project-dir`, `/health` を提供するローカルバックエンド
+- `MEETING_ROOM_PUBLIC_SHARE_ID` を設定すると、固定デモ会議専用の localhost public share gateway も同時に起動できる
 - Claude runtime 起動、terminal I/O、イベント永続化、SSE 配信、復元を担当する
 - 実体は `MeetingRoomDaemonApp`、runtime 実装は `MeetingRuntimeManager`、状態保持は `MeetingSessionStore`
 
 ### 5. Browser UI
 
 - `src/apps/web/src/` で Browser client を実装し、`src/apps/web/client/` を生成して配信する
-- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/daemon/dist/` は生成物なので commit しない
+- Public share client は `src/apps/web/share-client/` を生成して配信する
+- `src/apps/desktop/dist/`, `src/apps/web/client/`, `src/apps/web/share-client/`, `src/daemon/dist/` は生成物なので commit しない
 - `BrowserMeetingRoomClient` が daemon REST/SSE を直接叩き、`MeetingRoomShell` を再利用して Electron と同じ会議フローを表示する
+- Public share 側は固定会議だけを薄く公開し、任意 `projectDir` / terminal / debug を公開しない
+
+### 6. Browser UI と Public Share の責務差
+
+- Browser UI の frontend は setup から meeting までの full client で、`projectDir` 選択、terminal、debug、approval、recovering を持つ
+- Public Share UI の frontend は fixed demo 1 本だけを扱う restricted client で、chat と短い操作だけを持つ
+- Browser UI は daemon `/api/*` に直接接続する
+- Public Share UI は daemon に直接つながず、`public-share-gateway` の `/share-api/:shareId/*` だけを使う
+- daemon backend は source of truth として runtime / persistence / recovery / full session API を持つ
+- public-share-gateway backend は fixed meeting の bootstrap と safe relay だけを持ち、`projectDir` / debug / terminal を public payload から落とす
 
 ### 4. Hooks / relay
 

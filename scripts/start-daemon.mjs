@@ -33,6 +33,9 @@ const daemonDistDir = path.join(rootDir, "src", "daemon", "dist");
 const webBuilderScript = path.join(rootDir, "scripts", "build-web-client.mjs");
 const host = process.env.MEETING_ROOM_DAEMON_HOST?.trim() || "127.0.0.1";
 const port = process.env.MEETING_ROOM_DAEMON_PORT?.trim() || "4417";
+const publicShareId = process.env.MEETING_ROOM_PUBLIC_SHARE_ID?.trim() || "";
+const publicShareHost = process.env.MEETING_ROOM_PUBLIC_GATEWAY_HOST?.trim() || "127.0.0.1";
+const publicSharePort = process.env.MEETING_ROOM_PUBLIC_GATEWAY_PORT?.trim() || "4427";
 
 let daemonProcess = null;
 let buildContext = null;
@@ -91,6 +94,9 @@ function spawnDaemon() {
 
   log(`daemon listening target: http://${host}:${port}`);
   log(`browser UI: http://${host}:${port}/web/index.html`);
+  if (publicShareId) {
+    log(`public share gateway: http://${publicShareHost}:${publicSharePort}/share/${publicShareId}`);
+  }
 }
 
 async function stopDaemon() {

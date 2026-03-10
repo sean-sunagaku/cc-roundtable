@@ -37,6 +37,16 @@ export function resolveWebFile(requestPath: string): string | null {
   return filePath;
 }
 
+export function resolvePublicShareFile(requestPath: string): string | null {
+  const repoRoot = resolveRepoRoot();
+  const relative = requestPath.replace(/^\/share-assets\/?/, "").replace(/^\/+/, "") || "index.html";
+  const filePath = path.resolve(repoRoot, "src/apps/web/share-client", relative);
+  if (!filePath.startsWith(path.resolve(repoRoot, "src/apps/web/share-client"))) {
+    return null;
+  }
+  return filePath;
+}
+
 export function contentTypeFor(filePath: string): string {
   if (filePath.endsWith(".html")) return "text/html; charset=utf-8";
   if (filePath.endsWith(".js")) return "text/javascript; charset=utf-8";
