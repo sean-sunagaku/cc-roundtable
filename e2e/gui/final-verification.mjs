@@ -205,6 +205,7 @@ async function launchElectron() {
   delete env.ELECTRON_RUN_AS_NODE;
   env.MEETING_ROOM_DAEMON_PORT = daemonPort;
   env.MEETING_ROOM_WS_PORT = wsPort;
+  env.MEETING_ROOM_E2E_FAKE_RUNTIME = "1";
   electronProcess = spawn(electronBin, [".", `--remote-debugging-port=${cdpPort}`], {
     cwd: electronDir,
     env,
@@ -311,9 +312,38 @@ async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true }
   if (!bypassRef) {
     throw new Error(`Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`);
   }
-  const bypassChecked = /\[x\]\s+checkbox\s+"Bypass Mode"/.test(expanded);
-  if (bypassChecked !== bypassMode) {
+  await waitForRendererDom(
+    `(() => {
+      const input = [...document.querySelectorAll('input[type="checkbox"]')].find((node) =>
+        node.getAttribute("aria-label") === "Bypass Mode"
+      );
+      return Boolean(input);
+    })()`,
+    "Bypass Mode checkbox",
+    5_000,
+    250
+  );
+  const bypassChecked = await evaluateRenderer(
+    `(() => {
+      const input = [...document.querySelectorAll('input[type="checkbox"]')].find((node) =>
+        node.getAttribute("aria-label") === "Bypass Mode"
+      );
+      return Boolean(input?.checked);
+    })()`
+  );
+  if (Boolean(bypassChecked) !== bypassMode) {
     runAgentBrowser("click", `@${bypassRef}`);
+    await waitForRendererDom(
+      `(() => {
+        const input = [...document.querySelectorAll('input[type="checkbox"]')].find((node) =>
+          node.getAttribute("aria-label") === "Bypass Mode"
+        );
+        return Boolean(input?.checked) === ${bypassMode ? "true" : "false"};
+      })()`,
+      "Bypass Mode toggle state",
+      5_000,
+      250
+    );
   }
   const startRef = findRef(snapshot(), "button", "会議を開始");
   if (!startRef) {

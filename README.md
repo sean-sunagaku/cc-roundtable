@@ -128,6 +128,17 @@ npm --prefix src/apps/desktop run e2e:web
 - browser client を Chrome で開き、CDP 経由の DOM 操作で確認する
 - 新規会議開始、手動送信、一時停止 / 再開、daemon 再起動後の recovering、会議終了を確認する
 
+実 Claude runtime の smoke 確認はこれです。
+
+```bash
+npm --prefix src/apps/desktop run smoke:runtime:real
+```
+
+- `MEETING_ROOM_E2E_FAKE_RUNTIME` は使わず、実 runtime 経路で確認する
+- 空きポートと一時ディレクトリを毎回使うので、既存の `4417` / `9999` と衝突しにくい
+- `startMeeting`、最初の agent 返信、人間メッセージ送信、その後の agent 返信、`endMeeting` までをまとめて確認する
+- 失敗時は一時 state を残して debug tail を表示する
+
 ## Architecture Docs
 
 アーキテクチャ案を `Markdown` / `draw.io` / `SVG` で増やしたい時は、`docs/architecture-definitions/` を使います。

@@ -17,6 +17,7 @@ export interface StartMeetingRuntimeOptions {
   onData: (data: string) => void;
   onExit: (event: RuntimeExitEvent) => void;
   onInitPromptSent?: () => void;
+  onSyntheticAgentMessage?: (content: string) => void;
 }
 
 export interface MeetingRuntimeManagerOptions {
@@ -94,6 +95,105 @@ class InMemoryRuntimeProcess implements PtyLike {
   }
 }
 
+class E2EFakeRuntimeProcess implements PtyLike {
+  private readonly dataHandlers: Array<(data: string) => void> = [];
+  private readonly exitHandlers: Array<(event: RuntimeExitEvent) => void> = [];
+  private killed = false;
+  private promptBuffer = "";
+
+  constructor(
+    private readonly meetingId: string,
+    private readonly log: (message: string) => void,
+    private readonly onSyntheticAgentMessage?: (content: string) => void
+  ) {
+    setTimeout(() => {
+      if (this.killed) {
+        return;
+      }
+      this.emitData("Meeting Room E2E fake runtime is active.\r\n❯ ");
+    }, 50);
+  }
+
+  write(data: string): void {
+    if (this.killed) {
+      return;
+    }
+    const segments = data.split("\r");
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment = segments[index] ?? "";
+      this.promptBuffer += segment;
+      const isPromptCommitted = index < segments.length - 1;
+      if (!isPromptCommitted) {
+        continue;
+      }
+      const prompt = this.promptBuffer.replace(/\r/g, "").trim();
+      this.promptBuffer = "";
+      if (!prompt) {
+        continue;
+      }
+      this.handleCommittedPrompt(prompt);
+    }
+  }
+
+  resize(_cols: number, _rows: number): void {}
+
+  kill(): void {
+    if (this.killed) {
+      return;
+    }
+    this.killed = true;
+    queueMicrotask(() => {
+      for (const handler of this.exitHandlers) {
+        handler({ exitCode: 0 });
+      }
+    });
+  }
+
+  onData(handler: (data: string) => void): void {
+    this.dataHandlers.push(handler);
+  }
+
+  onExit(handler: (event: RuntimeExitEvent) => void): void {
+    this.exitHandlers.push(handler);
+  }
+
+  private handleCommittedPrompt(prompt: string): void {
+    const preview = prompt.length > 160 ? `${prompt.slice(0, 157)}...` : prompt;
+    this.log(`[daemon] E2E fake runtime received input for ${this.meetingId}: ${preview}`);
+
+    setTimeout(() => {
+      if (!this.killed) {
+        this.emitData(`\r\n[e2e fake runtime] accepted input for ${this.meetingId}.\r\n❯ `);
+      }
+    }, 10);
+
+    if (!this.onSyntheticAgentMessage) {
+      return;
+    }
+    if (!/(\[Human Input\]|人間参加者からの入力です)/.test(prompt)) {
+      return;
+    }
+
+    setTimeout(() => {
+      if (this.killed) {
+        return;
+      }
+      this.onSyntheticAgentMessage?.([
+        "現在の状態です。",
+        "会議は正常に稼働中です。",
+        "次の確認をそのまま続けます。"
+      ].join("\n"));
+      this.emitData("\r\n現在の状態です。短い状況共有を返しました。\r\n❯ ");
+    }, 250);
+  }
+
+  private emitData(data: string): void {
+    for (const handler of this.dataHandlers) {
+      handler(data);
+    }
+  }
+}
+
 export class MeetingRuntimeManager {
   private readonly runtimes = new Map<string, RuntimeHandle>();
 
@@ -109,7 +209,11 @@ export class MeetingRuntimeManager {
 
   startRuntime(options: StartMeetingRuntimeOptions): void {
     this.stopRuntime(options.meetingId);
-    const runtime = this.spawnRuntimeProcess(options.meetingId, options.projectDir);
+    const runtime = this.spawnRuntimeProcess(
+      options.meetingId,
+      options.projectDir,
+      options.onSyntheticAgentMessage
+    );
     runtime.pendingInitPrompt = options.initPrompt;
     runtime.initPromptTimer = setTimeout(() => {
       this.flushPendingInitPrompt(options.meetingId, options.onInitPromptSent);
@@ -196,7 +300,17 @@ export class MeetingRuntimeManager {
     return true;
   }
 
-  private spawnRuntimeProcess(meetingId: string, projectDir: string): RuntimeHandle {
+  private spawnRuntimeProcess(
+    meetingId: string,
+    projectDir: string,
+    onSyntheticAgentMessage?: (content: string) => void
+  ): RuntimeHandle {
+    if (process.env.MEETING_ROOM_E2E_FAKE_RUNTIME === "1") {
+      this.options.log(`[daemon] using E2E fake runtime for ${meetingId}`);
+      return {
+        process: new E2EFakeRuntimeProcess(meetingId, this.options.log, onSyntheticAgentMessage)
+      };
+    }
     try {
       const ptyModule = requireNodePty();
       const shell = process.platform === "win32" ? "powershell.exe" : "/bin/zsh";

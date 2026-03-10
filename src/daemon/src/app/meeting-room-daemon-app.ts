@@ -49,6 +49,7 @@ import type { RelayPayload } from "../types";
 import { createId, ensureWorkspaceTrustAccepted, resolveRepoRoot } from "../utils";
 
 export class MeetingRoomDaemonApp {
+  private shuttingDown = false;
   private readonly repoRoot = resolveRepoRoot();
   private readonly dataDir =
     process.env.MEETING_ROOM_DAEMON_DATA_DIR?.trim() ||
@@ -90,6 +91,7 @@ export class MeetingRoomDaemonApp {
   }
 
   async start(): Promise<void> {
+    this.shuttingDown = false;
     this.syncApprovalFiles();
     this.relayReceiver.start((payload) => {
       this.handleRelayPayload(payload);
@@ -97,6 +99,7 @@ export class MeetingRoomDaemonApp {
   }
 
   async stop(): Promise<void> {
+    this.shuttingDown = true;
     await this.relayReceiver.stop();
     this.runtimes.stopAll();
     this.eventStream.closeAll();
@@ -251,6 +254,9 @@ export class MeetingRoomDaemonApp {
         this.handlePtyData(command.meetingId, data);
       },
       onExit: ({ exitCode }) => {
+        if (this.shuttingDown) {
+          return;
+        }
         this.recordTerminalChunk(command.meetingId, `\n[pty exited: ${exitCode ?? 0}]\n`);
         this.endMeeting(command.meetingId, "runtime_exit");
       },
@@ -259,6 +265,18 @@ export class MeetingRoomDaemonApp {
           kind: "InitPromptSent",
           at: new Date().toISOString(),
           meetingId: command.meetingId
+        });
+      },
+      onSyntheticAgentMessage: (content) => {
+        const timestamp = new Date().toISOString();
+        this.recordAgentMessage(command.meetingId, {
+          id: createId("synthetic_agent"),
+          sender: "leader",
+          content,
+          timestamp,
+          team: "leader",
+          source: "agent",
+          status: "confirmed"
         });
       }
     });
@@ -602,6 +620,9 @@ export class MeetingRoomDaemonApp {
   private buildHumanMessagePrompt(meetingId: string, message: string): string {
     return [
       "人間参加者からの入力です。内容を必ずチーム全体へ broadcast してください。",
+      "ただし最優先は、人間への通常返答として 2〜4 行の短い状況説明をすぐ返すことです。",
+      "その短い返答を先に出してから、必要な TeamCreate / Task / SendMessage を続けてください。",
+      "追加情報が足りなくても AskUserQuestion は使わず、合理的な仮定を明示して回答してください。",
       "会議コンテキストを再掲するので、これを前提に検討と提案を続けてください。",
       ...this.buildMeetingContextLines(meetingId),
       "",
