@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    Concept: "Negative Room"
+    Three thick arcs arranged in a pinwheel/rotation pattern.
+    They don't close — they leave a triangular negative space at center.
+    That negative space IS the room. The agents surround and define
+    the room by their presence, but the room itself is the void they create.
+    Like how walls define a room — you see the walls, but the room
+    is the space between them.
+    Reads as ONE rotating symbol, like a camera aperture or turbine.
+  -->
+  <defs>
+    <style>
+      .arc { fill: none; stroke-width: 10; stroke-linecap: round; }
+    </style>
+  </defs>
+  <!-- Arc 1: curves from upper-left downward — agent approaching the room -->
+  <path class="arc" stroke="#0D9488"
+    d="M 40,28 A 32,32 0 0,1 88,48"/>
+  <!-- Arc 2: curves from right to lower-left -->
+  <path class="arc" stroke="#14B8A6"
+    d="M 96,68 A 32,32 0 0,1 56,102"/>
+  <!-- Arc 3: curves from bottom-left to upper area -->
+  <path class="arc" stroke="#0F766E"
+    d="M 32,92 A 32,32 0 0,1 34,40"/>
+  <!-- The negative space at center (~64,64) is the room -->
+  <!-- No element placed there — the room is defined by absence -->
+</svg>

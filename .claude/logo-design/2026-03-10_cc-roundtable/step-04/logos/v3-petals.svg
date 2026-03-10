@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    Concept: "Petals" (Flower Intersection)
+    Three circles overlap. Instead of showing the circles themselves,
+    we ONLY show the intersection zones — the "petals" where agents meet,
+    and the bright center where ALL meet.
+    The individual circles are invisible; what matters is the shared space.
+    One reads it as a single 3-petal flower/trefoil shape.
+  -->
+  <defs>
+    <!-- Individual circle definitions for clipping -->
+    <circle id="cTop" cx="64" cy="42" r="32"/>
+    <circle id="cBL" cx="44" cy="76" r="32"/>
+    <circle id="cBR" cx="84" cy="76" r="32"/>
+    <!-- Clip: top AND bottom-left intersection -->
+    <clipPath id="topBL">
+      <use href="#cTop"/>
+    </clipPath>
+    <!-- Clip: top AND bottom-right intersection -->
+    <clipPath id="topBR">
+      <use href="#cTop"/>
+    </clipPath>
+    <!-- Clip: bottom-left AND bottom-right intersection -->
+    <clipPath id="blBR">
+      <use href="#cBL"/>
+    </clipPath>
+    <!-- Triple clip layers -->
+    <clipPath id="triple1">
+      <use href="#cBL"/>
+    </clipPath>
+    <clipPath id="triple2">
+      <use href="#cBR"/>
+    </clipPath>
+  </defs>
+  <!-- Petal 1: Top meets Bottom-Left (soft teal) -->
+  <circle cx="44" cy="76" r="32" fill="#14B8A6" clip-path="url(#topBL)"/>
+  <!-- Petal 2: Top meets Bottom-Right (medium teal) -->
+  <circle cx="84" cy="76" r="32" fill="#0D9488" clip-path="url(#topBR)"/>
+  <!-- Petal 3: Bottom-Left meets Bottom-Right (deep teal) -->
+  <circle cx="84" cy="76" r="32" fill="#0F766E" clip-path="url(#blBR)"/>
+  <!-- Center: where all three meet — brightest, the "room" -->
+  <g clip-path="url(#triple1)">
+    <circle cx="84" cy="76" r="32" fill="#5EEAD4" clip-path="url(#topBR)"/>
+  </g>
+</svg>

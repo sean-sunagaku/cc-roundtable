@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    Concept: "Confluence"
+    Three filled circles overlap to create a bright shared center — the room.
+    No outlines, no decoration. The overlap zones ARE the design.
+    Uses blend-mode-like opacity layering to create emergent colors.
+  -->
+  <defs>
+    <clipPath id="c1c2">
+      <circle cx="64" cy="42" r="32"/>
+    </clipPath>
+    <clipPath id="c2c3">
+      <circle cx="44" cy="76" r="32"/>
+    </clipPath>
+    <clipPath id="c1c3">
+      <circle cx="64" cy="42" r="32"/>
+    </clipPath>
+    <clipPath id="all3a">
+      <circle cx="44" cy="76" r="32"/>
+    </clipPath>
+    <clipPath id="all3b">
+      <circle cx="84" cy="76" r="32"/>
+    </clipPath>
+  </defs>
+  <!-- Base circles: warm teal tones, each agent's "presence" -->
+  <circle cx="64" cy="42" r="32" fill="#0D9488" opacity="0.85"/>
+  <circle cx="44" cy="76" r="32" fill="#14B8A6" opacity="0.85"/>
+  <circle cx="84" cy="76" r="32" fill="#0F766E" opacity="0.85"/>
+  <!-- Pairwise overlaps: brighter where two agents meet -->
+  <circle cx="44" cy="76" r="32" fill="#2DD4BF" opacity="0.4" clip-path="url(#c1c2)"/>
+  <circle cx="84" cy="76" r="32" fill="#2DD4BF" opacity="0.4" clip-path="url(#c2c3)"/>
+  <circle cx="84" cy="76" r="32" fill="#2DD4BF" opacity="0.4" clip-path="url(#c1c3)"/>
+  <!-- Triple overlap: the brightest point — this IS the room -->
+  <g clip-path="url(#all3a)">
+    <circle cx="84" cy="76" r="32" fill="#5EEAD4" opacity="0.7" clip-path="url(#c1c3)"/>
+  </g>
+</svg>

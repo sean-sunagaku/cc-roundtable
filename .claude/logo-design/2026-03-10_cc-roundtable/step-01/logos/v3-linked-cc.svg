@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .c1 { fill: none; stroke: #0D9488; stroke-width: 14; stroke-linecap: round; }
+      .c2 { fill: none; stroke: #0F172A; stroke-width: 14; stroke-linecap: round; }
+    </style>
+  </defs>
+  <!-- First "c" — open arc, left-positioned -->
+  <path class="c1" d="M62,30 C36,30 18,46 18,64 C18,82 36,98 62,98"/>
+  <!-- Second "c" — open arc, right-positioned, interlocked -->
+  <path class="c2" d="M66,30 C92,30 110,46 110,64 C110,82 92,98 66,98"/>
+</svg>

@@ -70,6 +70,7 @@ function createWindow(): void {
     minWidth: 1000,
     minHeight: 700,
     backgroundColor: "#0b1119",
+    icon: path.resolve(__dirname, "../../assets/icon.png"),
     webPreferences: {
       preload: path.resolve(__dirname, "preload.js"),
       contextIsolation: true

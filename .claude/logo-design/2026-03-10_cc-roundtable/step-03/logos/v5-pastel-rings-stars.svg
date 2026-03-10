@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <g id="star4">
+      <path d="M0,-8 C1,-2 2,-1 8,0 C2,1 1,2 0,8 C-1,2 -2,1 -8,0 C-2,-1 -1,-2 0,-8 Z" fill="#F97316"/>
+    </g>
+  </defs>
+  <!-- Pastel-bright background -->
+  <rect width="128" height="128" rx="28" fill="#F0FDFA"/>
+  <!-- Three overlapping rings on light background -->
+  <circle cx="64" cy="42" r="27" fill="none" stroke="#0D9488" stroke-width="8"/>
+  <circle cx="45" cy="76" r="27" fill="none" stroke="#14B8A6" stroke-width="8"/>
+  <circle cx="83" cy="76" r="27" fill="none" stroke="#0F766E" stroke-width="8"/>
+  <!-- Claude star marks -->
+  <use href="#star4" transform="translate(64,16) scale(0.9)"/>
+  <use href="#star4" transform="translate(24,94) scale(0.9)"/>
+  <use href="#star4" transform="translate(104,94) scale(0.9)"/>
+</svg>

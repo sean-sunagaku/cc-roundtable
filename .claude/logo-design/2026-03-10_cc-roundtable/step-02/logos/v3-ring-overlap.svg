@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Three overlapping rings (stroked) — the woven intersection = room -->
+  <circle cx="64" cy="42" r="30" fill="none" stroke="#0D9488" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="44" cy="76" r="30" fill="none" stroke="#0D9488" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="84" cy="76" r="30" fill="none" stroke="#0D9488" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+</svg>

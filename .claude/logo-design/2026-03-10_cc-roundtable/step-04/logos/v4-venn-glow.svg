@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!--
+    Concept: "Venn Glow"
+    Dark background. Three semi-transparent circles with radial gradients
+    that glow brighter at the center. The triple overlap creates an emergent
+    bright point — like three lanterns in a dark room, where they overlap
+    the room is illuminated.
+    The logo IS the light emerging from convergence.
+    Single unified impression: a glowing convergence point.
+  -->
+  <defs>
+    <radialGradient id="g1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2DD4BF" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#0D9488" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0D9488" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34D399" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#14B8A6" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#5EEAD4" stop-opacity="0.9"/>
+      <stop offset="70%" stop-color="#0F766E" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0F766E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Dark backdrop -->
+  <rect width="128" height="128" rx="24" fill="#0C1222"/>
+  <!-- Three glowing presences — their overlap creates illumination -->
+  <circle cx="64" cy="40" r="36" fill="url(#g1)"/>
+  <circle cx="42" cy="76" r="36" fill="url(#g2)"/>
+  <circle cx="86" cy="76" r="36" fill="url(#g3)"/>
+  <!-- The bright convergence point — the "room" emerges from the meeting of light -->
+  <circle cx="64" cy="63" r="8" fill="#CCFBF1" opacity="0.8"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .bracket { fill: none; stroke: #1E293B; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+      .spark { fill: #0D9488; }
+    </style>
+  </defs>
+  <!-- Left curly bracket curved into arc (8 o'clock to 12 o'clock) -->
+  <path class="bracket" d="M52,108 C20,95 12,68 20,42 C24,30 36,20 50,18"/>
+  <!-- Right curly bracket curved into arc (4 o'clock to 12 o'clock) -->
+  <path class="bracket" d="M76,108 C108,95 116,68 108,42 C104,30 92,20 78,18"/>
+  <!-- Discussion spark dot at the top -->
+  <circle class="spark" cx="64" cy="14" r="8"/>
+</svg>

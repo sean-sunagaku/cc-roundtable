@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Bold simplified trefoil — three large overlapping discs, high contrast -->
+  <!-- Dark background circle for framing -->
+  <circle cx="64" cy="64" r="62" fill="#0F172A"/>
+  <!-- Three overlapping roundtable discs -->
+  <circle cx="64" cy="38" r="26" fill="#0D9488" opacity="0.7"/>
+  <circle cx="42" cy="76" r="26" fill="#0D9488" opacity="0.7"/>
+  <circle cx="86" cy="76" r="26" fill="#0D9488" opacity="0.7"/>
+  <!-- The bright "room" at the center where all three overlap -->
+  <!-- Approximated as a small bright shape -->
+  <path d="M56,58 Q64,50 72,58 Q78,68 72,76 Q64,82 56,76 Q50,68 56,58 Z" fill="#5EEAD4" opacity="0.9"/>
+</svg>
