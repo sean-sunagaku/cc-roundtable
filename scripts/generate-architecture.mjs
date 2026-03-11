@@ -72,7 +72,7 @@ function page(name, pageId, cells) {
     ...cells.map((c) => pad + c),
     `      </root>`,
     `    </mxGraphModel>`,
-    `  </diagram>`,
+    `  </diagram>`
   ].join("\n");
 }
 
@@ -81,7 +81,7 @@ function drawioFile(pages) {
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<mxfile host="generate-architecture.mjs" modified="${new Date().toISOString()}" type="device">`,
     `  ${pages.join("\n  ")}`,
-    `</mxfile>`,
+    `</mxfile>`
   ].join("\n");
 }
 
@@ -93,12 +93,9 @@ const S = {
   external:
     "rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;",
   hook: "rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;",
-  mainMod:
-    "rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;",
-  renderer:
-    "rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;",
-  shared:
-    "rounded=1;whiteSpace=wrap;html=1;fillColor=#fce5cd;strokeColor=#d79b00;fontSize=12;",
+  mainMod: "rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;",
+  renderer: "rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;",
+  shared: "rounded=1;whiteSpace=wrap;html=1;fillColor=#fce5cd;strokeColor=#d79b00;fontSize=12;",
   fsBox:
     "rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=2;fontSize=12;",
   container:
@@ -112,20 +109,15 @@ const S = {
   colHeader:
     "text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontStyle=5;fontColor=#555;",
   arr: "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;",
-  arrDash:
-    "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;dashed=1;",
-  arrWs:
-    "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#d6b656;",
-  arrIpc:
-    "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#82b366;",
-  arrBold:
-    "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#6c8ebf;",
+  arrDash: "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;dashed=1;",
+  arrWs: "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#d6b656;",
+  arrIpc: "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#82b366;",
+  arrBold: "rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#6c8ebf;",
   ipcBox:
     "rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F7FF;strokeColor=#1890FF;fontSize=11;fontFamily=monospace;",
   ipcDir:
     "text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#1890FF;fontStyle=3;",
-  flowStep:
-    "rounded=1;whiteSpace=wrap;html=1;fontSize=11;",
+  flowStep: "rounded=1;whiteSpace=wrap;html=1;fontSize=11;",
   leader:
     "shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#08519c;fontColor=#ffffff;strokeColor=#08519c;fontSize=13;fontStyle=1;size=0.1;",
   agent:
@@ -153,7 +145,7 @@ const S = {
   arrFlow:
     "edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#3182bd;",
   arrLifecycle:
-    "edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#2196F3;",
+    "edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#2196F3;"
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -172,8 +164,7 @@ function walk(dir, exts = [".ts", ".tsx", ".py"]) {
 }
 
 function extractImports(src) {
-  const re =
-    /import\s+(?:type\s+)?(?:\{[^}]*\}|[^{;]+)\s+from\s+["']([^"']+)["']/g;
+  const re = /import\s+(?:type\s+)?(?:\{[^}]*\}|[^{;]+)\s+from\s+["']([^"']+)["']/g;
   const out = [];
   let m;
   while ((m = re.exec(src))) out.push(m[1]);
@@ -208,8 +199,7 @@ function extractIpcHandles(src) {
   const re = /ipcMain\.handle\(\s*["']([^"']+)["']/g;
   const out = [];
   let m;
-  while ((m = re.exec(src)))
-    out.push({ ch: m[1], dir: "renderer→main" });
+  while ((m = re.exec(src))) out.push({ ch: m[1], dir: "renderer→main" });
   return out;
 }
 
@@ -217,8 +207,7 @@ function extractIpcSends(src) {
   const re = /webContents\.send\(\s*["']([^"']+)["']/g;
   const out = [];
   let m;
-  while ((m = re.exec(src)))
-    out.push({ ch: m[1], dir: "main→renderer" });
+  while ((m = re.exec(src))) out.push({ ch: m[1], dir: "main→renderer" });
   return out;
 }
 
@@ -226,11 +215,9 @@ function extractPreloadChannels(src) {
   const out = [];
   let m;
   const reInvoke = /ipcRenderer\.invoke\(\s*["']([^"']+)["']/g;
-  while ((m = reInvoke.exec(src)))
-    out.push({ ch: m[1], dir: "renderer→main", method: "invoke" });
+  while ((m = reInvoke.exec(src))) out.push({ ch: m[1], dir: "renderer→main", method: "invoke" });
   const reOn = /ipcRenderer\.on\(\s*["']([^"']+)["']/g;
-  while ((m = reOn.exec(src)))
-    out.push({ ch: m[1], dir: "main→renderer", method: "on" });
+  while ((m = reOn.exec(src))) out.push({ ch: m[1], dir: "main→renderer", method: "on" });
   return out;
 }
 
@@ -261,7 +248,7 @@ function analyze() {
       imports: extractImports(src),
       classes: extractClasses(src),
       functions: extractFunctions(src),
-      interfaces: extractInterfaces(src),
+      interfaces: extractInterfaces(src)
     });
 
     if (layer === "main") {
@@ -279,10 +266,8 @@ function analyze() {
     hooks.push({
       name,
       rel: path.relative(ROOT, fp),
-      type: /PreToolUse/i.test(src) || name.includes("enforce")
-        ? "PreToolUse"
-        : "PostToolUse",
-      usesWs: /websocket|WS_|ws_/i.test(src),
+      type: /PreToolUse/i.test(src) || name.includes("enforce") ? "PreToolUse" : "PostToolUse",
+      usesWs: /websocket|WS_|ws_/i.test(src)
     });
   }
 
@@ -306,9 +291,11 @@ function analyze() {
           id: parsed.id || entry.name.replace(".json", ""),
           name: parsed.name || parsed.id || entry.name,
           description: parsed.description || "",
-          enabledByDefault: Boolean(parsed.enabledByDefault),
+          enabledByDefault: Boolean(parsed.enabledByDefault)
         });
-      } catch { /* skip malformed */ }
+      } catch {
+        /* skip malformed */
+      }
     }
   }
 
@@ -318,12 +305,20 @@ function analyze() {
     try {
       const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
       for (const reg of settings.hooks?.PreToolUse ?? []) {
-        hookRegistrations.pre.push({ matcher: reg.matcher, command: reg.hooks?.[0]?.command || "" });
+        hookRegistrations.pre.push({
+          matcher: reg.matcher,
+          command: reg.hooks?.[0]?.command || ""
+        });
       }
       for (const reg of settings.hooks?.PostToolUse ?? []) {
-        hookRegistrations.post.push({ matcher: reg.matcher, command: reg.hooks?.[0]?.command || "" });
+        hookRegistrations.post.push({
+          matcher: reg.matcher,
+          command: reg.hooks?.[0]?.command || ""
+        });
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
 
   // Extract DEFAULT_AGENT_PROFILES from meeting.ts as fallback
@@ -350,14 +345,36 @@ function pageOverview(a) {
   const c = [];
 
   c.push(cell(nid(), "cc-roundtable  System Architecture", 310, 10, 420, 35, S.title));
-  c.push(cell(nid(), `Generated ${new Date().toISOString().slice(0, 10)} by generate-architecture.mjs`, 340, 42, 360, 20, S.subtitle));
+  c.push(
+    cell(
+      nid(),
+      `Generated ${new Date().toISOString().slice(0, 10)} by generate-architecture.mjs`,
+      340,
+      42,
+      360,
+      20,
+      S.subtitle
+    )
+  );
 
   // ── Layer 1: External ──
   const claude = nid();
-  c.push(cell(claude, "<b>Claude Code</b><br/>(Agent Teams + SubAgents)", 80, 80, 300, 80, S.external));
+  c.push(
+    cell(claude, "<b>Claude Code</b><br/>(Agent Teams + SubAgents)", 80, 80, 300, 80, S.external)
+  );
 
   const fsId = nid();
-  c.push(cell(fsId, "<b>File System</b><br/>.claude/meeting-room/<br/>(.active │ agents/ │ summaries/)", 880, 80, 320, 80, S.fsBox));
+  c.push(
+    cell(
+      fsId,
+      "<b>File System</b><br/>.claude/meeting-room/<br/>(.active │ agents/ │ summaries/)",
+      880,
+      80,
+      320,
+      80,
+      S.fsBox
+    )
+  );
 
   // ── Layer 2: Python Hooks ──
   const hookGrp = nid();
@@ -374,11 +391,15 @@ function pageOverview(a) {
 
   // ── Layer 3: Electron App ──
   const elGrp = nid();
-  c.push(group(elGrp, "Electron Desktop App (meeting-room-electron)", 80, 380, 1120, 470, S.container));
+  c.push(
+    group(elGrp, "Electron Desktop App (meeting-room-electron)", 80, 380, 1120, 470, S.container)
+  );
 
   // Main Process
   const mainGrp = nid();
-  c.push(group(mainGrp, "Main Process (Node.js + esbuild)", 20, 40, 500, 410, S.subContainer, elGrp));
+  c.push(
+    group(mainGrp, "Main Process (Node.js + esbuild)", 20, 40, 500, 410, S.subContainer, elGrp)
+  );
 
   const mainMods = {};
   const mainFiles = a.files.filter((f) => f.layer === "main");
@@ -393,20 +414,38 @@ function pageOverview(a) {
 
   // Shared
   const sharedFiles = a.files.filter((f) => f.layer === "shared");
-  let sy = 40 + 72 * mainFiles.length + 10;
+  const sy = 40 + 72 * mainFiles.length + 10;
   for (const f of sharedFiles) {
     const sid = nid();
-    c.push(cell(sid, `<b>${f.name}.ts</b><br/>(${f.interfaces.length} exported types)`, 260, sy - 72 * (mainFiles.length - 2), 210, 55, S.shared, mainGrp));
+    c.push(
+      cell(
+        sid,
+        `<b>${f.name}.ts</b><br/>(${f.interfaces.length} exported types)`,
+        260,
+        sy - 72 * (mainFiles.length - 2),
+        210,
+        55,
+        S.shared,
+        mainGrp
+      )
+    );
     mainMods[f.name] = sid;
   }
 
   // Renderer Process
   const renGrp = nid();
-  c.push(group(renGrp, "Renderer Process (React 18 + Vite 7)", 560, 40, 540, 410, S.subContainer, elGrp));
+  c.push(
+    group(renGrp, "Renderer Process (React 18 + Vite 7)", 560, 40, 540, 410, S.subContainer, elGrp)
+  );
 
   const renMods = {};
   const skipNames = new Set(["main", "global", "global.d"]);
-  const screens = a.files.filter((f) => f.layer === "renderer" && (f.sublayer === "root" || f.sublayer === "screen") && !skipNames.has(f.name));
+  const screens = a.files.filter(
+    (f) =>
+      f.layer === "renderer" &&
+      (f.sublayer === "root" || f.sublayer === "screen") &&
+      !skipNames.has(f.name)
+  );
   const comps = a.files.filter((f) => f.layer === "renderer" && f.sublayer === "component");
 
   let ry = 40;
@@ -432,7 +471,12 @@ function pageOverview(a) {
   for (const h of a.hooks) {
     const hid = hookIds[h.name];
     if (!hid) continue;
-    const label = h.type === "PreToolUse" ? "SendMessage\n(PreToolUse)" : h.name.includes("subagent") ? "SubagentStop\n(PostToolUse)" : "SendMessage\n(PostToolUse)";
+    const label =
+      h.type === "PreToolUse"
+        ? "SendMessage\n(PreToolUse)"
+        : h.name.includes("subagent")
+          ? "SubagentStop\n(PostToolUse)"
+          : "SendMessage\n(PostToolUse)";
     c.push(arrow(nid(), claude, hid, label, S.arr));
   }
 
@@ -498,11 +542,40 @@ function pageDeps(a) {
   c.push(cell(nid(), "Module Dependency Graph (import analysis)", 330, 10, 400, 30, S.title));
 
   const cols = [
-    { key: "main", label: "Main Process", x: 30, style: S.mainMod, files: a.files.filter((f) => f.layer === "main") },
-    { key: "shared", label: "Shared", x: 310, style: S.shared, files: a.files.filter((f) => f.layer === "shared") },
-    { key: "screen", label: "Screens", x: 590, style: S.renderer, files: a.files.filter((f) => f.layer === "renderer" && (f.sublayer === "root" || f.sublayer === "screen") && !["main", "global", "global.d"].includes(f.name)) },
-    { key: "component", label: "Components", x: 870, style: S.renderer, files: a.files.filter((f) => f.layer === "renderer" && f.sublayer === "component") },
-    { key: "hook", label: "Hooks (Python)", x: 1150, style: S.hook, files: [] },
+    {
+      key: "main",
+      label: "Main Process",
+      x: 30,
+      style: S.mainMod,
+      files: a.files.filter((f) => f.layer === "main")
+    },
+    {
+      key: "shared",
+      label: "Shared",
+      x: 310,
+      style: S.shared,
+      files: a.files.filter((f) => f.layer === "shared")
+    },
+    {
+      key: "screen",
+      label: "Screens",
+      x: 590,
+      style: S.renderer,
+      files: a.files.filter(
+        (f) =>
+          f.layer === "renderer" &&
+          (f.sublayer === "root" || f.sublayer === "screen") &&
+          !["main", "global", "global.d"].includes(f.name)
+      )
+    },
+    {
+      key: "component",
+      label: "Components",
+      x: 870,
+      style: S.renderer,
+      files: a.files.filter((f) => f.layer === "renderer" && f.sublayer === "component")
+    },
+    { key: "hook", label: "Hooks (Python)", x: 1150, style: S.hook, files: [] }
   ];
 
   const nodeById = {};
@@ -515,10 +588,12 @@ function pageDeps(a) {
       const lines = [
         ...f.classes.map((x) => `class ${x}`),
         ...f.functions.map((x) => `fn ${x}`),
-        ...f.interfaces.map((x) => `type ${x}`),
+        ...f.interfaces.map((x) => `type ${x}`)
       ];
       const trunc = lines.length > 4 ? [...lines.slice(0, 4), `+${lines.length - 4} more`] : lines;
-      const detail = trunc.length ? `<br/><font style="font-size:9px;color:#666">${trunc.join(", ")}</font>` : "";
+      const detail = trunc.length
+        ? `<br/><font style="font-size:9px;color:#666">${trunc.join(", ")}</font>`
+        : "";
       const h = trunc.length > 2 ? 70 : trunc.length ? 58 : 48;
       c.push(cell(fid, `<b>${f.name}</b>${detail}`, col.x, y, 250, h, col.style));
       nodeById[f.name] = fid;
@@ -573,12 +648,24 @@ function pageIpc(a) {
 
   // Renderer box
   const renBox = nid();
-  c.push(cell(renBox, "<b>Renderer</b><br/>(preload.ts → ipcRenderer)", 420, 60, 260, 55, S.renderer));
+  c.push(
+    cell(renBox, "<b>Renderer</b><br/>(preload.ts → ipcRenderer)", 420, 60, 260, 55, S.renderer)
+  );
 
   // Main box
   const mainBox = nid();
   const mainY = 60 + 80 + Math.max(toMain.length, toRenderer.length) * 38 + 40;
-  c.push(cell(mainBox, "<b>Main Process</b><br/>(index.ts → ipcMain.handle)", 420, mainY, 260, 55, S.mainMod));
+  c.push(
+    cell(
+      mainBox,
+      "<b>Main Process</b><br/>(index.ts → ipcMain.handle)",
+      420,
+      mainY,
+      260,
+      55,
+      S.mainMod
+    )
+  );
 
   // Left col: renderer→main (invoke)
   c.push(cell(nid(), "<b>renderer → main</b> (invoke)", 30, 140, 220, 22, S.ipcDir));
@@ -606,7 +693,17 @@ function pageIpc(a) {
   const wsY = mainY + 100;
   c.push(cell(nid(), "<b>WebSocket (port 9999)</b>", 420, wsY, 260, 22, S.colHeader));
   const hookBox = nid();
-  c.push(cell(hookBox, "<b>Python Hooks</b><br/>(ws-relay.py, subagent-status-relay.py)", 80, wsY + 35, 320, 55, S.hook));
+  c.push(
+    cell(
+      hookBox,
+      "<b>Python Hooks</b><br/>(ws-relay.py, subagent-status-relay.py)",
+      80,
+      wsY + 35,
+      320,
+      55,
+      S.hook
+    )
+  );
   const relayBox = nid();
   c.push(cell(relayBox, "<b>RelayServer</b> (ws-server.ts)", 680, wsY + 35, 280, 55, S.mainMod));
   c.push(arrow(nid(), hookBox, relayBox, "WebSocket :9999", S.arrWs));
@@ -635,7 +732,7 @@ function pageDataFlow() {
     { t: "4. WebSocket → RelayServer\n(port 9999, parse AgentMessagePayload)", s: S.mainMod },
     { t: "5. MeetingService.relayAgentMessage()\n→ IPC meeting:agent-message", s: S.mainMod },
     { t: "6. App.tsx onRelayMessage\n→ toChatMessage() → state update", s: S.renderer },
-    { t: "7. ChatView → MessageBubble\nMarkdown rendering + beep()", s: S.renderer },
+    { t: "7. ChatView → MessageBubble\nMarkdown rendering + beep()", s: S.renderer }
   ];
   let y1 = 90;
   let prev1 = null;
@@ -657,7 +754,7 @@ function pageDataFlow() {
     { t: "4. MeetingService.sendHumanMessage()\n→ PtyManager.write()", s: S.mainMod },
     { t: '5. PTY writes to Claude CLI\n"チームに broadcast してください:\\n{msg}"', s: S.mainMod },
     { t: "6. Claude Leader processes\n→ broadcasts to team via SendMessage", s: S.external },
-    { t: "7. Agent reply arrives via WebSocket\npending → confirmed", s: S.renderer },
+    { t: "7. Agent reply arrives via WebSocket\npending → confirmed", s: S.renderer }
   ];
   let y2 = 90;
   let prev2 = null;
@@ -709,7 +806,9 @@ function pageTypes(a) {
   }
 
   // Show which files use them
-  const consumers = a.files.filter((f) => f.imports.some((imp) => imp.includes("@shared/types") || imp.includes("shared/types")));
+  const consumers = a.files.filter((f) =>
+    f.imports.some((imp) => imp.includes("@shared/types") || imp.includes("shared/types"))
+  );
   const consY = 70 + Math.ceil(types.length / cols) * (rowH + gap) + 30;
   c.push(cell(nid(), "<b>Consumed by:</b>", 50, consY, 150, 22, S.colHeader));
 
@@ -735,7 +834,17 @@ function pageAgentTeams(a) {
   const c = [];
 
   c.push(cell(nid(), "Agent Teams &amp; SubAgent Architecture", 280, 10, 480, 35, S.title));
-  c.push(cell(nid(), `${a.agents.length} registered agents + human participant`, 360, 42, 320, 20, S.subtitle));
+  c.push(
+    cell(
+      nid(),
+      `${a.agents.length} registered agents + human participant`,
+      360,
+      42,
+      320,
+      20,
+      S.subtitle
+    )
+  );
 
   // ── Claude Code Process ──
   const claudeBox = nid();
@@ -746,11 +855,24 @@ function pageAgentTeams(a) {
   c.push(cell(leader, "<b>Leader Agent</b><br/>Claude CLI", 420, 40, 240, 70, S.leader, claudeBox));
 
   // env var
-  c.push(cell(nid(), "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1", 100, 48, 300, 24, S.envVar, claudeBox));
+  c.push(
+    cell(nid(), "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1", 100, 48, 300, 24, S.envVar, claudeBox)
+  );
 
   // Skill invocation
   const skillBox = nid();
-  c.push(cell(skillBox, '<b>Skill Invocation</b><br/>"/{skill-name} {topic}"<br/>→ Leader spawns SubAgents', 380, 130, 320, 60, S.lifecycle, claudeBox));
+  c.push(
+    cell(
+      skillBox,
+      '<b>Skill Invocation</b><br/>"/{skill-name} {topic}"<br/>→ Leader spawns SubAgents',
+      380,
+      130,
+      320,
+      60,
+      S.lifecycle,
+      claudeBox
+    )
+  );
   c.push(arrow(nid(), leader, skillBox, "initial prompt", S.arrFlow, claudeBox));
 
   // SubAgents ring
@@ -789,22 +911,50 @@ function pageAgentTeams(a) {
       c.push(arrow(nid(), agentIdList[i], agentIdList[next], "", S.broadcast, claudeBox));
     }
     // Center label
-    c.push(cell(nid(), "<b>SendMessage</b><br/>(type: broadcast)<br/>全員に公開", centerX - 90, centerY - 30, 180, 60,
-      "text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontColor=#3182bd;fontStyle=1;",
-      claudeBox));
+    c.push(
+      cell(
+        nid(),
+        "<b>SendMessage</b><br/>(type: broadcast)<br/>全員に公開",
+        centerX - 90,
+        centerY - 30,
+        180,
+        60,
+        "text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontColor=#3182bd;fontStyle=1;",
+        claudeBox
+      )
+    );
   }
 
   // ── Human Participant (outside Claude Code) ──
   const humanBox = nid();
-  c.push(cell(humanBox, "<b>Human Participant</b><br/>(Meeting Room UI)", 40, 750, 280, 70, S.humanBox));
+  c.push(
+    cell(humanBox, "<b>Human Participant</b><br/>(Meeting Room UI)", 40, 750, 280, 70, S.humanBox)
+  );
 
   // Electron App bridge
   const electronBridge = nid();
-  c.push(cell(electronBridge, "<b>Electron App</b><br/>InputBar → PTY.write()", 400, 750, 280, 70, S.mainMod));
+  c.push(
+    cell(
+      electronBridge,
+      "<b>Electron App</b><br/>InputBar → PTY.write()",
+      400,
+      750,
+      280,
+      70,
+      S.mainMod
+    )
+  );
 
   c.push(arrow(nid(), humanBox, electronBridge, "message input", S.arr));
-  c.push(arrow(nid(), electronBridge, leader,
-    'pty.write("チームに broadcast してください:\\n{msg}")', S.arrBold));
+  c.push(
+    arrow(
+      nid(),
+      electronBridge,
+      leader,
+      'pty.write("チームに broadcast してください:\\n{msg}")',
+      S.arrBold
+    )
+  );
 
   // ── Hook Layer (right side) ──
   const hookLayer = nid();
@@ -812,14 +962,47 @@ function pageAgentTeams(a) {
 
   // Pre hook
   const preHook = nid();
-  c.push(cell(preHook, "<b>PreToolUse</b><br/>enforce-broadcast.py<br/>⛔ blocks directed msgs", 20, 35, 160, 65, S.hookIntercept, hookLayer));
+  c.push(
+    cell(
+      preHook,
+      "<b>PreToolUse</b><br/>enforce-broadcast.py<br/>⛔ blocks directed msgs",
+      20,
+      35,
+      160,
+      65,
+      S.hookIntercept,
+      hookLayer
+    )
+  );
 
   // Post hooks
   const postHook1 = nid();
-  c.push(cell(postHook1, "<b>PostToolUse</b><br/>ws-relay.py<br/>📡 → WebSocket", 200, 35, 160, 65, S.hookIntercept, hookLayer));
+  c.push(
+    cell(
+      postHook1,
+      "<b>PostToolUse</b><br/>ws-relay.py<br/>📡 → WebSocket",
+      200,
+      35,
+      160,
+      65,
+      S.hookIntercept,
+      hookLayer
+    )
+  );
 
   const postHook2 = nid();
-  c.push(cell(postHook2, "<b>PostToolUse</b><br/>subagent-status-relay.py<br/>📊 agent completed", 110, 108, 170, 45, S.hookIntercept, hookLayer));
+  c.push(
+    cell(
+      postHook2,
+      "<b>PostToolUse</b><br/>subagent-status-relay.py<br/>📊 agent completed",
+      110,
+      108,
+      170,
+      45,
+      S.hookIntercept,
+      hookLayer
+    )
+  );
 
   // Arrows: Hooks → Electron
   c.push(arrow(nid(), postHook1, electronBridge, "WebSocket :9999\n→ ChatView", S.arrWs));
@@ -835,11 +1018,31 @@ function pageAgentTeams(a) {
   c.push(cell(nid(), "<b>.claude/settings.json</b>", 40, regY, 200, 22, S.colHeader));
   let ry = regY + 30;
   for (const r of a.hookRegistrations.pre) {
-    c.push(cell(nid(), `Pre: ${r.matcher} → ${path.basename(r.command.split('"').find(s => s.endsWith('.py')) || '')}`, 40, ry, 380, 24, S.envVar));
+    c.push(
+      cell(
+        nid(),
+        `Pre: ${r.matcher} → ${path.basename(r.command.split('"').find((s) => s.endsWith(".py")) || "")}`,
+        40,
+        ry,
+        380,
+        24,
+        S.envVar
+      )
+    );
     ry += 30;
   }
   for (const r of a.hookRegistrations.post) {
-    c.push(cell(nid(), `Post: ${r.matcher} → ${path.basename(r.command.split('"').find(s => s.endsWith('.py')) || '')}`, 40, ry, 380, 24, S.envVar));
+    c.push(
+      cell(
+        nid(),
+        `Post: ${r.matcher} → ${path.basename(r.command.split('"').find((s) => s.endsWith(".py")) || "")}`,
+        40,
+        ry,
+        380,
+        24,
+        S.envVar
+      )
+    );
     ry += 30;
   }
 
@@ -851,8 +1054,17 @@ function pageAgentTeams(a) {
   c.push(cell(nid(), "Human", 280, legY + 28, 120, 32, S.humanBox));
   c.push(cell(nid(), "Hook", 420, legY + 28, 100, 32, S.hookIntercept));
   c.push(cell(nid(), ".active gate", 540, legY + 28, 120, 32, S.flagFile));
-  c.push(cell(nid(), "broadcast", 680, legY + 28, 120, 20,
-    "text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=10;fontColor=#3182bd;fontStyle=3;"));
+  c.push(
+    cell(
+      nid(),
+      "broadcast",
+      680,
+      legY + 28,
+      120,
+      20,
+      "text;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=10;fontColor=#3182bd;fontStyle=3;"
+    )
+  );
 
   return c;
 }
@@ -873,39 +1085,53 @@ function pageMeetingLifecycle(a) {
       label: "<b>1. Setup</b>",
       detail: "SetupScreen で設定\n• スキル選択\n• 議題入力\n• プロジェクトDir\n• メンバー選択",
       style: S.lifecycle,
-      h: 120,
+      h: 120
     },
     {
       label: "<b>2. Start Meeting</b>",
-      detail: "MeetingService.startMeeting()\n• .active flag 作成\n• PTY 起動 (zsh)\n• claude CLI 実行\n• 初期プロンプト送信\n  (/{skill} {topic})",
+      detail:
+        "MeetingService.startMeeting()\n• .active flag 作成\n• PTY 起動 (zsh)\n• claude CLI 実行\n• 初期プロンプト送信\n  (/{skill} {topic})",
       style: S.lifecycleActive,
-      h: 140,
+      h: 140
     },
     {
       label: "<b>3. Running</b>",
-      detail: "会議進行中\n• Agent 間 broadcast\n• Human → InputBar → PTY\n• Hook → WS → ChatView\n• SubagentStop → status",
+      detail:
+        "会議進行中\n• Agent 間 broadcast\n• Human → InputBar → PTY\n• Hook → WS → ChatView\n• SubagentStop → status",
       style: S.lifecycleActive,
-      h: 120,
+      h: 120
     },
     {
       label: "<b>4. Control</b>",
-      detail: "会議中操作\n• pause: 要点まとめ\n• resume: 再開\n• settings: 設定変更\n• retryMcp: MCP 復旧",
+      detail:
+        "会議中操作\n• pause: 要点まとめ\n• resume: 再開\n• settings: 設定変更\n• retryMcp: MCP 復旧",
       style: S.lifecycle,
-      h: 120,
+      h: 120
     },
     {
       label: "<b>5. End Meeting</b>",
-      detail: "MeetingService.endMeeting()\n• サマリー保存(.md)\n• PTY kill\n• .active flag 削除\n• タブ削除",
+      detail:
+        "MeetingService.endMeeting()\n• サマリー保存(.md)\n• PTY kill\n• .active flag 削除\n• タブ削除",
       style: S.lifecycleEnd,
-      h: 120,
-    },
+      h: 120
+    }
   ];
 
   const phaseIds = [];
   let px = 40;
   for (const phase of phases) {
     const pid = nid();
-    c.push(cell(pid, `${phase.label}<br/><font style="font-size:10px">${phase.detail.replace(/\n/g, "<br/>")}</font>`, px, 80, 240, phase.h, phase.style));
+    c.push(
+      cell(
+        pid,
+        `${phase.label}<br/><font style="font-size:10px">${phase.detail.replace(/\n/g, "<br/>")}</font>`,
+        px,
+        80,
+        240,
+        phase.h,
+        phase.style
+      )
+    );
     phaseIds.push(pid);
     px += 260;
   }
@@ -915,7 +1141,9 @@ function pageMeetingLifecycle(a) {
     c.push(arrow(nid(), phaseIds[i], phaseIds[i + 1], "", S.arrLifecycle));
   }
   // Loop: Control → Running
-  c.push(arrow(nid(), phaseIds[3], phaseIds[2], "resume", S.arrDash + "strokeColor=#82b366;curved=1;"));
+  c.push(
+    arrow(nid(), phaseIds[3], phaseIds[2], "resume", S.arrDash + "strokeColor=#82b366;curved=1;")
+  );
 
   // ── State detail: MeetingTab.status ──
   const stateY = 290;
@@ -924,7 +1152,7 @@ function pageMeetingLifecycle(a) {
   const states = [
     { label: '"running"', x: 120, y: stateY + 40, style: S.lifecycleActive },
     { label: '"paused"', x: 420, y: stateY + 40, style: S.lifecycle },
-    { label: '"ended"', x: 720, y: stateY + 40, style: S.lifecycleEnd },
+    { label: '"ended"', x: 720, y: stateY + 40, style: S.lifecycleEnd }
   ];
   const stateIds = [];
   for (const st of states) {
@@ -941,11 +1169,17 @@ function pageMeetingLifecycle(a) {
   c.push(cell(nid(), "<b>Data Stores &amp; Persistence</b>", 40, dsY, 300, 25, S.colHeader));
 
   const stores = [
-    { label: "<b>localStorage</b><br/>meeting-room:sessions<br/>(SessionSnapshot[])", style: S.renderer },
+    {
+      label: "<b>localStorage</b><br/>meeting-room:sessions<br/>(SessionSnapshot[])",
+      style: S.renderer
+    },
     { label: "<b>.claude/meeting-room/</b><br/>agents/*.json<br/>(AgentProfile)", style: S.fsBox },
     { label: "<b>.claude/meeting-room/</b><br/>summaries/*.md<br/>(会議サマリー)", style: S.fsBox },
     { label: "<b>.claude/meeting-room/</b><br/>.active<br/>(Hook gate flag)", style: S.flagFile },
-    { label: "<b>In-Memory</b><br/>MeetingService.tabs<br/>Map&lt;string, MeetingTab&gt;", style: S.mainMod },
+    {
+      label: "<b>In-Memory</b><br/>MeetingService.tabs<br/>Map&lt;string, MeetingTab&gt;",
+      style: S.mainMod
+    }
   ];
 
   let sx = 40;
@@ -962,7 +1196,10 @@ function pageMeetingLifecycle(a) {
   let ax = 40;
   let apRow = 0;
   for (const agent of profDisplay) {
-    if (ax > 900) { ax = 40; apRow++; }
+    if (ax > 900) {
+      ax = 40;
+      apRow++;
+    }
     const aid = nid();
     const lbl = `<b>${agent.name}</b><br/><font style="font-size:9px">${agent.id}</font><br/><font style="font-size:9px;color:#666">${agent.description}</font>`;
     c.push(cell(aid, lbl, ax, apY + 35 + apRow * 85, 220, 75, S.agent));
@@ -971,7 +1208,17 @@ function pageMeetingLifecycle(a) {
 
   // ── Initial Prompt Template ──
   const ipY = apY + 35 + (apRow + 1) * 85 + 20;
-  c.push(cell(nid(), "<b>Initial Prompt Template</b> (MeetingService.buildInitPrompt)", 40, ipY, 450, 25, S.colHeader));
+  c.push(
+    cell(
+      nid(),
+      "<b>Initial Prompt Template</b> (MeetingService.buildInitPrompt)",
+      40,
+      ipY,
+      450,
+      25,
+      S.colHeader
+    )
+  );
 
   const promptLines = [
     "/{skill}",
@@ -979,11 +1226,21 @@ function pageMeetingLifecycle(a) {
     "議題: {topic}",
     "参加メンバー（ロール）:",
     "- {id} ({name}): {description}",
-    "進め方: 1.議題再定義 2.論点整理 3.具体案 4.結論",
+    "進め方: 1.議題再定義 2.論点整理 3.具体案 4.結論"
   ];
-  c.push(cell(nid(), promptLines.map((l) => `<font style="font-family:monospace;font-size:10px">${l}</font>`).join("<br/>"),
-    40, ipY + 35, 520, 100,
-    "rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#ccc;fontSize=10;align=left;spacingLeft=10;spacingTop=5;"));
+  c.push(
+    cell(
+      nid(),
+      promptLines
+        .map((l) => `<font style="font-family:monospace;font-size:10px">${l}</font>`)
+        .join("<br/>"),
+      40,
+      ipY + 35,
+      520,
+      100,
+      "rounded=1;whiteSpace=wrap;html=1;fillColor=#f9f9f9;strokeColor=#ccc;fontSize=10;align=left;spacingLeft=10;spacingTop=5;"
+    )
+  );
 
   return c;
 }
@@ -998,9 +1255,15 @@ function main() {
   console.log("📊 Static analysis results:");
   console.log(`   Files:        ${a.files.length}`);
   console.log(`   IPC channels: ${a.ipcChannels.length}`);
-  console.log(`   Hooks:        ${a.hooks.length} (Pre: ${a.hookRegistrations.pre.length}, Post: ${a.hookRegistrations.post.length})`);
-  console.log(`   Agents:       ${a.agents.length} profiles (${a.defaultProfiles.length} defaults in code)`);
-  console.log(`   Types:        ${a.files.filter((f) => f.layer === "shared").flatMap((f) => f.interfaces).length}`);
+  console.log(
+    `   Hooks:        ${a.hooks.length} (Pre: ${a.hookRegistrations.pre.length}, Post: ${a.hookRegistrations.post.length})`
+  );
+  console.log(
+    `   Agents:       ${a.agents.length} profiles (${a.defaultProfiles.length} defaults in code)`
+  );
+  console.log(
+    `   Types:        ${a.files.filter((f) => f.layer === "shared").flatMap((f) => f.interfaces).length}`
+  );
 
   const pages = [
     page("System Overview", "page-overview", pageOverview(a)),
@@ -1009,7 +1272,7 @@ function main() {
     page("Module Dependencies", "page-deps", pageDeps(a)),
     page("IPC Channel Map", "page-ipc", pageIpc(a)),
     page("Data Flow", "page-flow", pageDataFlow()),
-    page("Shared Types", "page-types", pageTypes(a)),
+    page("Shared Types", "page-types", pageTypes(a))
   ];
 
   fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });

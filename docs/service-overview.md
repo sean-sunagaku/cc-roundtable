@@ -55,20 +55,20 @@ Meeting Room は、ローカルのコードベースを対象に、複数 Agent 
 
 ## コンポーネント別の責務
 
-| レイヤ | 主な責務 | ファイル |
-|--------|----------|----------|
-| Renderer shell | Setup / Meeting / Debug UI の共通本体 | `src/apps/desktop/src/renderer/MeetingRoomShell.tsx`, `src/apps/desktop/src/renderer/screens/*` |
-| Electron adapter | preload API を renderer shell へ渡す | `src/apps/desktop/src/renderer/App.tsx` |
-| Electron main | daemon 起動、IPC bridge、window 管理 | `src/apps/desktop/src/main/index.ts`, `src/apps/desktop/src/main/daemon/meeting-room-daemon-manager.ts` |
-| Meeting helper / shared support | init prompt 生成、agent profile、summary 保存 | `src/apps/desktop/src/main/meeting.ts`, `src/packages/meeting-room-support/src/local-meeting-room-support.ts` |
-| Daemon API | `/health`, `/api/meta`, `/api/events`, `/api/sessions`, `/api/commands`, `/api/agents`, `/api/default-project-dir` | `src/daemon/src/http/start-meeting-room-daemon-server.ts` |
-| Public share gateway | `/share/:shareId`, `/share-api/:shareId/bootstrap`, `/message`, `/control`, `/events` | `src/daemon/src/public-share/create-public-share-http-app.ts` |
-| Daemon core | command 処理、event 発火、session 更新 | `src/daemon/src/app/meeting-room-daemon-app.ts` |
-| Runtime | Claude 起動、PTY I/O、init prompt flush | `src/daemon/src/runtime/meeting-runtime-manager.ts` |
-| Session persistence | durable event log、recovering 復元、chat/debug filtering | `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/` |
-| Shared contracts | command / event / payload schema | `src/packages/shared-contracts/src/meeting-room-daemon.ts` |
-| Hooks | SendMessage / Stop / SubagentStop relay、approval gate | `.claude/settings.json`, `src/packages/meeting-room-hooks/README.md`, `src/packages/meeting-room-hooks/*.py` |
-| Browser client | daemon に直接接続する Web adapter | `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/browser-meeting-room-client.ts` |
+| レイヤ                          | 主な責務                                                                                                           | ファイル                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Renderer shell                  | Setup / Meeting / Debug UI の共通本体                                                                              | `src/apps/desktop/src/renderer/MeetingRoomShell.tsx`, `src/apps/desktop/src/renderer/screens/*`               |
+| Electron adapter                | preload API を renderer shell へ渡す                                                                               | `src/apps/desktop/src/renderer/App.tsx`                                                                       |
+| Electron main                   | daemon 起動、IPC bridge、window 管理                                                                               | `src/apps/desktop/src/main/index.ts`, `src/apps/desktop/src/main/daemon/meeting-room-daemon-manager.ts`       |
+| Meeting helper / shared support | init prompt 生成、agent profile、summary 保存                                                                      | `src/apps/desktop/src/main/meeting.ts`, `src/packages/meeting-room-support/src/local-meeting-room-support.ts` |
+| Daemon API                      | `/health`, `/api/meta`, `/api/events`, `/api/sessions`, `/api/commands`, `/api/agents`, `/api/default-project-dir` | `src/daemon/src/http/start-meeting-room-daemon-server.ts`                                                     |
+| Public share gateway            | `/share/:shareId`, `/share-api/:shareId/bootstrap`, `/message`, `/control`, `/events`                              | `src/daemon/src/public-share/create-public-share-http-app.ts`                                                 |
+| Daemon core                     | command 処理、event 発火、session 更新                                                                             | `src/daemon/src/app/meeting-room-daemon-app.ts`                                                               |
+| Runtime                         | Claude 起動、PTY I/O、init prompt flush                                                                            | `src/daemon/src/runtime/meeting-runtime-manager.ts`                                                           |
+| Session persistence             | durable event log、recovering 復元、chat/debug filtering                                                           | `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/`                                  |
+| Shared contracts                | command / event / payload schema                                                                                   | `src/packages/shared-contracts/src/meeting-room-daemon.ts`                                                    |
+| Hooks                           | SendMessage / Stop / SubagentStop relay、approval gate                                                             | `.claude/settings.json`, `src/packages/meeting-room-hooks/README.md`, `src/packages/meeting-room-hooks/*.py`  |
+| Browser client                  | daemon に直接接続する Web adapter                                                                                  | `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/browser-meeting-room-client.ts`                          |
 
 ## Browser UI と Public Share の責務差
 
@@ -164,11 +164,15 @@ make public-share-smoke
 make public-share-api
 make verify-web
 make verify
+make lint
+make format
 ```
 
 補足:
 
 - `make help` で短い運用コマンド一覧を見られる
+- `make lint` は TypeScript / React / Node script の静的チェック
+- `make format` / `make format-check` は Prettier による整形と整形確認
 - `daemon:start` は build 後に daemon と Web client を起動対象へ揃える
 - `daemon:start:dev` は daemon / Web client / public share client の watch build + 自動再起動付き
 - `public-share:start*` は固定 demo 設定を入れた thin gateway 起動ラッパー
@@ -182,5 +186,6 @@ make verify
 
 - chat 表示は hook relay ベースが正系で、terminal fallback に戻さない
 - 会議開始や prompt 送信周りは timing 依存があるので、Electron 側 helper と daemon runtime の両方を確認する
+- 日常チェックは `make lint` と `make format-check`、完了前の最終確認は `make verify` を使う
 - 画面や会議ライフサイクルを変えたら `npm --prefix src/apps/desktop run verify:final` を通す
 - 設計検討や将来像は `docs/rearchitecture/content_rearchitecture_2026-03-06/` を参照する

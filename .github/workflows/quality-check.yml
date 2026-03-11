@@ -1,0 +1,38 @@
+name: Quality Check
+
+on:
+  push:
+    paths-ignore:
+      - "docs/**/*.drawio"
+      - "docs/**/*.svg"
+  pull_request:
+    paths-ignore:
+      - "docs/**/*.drawio"
+      - "docs/**/*.svg"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/apps/desktop/package-lock.json
+
+      - name: Install dependencies
+        run: npm --prefix src/apps/desktop ci
+
+      - name: Run lint
+        run: npm --prefix src/apps/desktop run lint
+
+      - name: Check formatting
+        run: npm --prefix src/apps/desktop run format:check
+
+      - name: Run typecheck
+        run: npm --prefix src/apps/desktop run typecheck
+
+      - name: Run build
+        run: npm --prefix src/apps/desktop run build

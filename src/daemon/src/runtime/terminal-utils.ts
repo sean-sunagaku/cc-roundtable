@@ -42,12 +42,19 @@ function isMcpStatusBadge(line: string): boolean {
   if (!compact) return false;
   if (!/\bmcp server failed\b/i.test(compact)) return false;
   if (!/\/mcp\b/i.test(compact)) return false;
-  return /[·•]/.test(compact) || /\b\d+\s+mcp server failed\b/i.test(compact) || /\bmanage mcp servers\b/i.test(compact);
+  return (
+    /[·•]/.test(compact) ||
+    /\b\d+\s+mcp server failed\b/i.test(compact) ||
+    /\bmanage mcp servers\b/i.test(compact)
+  );
 }
 
 export function hasMcpFailureSignal(text: string): boolean {
   const normalized = stripAnsi(text).replace(/\u0007/g, "");
-  const lines = normalized.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = normalized
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   return lines.some((line) => /mcp server failed/i.test(line) && !isMcpStatusBadge(line));
 }
 
@@ -60,7 +67,7 @@ function compactAscii(line: string): string {
 }
 
 function stripDecorativePrefix(line: string): string {
-  return line.replace(/^[\s"'`>│├└╰╭╮╯•·⏺✳✶✢✻✽✿▶▸▹→←↳⎿┌┐┘└\-]+/, "").trim();
+  return line.replace(/^[\s"'`>│├└╰╭╮╯•·⏺✳✶✢✻✽✿▶▸▹→←↳⎿┌┐┘└-]+/, "").trim();
 }
 
 function isUiNoiseLine(line: string): boolean {
@@ -82,7 +89,11 @@ function isUiNoiseLine(line: string): boolean {
   if (/^task would you like the agent team/i.test(plain)) return true;
   if (/^tool loaded\.?$/i.test(plain)) return true;
   if (/^initiali[sz]ing(?:\.\.\.|…)?$/i.test(plain)) return true;
-  if (/^(read|searched for|recalled)\b/i.test(plain) && /(file|files|pattern|patterns|memory|memories|ctrl\+o to expand)/i.test(plain)) return true;
+  if (
+    /^(read|searched for|recalled)\b/i.test(plain) &&
+    /(file|files|pattern|patterns|memory|memories|ctrl\+o to expand)/i.test(plain)
+  )
+    return true;
   if (/^\d+\s+agents?\s+launched\b/i.test(plain)) return true;
   if (/^beaming(?:\.\.\.|…)?(?:\s*\(.+\)|\s*\d+)?$/i.test(plain)) return true;
   if (/^~\/|repository\/|^\[ctx:\s*\d+%]/i.test(plain)) return true;
@@ -103,7 +114,9 @@ function isUiNoiseLine(line: string): boolean {
 export function collectDebugTail(existing: string[], chunk: string): string[] {
   const next = [...existing];
   for (const rawLine of chunk.split(/[\r\n]+/)) {
-    const line = stripAnsi(rawLine).replace(/\u0007/g, "").trimEnd();
+    const line = stripAnsi(rawLine)
+      .replace(/\u0007/g, "")
+      .trimEnd();
     if (!line.length || isUiNoiseLine(line)) {
       continue;
     }

@@ -15,7 +15,10 @@ const requireFromRepo = createRequire(__filename);
 export function resolveRepoRoot(): string {
   let current = process.cwd();
   while (true) {
-    if (fs.existsSync(path.resolve(current, "src/apps/desktop")) && fs.existsSync(path.resolve(current, "docs"))) {
+    if (
+      fs.existsSync(path.resolve(current, "src/apps/desktop")) &&
+      fs.existsSync(path.resolve(current, "docs"))
+    ) {
       return current;
     }
     const parent = path.resolve(current, "..");
@@ -39,7 +42,8 @@ export function resolveWebFile(requestPath: string): string | null {
 
 export function resolvePublicShareFile(requestPath: string): string | null {
   const repoRoot = resolveRepoRoot();
-  const relative = requestPath.replace(/^\/share-assets\/?/, "").replace(/^\/+/, "") || "index.html";
+  const relative =
+    requestPath.replace(/^\/share-assets\/?/, "").replace(/^\/+/, "") || "index.html";
   const filePath = path.resolve(repoRoot, "src/apps/web/share-client", relative);
   if (!filePath.startsWith(path.resolve(repoRoot, "src/apps/web/share-client"))) {
     return null;
@@ -55,8 +59,12 @@ export function contentTypeFor(filePath: string): string {
   return "text/plain; charset=utf-8";
 }
 
-export function requireNodePty(): { spawn: (file: string, args: string[], options: Record<string, unknown>) => unknown } {
-  return requireFromRepo(path.resolve(resolveRepoRoot(), "src/apps/desktop/node_modules/node-pty")) as {
+export function requireNodePty(): {
+  spawn: (file: string, args: string[], options: Record<string, unknown>) => unknown;
+} {
+  return requireFromRepo(
+    path.resolve(resolveRepoRoot(), "src/apps/desktop/node_modules/node-pty")
+  ) as {
     spawn: (file: string, args: string[], options: Record<string, unknown>) => unknown;
   };
 }
@@ -94,7 +102,7 @@ export function deepClone<T>(value: T): T {
 }
 
 export function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+  return `'${value.replace(/'/g, "'\"'\"'")}'`;
 }
 
 export function buildClaudeLaunchArgs(shell: string, command: string): string[] {

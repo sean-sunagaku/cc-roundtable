@@ -19,7 +19,7 @@ export class PtyManager extends EventEmitter {
   private sessions = new Map<string, PtySession>();
 
   private shellQuote(value: string): string {
-    return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+    return `'${value.replace(/'/g, "'\"'\"'")}'`;
   }
 
   start(meetingId: string, cwd: string, env: NodeJS.ProcessEnv): void {
@@ -46,13 +46,19 @@ export class PtyManager extends EventEmitter {
     if (!session) return;
     const { process: proc, env: sessionEnv } = session;
 
-    const baseCommand = sessionEnv.MEETING_ROOM_CLAUDE_CMD || process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
+    const baseCommand =
+      sessionEnv.MEETING_ROOM_CLAUDE_CMD ||
+      process.env.MEETING_ROOM_CLAUDE_CMD ||
+      "claude --dangerously-skip-permissions";
     const settingsPath =
-      sessionEnv.MEETING_ROOM_SETTINGS_FILE || process.env.MEETING_ROOM_SETTINGS_FILE || path.resolve(process.cwd(), "..", ".claude", "settings.json");
+      sessionEnv.MEETING_ROOM_SETTINGS_FILE ||
+      process.env.MEETING_ROOM_SETTINGS_FILE ||
+      path.resolve(process.cwd(), "..", ".claude", "settings.json");
     const hasSettingsArg = /(^|\s)--settings(\s|=)/.test(baseCommand);
-    const settingsArg = fs.existsSync(settingsPath) && !hasSettingsArg
-      ? ` --settings ${this.shellQuote(settingsPath)} --setting-sources user,project,local`
-      : "";
+    const settingsArg =
+      fs.existsSync(settingsPath) && !hasSettingsArg
+        ? ` --settings ${this.shellQuote(settingsPath)} --setting-sources user,project,local`
+        : "";
 
     proc.write(`${baseCommand}${settingsArg}\n`);
   }

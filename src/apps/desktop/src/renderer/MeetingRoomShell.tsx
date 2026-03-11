@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MeetingRoomClient } from "@shared/meeting-room-client";
 import type {
   ApprovalGate,
@@ -60,15 +60,35 @@ export function MeetingRoomShell({
     );
   }
 
+  return (
+    <MeetingRoomShellContent
+      client={client}
+      canOpenDevTools={canOpenDevTools}
+      canOpenSessionDebugWindow={canOpenSessionDebugWindow}
+    />
+  );
+}
+
+function MeetingRoomShellContent({
+  client,
+  canOpenDevTools,
+  canOpenSessionDebugWindow
+}: Props): JSX.Element {
   const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [tabs, setTabs] = useState<MeetingTab[]>([]);
   const [currentTabId, setCurrentTabId] = useState<string>("");
   const [defaultProjectDir, setDefaultProjectDir] = useState<string>(DEFAULT_PROJECT_DIR);
   const [messagesByMeeting, setMessagesByMeeting] = useState<Record<string, ChatMessage[]>>({});
-  const [agentStatusesByMeeting, setAgentStatusesByMeeting] = useState<Record<string, Record<string, AgentRunStatus>>>({});
-  const [runtimeEventsByMeeting, setRuntimeEventsByMeeting] = useState<Record<string, RuntimeEvent[]>>({});
+  const [agentStatusesByMeeting, setAgentStatusesByMeeting] = useState<
+    Record<string, Record<string, AgentRunStatus>>
+  >({});
+  const [runtimeEventsByMeeting, setRuntimeEventsByMeeting] = useState<
+    Record<string, RuntimeEvent[]>
+  >({});
   const [healthByMeeting, setHealthByMeeting] = useState<Record<string, ConversationHealth>>({});
-  const [approvalGateByMeeting, setApprovalGateByMeeting] = useState<Record<string, ApprovalGate>>({});
+  const [approvalGateByMeeting, setApprovalGateByMeeting] = useState<Record<string, ApprovalGate>>(
+    {}
+  );
   const [sessionDebug, setSessionDebug] = useState<ClaudeSessionDebug | null>(null);
   const [, setDaemonMeta] = useState<MeetingRoomDaemonMeta | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
@@ -90,19 +110,56 @@ export function MeetingRoomShell({
     tabsRef.current = tabs;
   }, [tabs]);
 
-  const loadSetupData = async () => {
+  const beep = useCallback(() => {
+    if (!notifyRef.current) {
+      notifyRef.current = new AudioContext();
+    }
+    const ctx = notifyRef.current;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.03;
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.07);
+  }, []);
+
+  const hydrateSessionView = useCallback((view: MeetingSessionView) => {
+    setMessagesByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.messages
+    }));
+    setAgentStatusesByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.agentStatuses
+    }));
+    setRuntimeEventsByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.runtimeEvents
+    }));
+    setHealthByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.health
+    }));
+    setApprovalGateByMeeting((prev) => ({
+      ...prev,
+      [view.tab.id]: view.approvalGate
+    }));
+    setSessionDebug(view.sessionDebug);
+  }, []);
+
+  const loadSetupData = useCallback(async () => {
     setSetupLoadState({
       loading: true,
       agentError: "",
       projectDirError: ""
     });
 
-    const [agentsResult, tabsResult, projectDirResult, daemonMetaResult] = await Promise.allSettled([
-      client.listAgents(),
-      client.listTabs(),
-      client.defaultProjectDir(),
-      client.getDaemonMeta()
-    ]);
+    const [agentsResult, tabsResult, projectDirResult, daemonMetaResult] = await Promise.allSettled(
+      [client.listAgents(), client.listTabs(), client.defaultProjectDir(), client.getDaemonMeta()]
+    );
 
     let agentError = "";
     let projectDirError = "";
@@ -110,9 +167,10 @@ export function MeetingRoomShell({
     if (agentsResult.status === "fulfilled") {
       setAgents(agentsResult.value);
     } else {
-      agentError = agentsResult.reason instanceof Error
-        ? agentsResult.reason.message
-        : "Agent 一覧の取得に失敗しました";
+      agentError =
+        agentsResult.reason instanceof Error
+          ? agentsResult.reason.message
+          : "Agent 一覧の取得に失敗しました";
     }
 
     if (tabsResult.status === "fulfilled") {
@@ -131,9 +189,10 @@ export function MeetingRoomShell({
         setDefaultProjectDir(projectDirResult.value);
       }
     } else {
-      projectDirError = projectDirResult.reason instanceof Error
-        ? projectDirResult.reason.message
-        : "既定 project directory の取得に失敗しました";
+      projectDirError =
+        projectDirResult.reason instanceof Error
+          ? projectDirResult.reason.message
+          : "既定 project directory の取得に失敗しました";
     }
 
     if (daemonMetaResult.status === "fulfilled") {
@@ -145,7 +204,7 @@ export function MeetingRoomShell({
       agentError,
       projectDirError
     });
-  };
+  }, [client]);
 
   useEffect(() => {
     void loadSetupData();
@@ -195,7 +254,7 @@ export function MeetingRoomShell({
       unsubTabs();
       unsubRuntime();
     };
-  }, [client]);
+  }, [beep, client, hydrateSessionView, loadSetupData]);
 
   useEffect(() => {
     if (!currentTabId) {
@@ -218,33 +277,9 @@ export function MeetingRoomShell({
     return () => {
       window.clearInterval(timer);
     };
-  }, [client, currentTabId]);
+  }, [client, currentTabId, hydrateSessionView]);
 
-  const currentMessages = useMemo(() => messagesByMeeting[currentTabId] ?? [], [messagesByMeeting, currentTabId]);
-
-  const hydrateSessionView = (view: MeetingSessionView) => {
-    setMessagesByMeeting((prev) => ({
-      ...prev,
-      [view.tab.id]: view.messages
-    }));
-    setAgentStatusesByMeeting((prev) => ({
-      ...prev,
-      [view.tab.id]: view.agentStatuses
-    }));
-    setRuntimeEventsByMeeting((prev) => ({
-      ...prev,
-      [view.tab.id]: view.runtimeEvents
-    }));
-    setHealthByMeeting((prev) => ({
-      ...prev,
-      [view.tab.id]: view.health
-    }));
-    setApprovalGateByMeeting((prev) => ({
-      ...prev,
-      [view.tab.id]: view.approvalGate
-    }));
-    setSessionDebug(view.sessionDebug);
-  };
+  const currentMessages = messagesByMeeting[currentTabId] ?? [];
 
   const handleStart = async (config: MeetingConfig) => {
     const tab = await client.startMeeting(config);
@@ -320,9 +355,9 @@ export function MeetingRoomShell({
       }
       setMessagesByMeeting((prev) => ({
         ...prev,
-        [meetingId]: (prev[meetingId] ?? []).map((entry) => (
+        [meetingId]: (prev[meetingId] ?? []).map((entry) =>
           entry.id === optimisticId ? { ...entry, status: "confirmed" } : entry
-        ))
+        )
       }));
     }
   };
@@ -387,22 +422,6 @@ export function MeetingRoomShell({
     }
   };
 
-  const beep = () => {
-    if (!notifyRef.current) {
-      notifyRef.current = new AudioContext();
-    }
-    const ctx = notifyRef.current;
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-    oscillator.type = "triangle";
-    oscillator.frequency.value = 880;
-    gain.gain.value = 0.03;
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + 0.07);
-  };
-
   if (!currentTabId) {
     return (
       <SetupScreen
@@ -432,10 +451,12 @@ export function MeetingRoomShell({
       agentStatuses={agentStatusesByMeeting[currentTabId] ?? {}}
       ending={ending}
       health={healthByMeeting[currentTabId] ?? {}}
-      approvalGate={approvalGateByMeeting[currentTabId] ?? {
-        mode: "open",
-        updatedAt: new Date(0).toISOString()
-      }}
+      approvalGate={
+        approvalGateByMeeting[currentTabId] ?? {
+          mode: "open",
+          updatedAt: new Date(0).toISOString()
+        }
+      }
       runtimeEvents={runtimeEventsByMeeting[currentTabId] ?? []}
       onRetryMcp={handleRetryMcp}
       sessionDebug={sessionDebug}
@@ -443,7 +464,9 @@ export function MeetingRoomShell({
       onOpenSessionDebugWindow={handleOpenSessionDebugWindow}
       onApproveNextStep={handleApproveNextStep}
       canOpenDevTools={Boolean(canOpenDevTools && client.openDevTools)}
-      canOpenSessionDebugWindow={Boolean(canOpenSessionDebugWindow && client.openSessionDebugWindow)}
+      canOpenSessionDebugWindow={Boolean(
+        canOpenSessionDebugWindow && client.openSessionDebugWindow
+      )}
       terminalControls={{
         onResize: client.resizeTerminal,
         subscribeData: client.onTerminalData,

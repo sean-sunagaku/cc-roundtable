@@ -43,7 +43,9 @@ function runCommand(command, args, options = {}) {
         `Command failed: ${command} ${args.join(" ")}`,
         stdout ? `stdout:\n${stdout}` : "",
         stderr ? `stderr:\n${stderr}` : ""
-      ].filter(Boolean).join("\n\n")
+      ]
+        .filter(Boolean)
+        .join("\n\n")
     );
   }
 
@@ -51,7 +53,11 @@ function runCommand(command, args, options = {}) {
 }
 
 function runAgentBrowser(...args) {
-  return runCommand(process.env.AGENT_BROWSER_BIN ?? "agent-browser", ["--session", browserSession, ...args]);
+  return runCommand(process.env.AGENT_BROWSER_BIN ?? "agent-browser", [
+    "--session",
+    browserSession,
+    ...args
+  ]);
 }
 
 function snapshot() {
@@ -63,7 +69,9 @@ function escapeRegex(value) {
 }
 
 function findRef(text, role, label) {
-  const match = text.match(new RegExp(`- ${escapeRegex(role)} "${escapeRegex(label)}" \\[ref=(e\\d+)\\]`, "u"));
+  const match = text.match(
+    new RegExp(`- ${escapeRegex(role)} "${escapeRegex(label)}" \\[ref=(e\\d+)\\]`, "u")
+  );
   return match?.[1] ?? null;
 }
 
@@ -72,10 +80,12 @@ function hasControl(text, role, label) {
 }
 
 function isSetupScreen(text) {
-  return hasControl(text, "button", "会議を開始") && text.includes('textbox "議題（ここを中心に議論）"');
+  return (
+    hasControl(text, "button", "会議を開始") && text.includes('textbox "議題（ここを中心に議論）"')
+  );
 }
 
-function isMeetingScreen(text, title) {
+function isMeetingScreen(text, _title) {
   return (
     hasControl(text, "button", "一時停止") &&
     hasControl(text, "button", "会議終了") &&
@@ -84,7 +94,11 @@ function isMeetingScreen(text, title) {
 }
 
 function isAnyKnownScreen(text) {
-  return isSetupScreen(text) || hasControl(text, "button", "会議終了") || hasControl(text, "button", "一時停止");
+  return (
+    isSetupScreen(text) ||
+    hasControl(text, "button", "会議終了") ||
+    hasControl(text, "button", "一時停止")
+  );
 }
 
 async function waitFor(check, description, timeoutMs = 30_000, intervalMs = 500) {
@@ -103,7 +117,9 @@ async function waitFor(check, description, timeoutMs = 30_000, intervalMs = 500)
     await delay(intervalMs);
   }
 
-  throw new Error(`Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`);
+  throw new Error(
+    `Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`
+  );
 }
 
 async function daemonJson(pathname) {
@@ -125,14 +141,23 @@ async function currentMeetingView(meetingId) {
 }
 
 async function connectRendererCdp() {
-  const target = await waitFor(async () => {
-    const response = await fetch(`http://127.0.0.1:${cdpPort}/json/list`);
-    if (!response.ok) {
-      return null;
-    }
-    const pages = await response.json();
-    return pages.find((page) => page.type === "page" && String(page.title).includes("Meeting Room")) ?? pages.find((page) => page.type === "page") ?? null;
-  }, "Electron renderer target", 30_000, 750);
+  const target = await waitFor(
+    async () => {
+      const response = await fetch(`http://127.0.0.1:${cdpPort}/json/list`);
+      if (!response.ok) {
+        return null;
+      }
+      const pages = await response.json();
+      return (
+        pages.find((page) => page.type === "page" && String(page.title).includes("Meeting Room")) ??
+        pages.find((page) => page.type === "page") ??
+        null
+      );
+    },
+    "Electron renderer target",
+    30_000,
+    750
+  );
 
   rendererCdp = new CdpClient(target.webSocketDebuggerUrl);
   await rendererCdp.connect();
@@ -169,26 +194,36 @@ async function waitForRendererDom(expression, description, timeoutMs = 30_000, i
 }
 
 async function connectBrowser() {
-  await waitFor(() => {
-    try {
-      runAgentBrowser("connect", cdpPort);
-      return true;
-    } catch {
-      return false;
-    }
-  }, "Electron CDP connection", 20_000, 750);
+  await waitFor(
+    () => {
+      try {
+        runAgentBrowser("connect", cdpPort);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    "Electron CDP connection",
+    20_000,
+    750
+  );
 }
 
 async function focusMeetingRoomTab() {
-  await waitFor(() => {
-    const tabs = runAgentBrowser("tab");
-    const match = tabs.match(/→?\s*\[(\d+)\]\s+Meeting Room/u);
-    if (!match) {
-      return false;
-    }
-    runAgentBrowser("tab", match[1]);
-    return true;
-  }, "Meeting Room tab", 30_000, 750);
+  await waitFor(
+    () => {
+      const tabs = runAgentBrowser("tab");
+      const match = tabs.match(/→?\s*\[(\d+)\]\s+Meeting Room/u);
+      if (!match) {
+        return false;
+      }
+      runAgentBrowser("tab", match[1]);
+      return true;
+    },
+    "Meeting Room tab",
+    30_000,
+    750
+  );
 }
 
 async function launchElectron() {
@@ -228,17 +263,29 @@ async function launchElectron() {
   await connectBrowser();
   await focusMeetingRoomTab();
   await connectRendererCdp();
-  await waitFor(() => {
-    const snap = snapshot();
-    return isAnyKnownScreen(snap) ? snap : null;
-  }, "Meeting Room UI", 30_000, 750);
+  await waitFor(
+    () => {
+      const snap = snapshot();
+      return isAnyKnownScreen(snap) ? snap : null;
+    },
+    "Meeting Room UI",
+    30_000,
+    750
+  );
 }
 
 function killPortListeners(port) {
-  spawnSync("bash", ["-lc", `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`], {
-    cwd: repoRoot,
-    stdio: "ignore"
-  });
+  spawnSync(
+    "bash",
+    [
+      "-lc",
+      `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`
+    ],
+    {
+      cwd: repoRoot,
+      stdio: "ignore"
+    }
+  );
 }
 
 async function stopElectron() {
@@ -262,14 +309,19 @@ async function stopElectron() {
   await new Promise((resolve) => child.once("exit", resolve));
   logStep("stopping daemon");
   killPortListeners(daemonPort);
-  await waitFor(async () => {
-    try {
-      await daemonJson("/health");
-      return false;
-    } catch {
-      return true;
-    }
-  }, "daemon shutdown", 10_000, 500);
+  await waitFor(
+    async () => {
+      try {
+        await daemonJson("/health");
+        return false;
+      } catch {
+        return true;
+      }
+    },
+    "daemon shutdown",
+    10_000,
+    500
+  );
 }
 
 async function resetToSetupScreen() {
@@ -310,7 +362,9 @@ async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true }
   const expanded = snapshot();
   const bypassRef = findRef(expanded, "checkbox", "Bypass Mode");
   if (!bypassRef) {
-    throw new Error(`Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`);
+    throw new Error(
+      `Bypass Mode checkbox was not found after expanding flow mode settings.\n${expanded}`
+    );
   }
   await waitForRendererDom(
     `(() => {
@@ -351,12 +405,22 @@ async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true }
   }
   runAgentBrowser("click", `@${startRef}`);
 
-  await waitFor(() => {
-    const current = snapshot();
-    return isMeetingScreen(current, meetingTopic) ? current : null;
-  }, "meeting screen after start", 30_000, 750);
+  await waitFor(
+    () => {
+      const current = snapshot();
+      return isMeetingScreen(current, meetingTopic) ? current : null;
+    },
+    "meeting screen after start",
+    30_000,
+    750
+  );
 
-  return waitFor(() => currentMeetingIdByTitle(meetingTopic), "daemon session creation", 30_000, 750);
+  return waitFor(
+    () => currentMeetingIdByTitle(meetingTopic),
+    "daemon session creation",
+    30_000,
+    750
+  );
 }
 
 async function sendHumanMessageAndVerify(meetingId) {
@@ -371,10 +435,19 @@ async function sendHumanMessageAndVerify(meetingId) {
   await delay(500);
   runAgentBrowser("click", `@${sendRef}`);
 
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.messages.some((message) => message.source === "human" && message.content === humanMessage) ? view : null;
-  }, "human message persistence", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.messages.some(
+        (message) => message.source === "human" && message.content === humanMessage
+      )
+        ? view
+        : null;
+    },
+    "human message persistence",
+    30_000,
+    750
+  );
 }
 
 function isRenderableAgentMessage(message) {
@@ -392,7 +465,9 @@ function isRenderableAgentMessage(message) {
 }
 
 function normalizeText(value) {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function buildExpectedAgentEntries(messages) {
@@ -405,16 +480,21 @@ function buildExpectedAgentEntries(messages) {
 }
 
 async function verifyAgentConversation(meetingId, label) {
-  const view = await waitFor(async () => {
-    const current = await currentMeetingView(meetingId);
-    if (!current.health?.lastAgentReplyAt) {
-      return null;
-    }
-    if (current.sessionDebug?.tail?.some((line) => /AskUserQuestion/i.test(String(line)))) {
-      throw new Error(`AskUserQuestion detected during ${label} flow`);
-    }
-    return current.messages.some((message) => isRenderableAgentMessage(message)) ? current : null;
-  }, `${label} agent message in daemon session`, agentReplyTimeoutMs, 1_000);
+  const view = await waitFor(
+    async () => {
+      const current = await currentMeetingView(meetingId);
+      if (!current.health?.lastAgentReplyAt) {
+        return null;
+      }
+      if (current.sessionDebug?.tail?.some((line) => /AskUserQuestion/i.test(String(line)))) {
+        throw new Error(`AskUserQuestion detected during ${label} flow`);
+      }
+      return current.messages.some((message) => isRenderableAgentMessage(message)) ? current : null;
+    },
+    `${label} agent message in daemon session`,
+    agentReplyTimeoutMs,
+    1_000
+  );
 
   const expectedEntries = buildExpectedAgentEntries(view.messages);
   if (expectedEntries.length === 0) {
@@ -462,10 +542,15 @@ async function verifyPauseAndResume(meetingId) {
   }
 
   runAgentBrowser("click", `@${pauseRef}`);
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.status === "paused" ? view : null;
-  }, "paused status", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.status === "paused" ? view : null;
+    },
+    "paused status",
+    30_000,
+    750
+  );
 
   snap = snapshot();
   const resumeRefAfterPause = findRef(snap, "button", "再開");
@@ -473,10 +558,15 @@ async function verifyPauseAndResume(meetingId) {
     throw new Error(`Resume button disappeared after pause.\n${snap}`);
   }
   runAgentBrowser("click", `@${resumeRefAfterPause}`);
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.status === "running" ? view : null;
-  }, "running status after resume", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.status === "running" ? view : null;
+    },
+    "running status after resume",
+    30_000,
+    750
+  );
 }
 
 async function verifyRecovery(meetingId) {
@@ -487,16 +577,26 @@ async function verifyRecovery(meetingId) {
   await launchElectron();
 
   logStep("waiting for recovered meeting screen");
-  await waitFor(() => {
-    const snap = snapshot();
-    return isMeetingScreen(snap, topic) ? snap : null;
-  }, "recovered meeting screen", 30_000, 750);
+  await waitFor(
+    () => {
+      const snap = snapshot();
+      return isMeetingScreen(snap, topic) ? snap : null;
+    },
+    "recovered meeting screen",
+    30_000,
+    750
+  );
 
   logStep("waiting for recovering status");
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.status === "recovering" ? view : null;
-  }, "recovering status after restart", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.status === "recovering" ? view : null;
+    },
+    "recovering status after restart",
+    30_000,
+    750
+  );
 }
 
 async function endMeetingAndVerifyCleared() {
@@ -508,24 +608,41 @@ async function endMeetingAndVerifyCleared() {
 
   runAgentBrowser("click", `@${endRef}`);
 
-  await waitFor(() => {
-    const current = snapshot();
-    return isSetupScreen(current) ? current : null;
-  }, "setup screen after end", 30_000, 750);
+  await waitFor(
+    () => {
+      const current = snapshot();
+      return isSetupScreen(current) ? current : null;
+    },
+    "setup screen after end",
+    30_000,
+    750
+  );
 
-  await waitFor(async () => {
-    const payload = await daemonJson("/api/sessions");
-    return payload.sessions.length === 0 ? payload : null;
-  }, "empty session list after end", 30_000, 750);
+  await waitFor(
+    async () => {
+      const payload = await daemonJson("/api/sessions");
+      return payload.sessions.length === 0 ? payload : null;
+    },
+    "empty session list after end",
+    30_000,
+    750
+  );
 }
 
 async function verifyBypassModeStart() {
   const meetingId = await startMeetingFromSetup({ meetingTopic: bypassTopic, bypassMode: true });
 
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true ? view : null;
-  }, "bypass mode session config", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true
+        ? view
+        : null;
+    },
+    "bypass mode session config",
+    30_000,
+    750
+  );
 
   await sendHumanMessageAndVerify(meetingId);
   await verifyAgentConversation(meetingId, "bypass");
@@ -648,7 +765,9 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`[gui-e2e] FAILED: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+  console.error(
+    `[gui-e2e] FAILED: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`
+  );
   void stopElectron().finally(() => {
     process.exitCode = 1;
   });
