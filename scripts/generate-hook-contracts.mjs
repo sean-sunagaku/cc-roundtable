@@ -49,9 +49,7 @@ function camelToUpperSnake(str) {
 
 /** UPPER_SNAKE_CASE → PascalCase  (e.g. "RELAY_PAYLOAD_FIELDS" → "RelayPayloadFields") */
 function upperSnakeToPascal(str) {
-  return str
-    .toLowerCase()
-    .replace(/(^|_)([a-z])/g, (_, __, c) => c.toUpperCase());
+  return str.toLowerCase().replace(/(^|_)([a-z])/g, (_, __, c) => c.toUpperCase());
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +62,7 @@ const lines = [
   "DO NOT EDIT MANUALLY. Run `make contracts` to regenerate.",
   '"""',
   "",
-  "",
+  ""
 ];
 
 // Sort export names for stable output
@@ -113,11 +111,15 @@ if (checkMode) {
   try {
     existing = readFileSync(outputPath, "utf-8");
   } catch {
-    console.error(`[contracts] src/packages/meeting-room-hooks/contracts.py does not exist. Run: make contracts`);
+    console.error(
+      `[contracts] src/packages/meeting-room-hooks/contracts.py does not exist. Run: make contracts`
+    );
     process.exit(1);
   }
   if (existing !== output) {
-    console.error(`[contracts] src/packages/meeting-room-hooks/contracts.py is out of date. Run: make contracts`);
+    console.error(
+      `[contracts] src/packages/meeting-room-hooks/contracts.py is out of date. Run: make contracts`
+    );
     process.exit(1);
   }
   console.log("[contracts] src/packages/meeting-room-hooks/contracts.py is up to date.");

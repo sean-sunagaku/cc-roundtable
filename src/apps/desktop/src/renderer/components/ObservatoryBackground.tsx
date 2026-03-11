@@ -27,7 +27,12 @@ export function ObservatoryBackground(): JSX.Element {
     let renderer: THREE.WebGLRenderer;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      container.clientWidth / container.clientHeight,
+      0.1,
+      100
+    );
     camera.position.z = 8;
 
     try {
@@ -63,7 +68,7 @@ export function ObservatoryBackground(): JSX.Element {
         transparent: true,
         opacity,
         blending: THREE.NormalBlending,
-        depthWrite: false,
+        depthWrite: false
       });
 
       return new THREE.Points(geometry, material);

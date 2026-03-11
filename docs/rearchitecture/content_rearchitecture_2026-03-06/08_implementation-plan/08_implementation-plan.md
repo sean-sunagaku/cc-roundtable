@@ -62,20 +62,24 @@ CLI は前提にせず、Electron と Web が同じ command / event 契約を使
 ### Phase 1: Daemon Foundation
 
 目的:
+
 - daemon を独立プロセスとして起動できるようにする
 - Electron main が daemon を起動 / 接続できるようにする
 - command API と event stream の最小契約を定義する
 
 成果物:
+
 - `meeting-room-daemon` の起動エントリ
 - `/health` と command API の骨格
 - WebSocket または SSE の骨格
 - shared contracts の定義
 
 詳細 Plan:
+
 - `08_phase-1-daemon-foundation.md`
 
 チェック:
+
 - [ ] daemon package の土台がある
 - [ ] Electron main から daemon の起動または接続ができる
 - [ ] 最小 command / event 契約が shared contracts にある
@@ -83,18 +87,22 @@ CLI は前提にせず、Electron と Web が同じ command / event 契約を使
 ### Phase 2: Claude Runtime Bridge
 
 目的:
+
 - PTY、Claude 起動、ready signal、Hook relay を `ClaudeRuntimeBridge` に集約する
 - meeting core が Claude 生仕様を直接知らない状態を作る
 
 成果物:
+
 - `ClaudeRuntimeBridge`
 - `RuntimeEventNormalizer`
 - hook / terminal fallback 統合経路
 
 詳細 Plan:
+
 - `08_phase-2-runtime-bridge.md`
 
 チェック:
+
 - [ ] Claude / PTY / Hook の詳細が bridge に集約されている
 - [ ] ready signal と relay 正規化が Electron main から外れている
 - [ ] UI に Claude 生 payload を渡していない
@@ -102,20 +110,24 @@ CLI は前提にせず、Electron と Web が同じ command / event 契約を使
 ### Phase 3: Session State and Event Log
 
 目的:
+
 - daemon を session source of truth にする
 - 重要フローだけ append-only event log を残す
 - projection で UI 向け状態を組み立てる
 
 成果物:
+
 - `SessionEventLog`
 - `MeetingViewProjection`
 - `HealthProjection`
 - session persistence
 
 詳細 Plan:
+
 - `08_phase-3-session-state-events.md`
 
 チェック:
+
 - [ ] daemon が session state の source of truth になっている
 - [ ] 重要イベントだけ append-only に保存される
 - [ ] projection 再構築で session view を復元できる
@@ -123,19 +135,23 @@ CLI は前提にせず、Electron と Web が同じ command / event 契約を使
 ### Phase 4: Electron Client Switchover
 
 目的:
+
 - Electron renderer / main を daemon client に寄せる
 - 既存の orchestration を段階的に daemon へ移す
 
 成果物:
+
 - Electron からの command 呼び出し
 - event stream 購読
 - local state の削減
 - session reconnect
 
 詳細 Plan:
+
 - `08_phase-4-electron-integration.md`
 
 チェック:
+
 - [ ] renderer が command / event ベースで動く
 - [ ] Electron main が domain orchestration を持たない
 - [ ] 再起動後の reconnect が成立する
@@ -143,19 +159,23 @@ CLI は前提にせず、Electron と Web が同じ command / event 契約を使
 ### Phase 5: Web Readiness and Hardening
 
 目的:
+
 - 将来の iPhone / Web 接続に備えて API 契約と認証境界を固める
 - tunnel 越し接続でも session host が Mac 側であることを維持する
 
 成果物:
+
 - auth / session access rule
 - reconnect / resume policy
 - observability / health policy
 - Web client 用の最低限の契約固定
 
 詳細 Plan:
+
 - `08_phase-5-web-readiness.md`
 
 チェック:
+
 - [ ] Electron と Web が同じ契約を見られる
 - [ ] tunnel 越し接続前提の auth / access rule がある
 - [ ] Mac 上の daemon が session host のまま保たれる

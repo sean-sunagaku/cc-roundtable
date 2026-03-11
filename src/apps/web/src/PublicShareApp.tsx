@@ -45,7 +45,7 @@ export function PublicShareApp(): JSX.Element {
     const offConnection = client.onConnectionState((state, errorMessage) => {
       if (!active) return;
       setConnectionState(state);
-      setConnectionError(state === "error" || state === "reconnecting" ? errorMessage ?? "" : "");
+      setConnectionError(state === "error" || state === "reconnecting" ? (errorMessage ?? "") : "");
     });
 
     const offFrame = client.onFrame((frame: MeetingRoomPublicShareStreamFrame) => {
@@ -55,16 +55,19 @@ export function PublicShareApp(): JSX.Element {
       }
     });
 
-    void client.connect().then((payload) => {
-      if (!active) return;
-      setSession(payload.session);
-      setAllowedActions(payload.allowedActions);
-      setConnectionError("");
-    }).catch((error) => {
-      if (!active) return;
-      setConnectionState("error");
-      setConnectionError(error instanceof Error ? error.message : String(error));
-    });
+    void client
+      .connect()
+      .then((payload) => {
+        if (!active) return;
+        setSession(payload.session);
+        setAllowedActions(payload.allowedActions);
+        setConnectionError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setConnectionState("error");
+        setConnectionError(error instanceof Error ? error.message : String(error));
+      });
 
     return () => {
       active = false;
@@ -75,7 +78,7 @@ export function PublicShareApp(): JSX.Element {
   }, [client]);
 
   const messages = useMemo(
-    () => (session?.messages ?? []).map((entry) => ({ ...entry } satisfies ChatMessage)),
+    () => (session?.messages ?? []).map((entry) => ({ ...entry }) satisfies ChatMessage),
     [session?.messages]
   );
 
@@ -107,7 +110,8 @@ export function PublicShareApp(): JSX.Element {
           <h2>{session?.tab.title ?? "Public Share"}</h2>
           <ConnectionStatus connected={connectionState === "connected"} />
           <p className="subtle share-subtitle">
-            固定デモ会議にそのまま参加できます。ローカルの任意ディレクトリや terminal には触れません。
+            固定デモ会議にそのまま参加できます。ローカルの任意ディレクトリや terminal
+            には触れません。
           </p>
         </div>
         <div className="actions">
@@ -130,7 +134,9 @@ export function PublicShareApp(): JSX.Element {
       <section className="status-row">
         <span className="mode-pill">Public Share</span>
         <span className="agent-status active">shareId: {shareId || "share"}</span>
-        <span className={`agent-status ${session?.tab.status === "running" ? "completed" : "active"}`}>
+        <span
+          className={`agent-status ${session?.tab.status === "running" ? "completed" : "active"}`}
+        >
           status: {session?.tab.status ?? connectionState}
         </span>
         {Object.entries(session?.agentStatuses ?? {}).map(([agent, status]) => (
@@ -167,7 +173,10 @@ export function PublicShareApp(): JSX.Element {
         </div>
         <div className="share-runtime-strip">
           {session?.runtimeEvents.slice(-2).map((event) => (
-            <div key={`${event.timestamp}-${event.message}`} className={`runtime-event ${event.type}`}>
+            <div
+              key={`${event.timestamp}-${event.message}`}
+              className={`runtime-event ${event.type}`}
+            >
               <strong>{event.type}</strong>
               <p>{event.message}</p>
             </div>
@@ -181,14 +190,21 @@ export function PublicShareApp(): JSX.Element {
   );
 }
 
-function canUseAction(action: PublicShareControlAction, session: MeetingRoomPublicShareSessionPayload): boolean {
+function canUseAction(
+  action: PublicShareControlAction,
+  session: MeetingRoomPublicShareSessionPayload
+): boolean {
   switch (action) {
     case "pause":
       return session.tab.status === "running";
     case "resume":
       return session.tab.status === "paused" || session.tab.status === "awaiting_review";
     case "retryMcp":
-      return session.tab.status === "running" || session.tab.status === "paused" || session.tab.status === "awaiting_review";
+      return (
+        session.tab.status === "running" ||
+        session.tab.status === "paused" ||
+        session.tab.status === "awaiting_review"
+      );
     case "endMeeting":
       return session.tab.status !== "ended";
   }

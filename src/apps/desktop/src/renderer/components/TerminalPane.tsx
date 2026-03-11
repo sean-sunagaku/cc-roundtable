@@ -10,7 +10,13 @@ interface Props {
   initialContent?: string;
 }
 
-export function TerminalPane({ meetingId, onResize, writeData, subscribeData, initialContent }: Props): JSX.Element {
+export function TerminalPane({
+  meetingId,
+  onResize,
+  writeData,
+  subscribeData,
+  initialContent
+}: Props): JSX.Element {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const seededRef = useRef(false);
@@ -28,7 +34,7 @@ export function TerminalPane({ meetingId, onResize, writeData, subscribeData, in
         foreground: "#D8E8F5",
         cursor: "#5BA8A0",
         cursorAccent: "#0B1A2A",
-        selectionBackground: "#294A66",
+        selectionBackground: "#294A66"
       }
     });
     const fit = new FitAddon();

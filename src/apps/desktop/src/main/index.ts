@@ -110,13 +110,15 @@ function registerIpc(): void {
 
     const view = await daemonManager.getSessionView(config.id);
     void refreshTabsFromDaemon();
-    return view ? toMeetingTab(view.tab) : {
-      id: config.id,
-      title: config.topic,
-      config,
-      createdAt: new Date().toISOString(),
-      status: "running"
-    };
+    return view
+      ? toMeetingTab(view.tab)
+      : {
+          id: config.id,
+          title: config.topic,
+          config,
+          createdAt: new Date().toISOString(),
+          status: "running"
+        };
   });
 
   handleIpc("meeting:end", async (meetingId) => {
@@ -370,7 +372,10 @@ function bridgeDaemonFrame(frame: MeetingRoomDaemonStreamFrame): void {
   }
 }
 
-function toAgentMessagePayload(meetingId: string, message: ChatMessagePayload): AgentMessagePayload {
+function toAgentMessagePayload(
+  meetingId: string,
+  message: ChatMessagePayload
+): AgentMessagePayload {
   return {
     type: "agent_message",
     id: message.id,
@@ -421,7 +426,9 @@ function toChatMessage(message: ChatMessagePayload): ChatMessage {
   };
 }
 
-function toClaudeSessionDebug(debug: MeetingSessionViewPayload["sessionDebug"]): ClaudeSessionDebug {
+function toClaudeSessionDebug(
+  debug: MeetingSessionViewPayload["sessionDebug"]
+): ClaudeSessionDebug {
   return {
     meetingId: debug.meetingId,
     tail: [...debug.tail],

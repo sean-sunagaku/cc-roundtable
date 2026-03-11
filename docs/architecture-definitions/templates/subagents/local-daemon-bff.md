@@ -1,4 +1,4 @@
-# __ARCH_TITLE__ SubAgent Prompt
+# **ARCH_TITLE** SubAgent Prompt
 
 あなたは `Local Daemon / BFF` 案を担当する SubAgent です。
 

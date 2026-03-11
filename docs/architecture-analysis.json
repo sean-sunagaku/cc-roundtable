@@ -22,14 +22,9 @@
         "./screens/MeetingScreen",
         "./screens/SessionDebugWindow"
       ],
-      "src/apps/desktop/src/renderer/components/ChatView.tsx": [
-        "@shared/types",
-        "./MessageBubble"
-      ],
+      "src/apps/desktop/src/renderer/components/ChatView.tsx": ["@shared/types", "./MessageBubble"],
       "src/apps/desktop/src/renderer/components/ConnectionStatus.tsx": [],
-      "src/apps/desktop/src/renderer/components/InputBar.tsx": [
-        "react"
-      ],
+      "src/apps/desktop/src/renderer/components/InputBar.tsx": ["react"],
       "src/apps/desktop/src/renderer/components/MessageBubble.tsx": [
         "react",
         "marked",
@@ -40,14 +35,8 @@
         "@xterm/xterm",
         "@xterm/addon-fit"
       ],
-      "src/apps/desktop/src/renderer/global.d.ts": [
-        "../main/preload"
-      ],
-      "src/apps/desktop/src/renderer/main.tsx": [
-        "react",
-        "react-dom/client",
-        "./App"
-      ],
+      "src/apps/desktop/src/renderer/global.d.ts": ["../main/preload"],
+      "src/apps/desktop/src/renderer/main.tsx": ["react", "react-dom/client", "./App"],
       "src/apps/desktop/src/renderer/screens/MeetingScreen.tsx": [
         "react",
         "@shared/types",
@@ -56,14 +45,8 @@
         "../components/InputBar",
         "../components/TerminalPane"
       ],
-      "src/apps/desktop/src/renderer/screens/SessionDebugWindow.tsx": [
-        "react",
-        "@shared/types"
-      ],
-      "src/apps/desktop/src/renderer/screens/SetupScreen.tsx": [
-        "react",
-        "@shared/types"
-      ]
+      "src/apps/desktop/src/renderer/screens/SessionDebugWindow.tsx": ["react", "@shared/types"],
+      "src/apps/desktop/src/renderer/screens/SetupScreen.tsx": ["react", "@shared/types"]
     }
   },
   "main": {
@@ -92,26 +75,18 @@
         "@shared/types",
         "./pty-manager"
       ],
-      "src/apps/desktop/src/main/preload.ts": [
-        "electron",
-        "@shared/types"
-      ],
+      "src/apps/desktop/src/main/preload.ts": ["electron", "@shared/types"],
       "src/apps/desktop/src/main/pty-manager.ts": [
         "node:os",
         "node:path",
         "node:events",
         "node-pty"
       ],
-      "src/apps/desktop/src/main/ws-server.ts": [
-        "ws",
-        "@shared/types"
-      ]
+      "src/apps/desktop/src/main/ws-server.ts": ["ws", "@shared/types"]
     }
   },
   "shared": {
-    "files": [
-      "src/apps/desktop/src/shared/types.ts"
-    ],
+    "files": ["src/apps/desktop/src/shared/types.ts"],
     "types": [
       "MessageStatus",
       "ChatMessage",

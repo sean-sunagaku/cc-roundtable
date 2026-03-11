@@ -32,7 +32,10 @@ class InMemoryRuntimeProcess implements PtyLike {
   private readonly exitHandlers: Array<(event: RuntimeExitEvent) => void> = [];
   private killed = false;
 
-  constructor(private readonly meetingId: string, private readonly log: (message: string) => void) {
+  constructor(
+    private readonly meetingId: string,
+    private readonly log: (message: string) => void
+  ) {
     setTimeout(() => {
       if (this.killed) {
         return;
@@ -178,11 +181,9 @@ class E2EFakeRuntimeProcess implements PtyLike {
       if (this.killed) {
         return;
       }
-      this.onSyntheticAgentMessage?.([
-        "現在の状態です。",
-        "会議は正常に稼働中です。",
-        "次の確認をそのまま続けます。"
-      ].join("\n"));
+      this.onSyntheticAgentMessage?.(
+        ["現在の状態です。", "会議は正常に稼働中です。", "次の確認をそのまま続けます。"].join("\n")
+      );
       this.emitData("\r\n現在の状態です。短い状況共有を返しました。\r\n❯ ");
     }, 250);
   }
@@ -347,21 +348,35 @@ export class MeetingRuntimeManager {
       [HOOK_ENV_VARS.approvalDir]: this.options.approvalDir,
       [HOOK_ENV_VARS.approvalFile]: path.resolve(this.options.approvalDir, `${meetingId}.json`),
       [HOOK_ENV_VARS.settingsFile]: path.resolve(this.options.repoRoot, ".claude/settings.json"),
-      [HOOK_ENV_VARS.hooksDir]: path.resolve(this.options.repoRoot, "src/packages/meeting-room-hooks"),
-      [HOOK_ENV_VARS.fallbackLog]: path.resolve(this.options.repoRoot, ".claude/meeting-room/discussion.log.jsonl"),
-      [HOOK_ENV_VARS.stopDebugLog]: path.resolve(this.options.repoRoot, ".claude/meeting-room/stop-hook.log.jsonl"),
-      [HOOK_ENV_VARS.wsDebugLog]: path.resolve(this.options.repoRoot, ".claude/meeting-room/ws-hook.log.jsonl"),
+      [HOOK_ENV_VARS.hooksDir]: path.resolve(
+        this.options.repoRoot,
+        "src/packages/meeting-room-hooks"
+      ),
+      [HOOK_ENV_VARS.fallbackLog]: path.resolve(
+        this.options.repoRoot,
+        ".claude/meeting-room/discussion.log.jsonl"
+      ),
+      [HOOK_ENV_VARS.stopDebugLog]: path.resolve(
+        this.options.repoRoot,
+        ".claude/meeting-room/stop-hook.log.jsonl"
+      ),
+      [HOOK_ENV_VARS.wsDebugLog]: path.resolve(
+        this.options.repoRoot,
+        ".claude/meeting-room/ws-hook.log.jsonl"
+      ),
       [HOOK_ENV_VARS.wsPort]: `${HOOKS_WS_PORT}`
     };
   }
 
   private buildClaudeLaunchCommand(): string {
-    const baseCommand = process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
+    const baseCommand =
+      process.env.MEETING_ROOM_CLAUDE_CMD || "claude --dangerously-skip-permissions";
     const settingsPath = path.resolve(this.options.repoRoot, ".claude", "settings.json");
     const hasSettingsArg = /(^|\s)--settings(\s|=)/.test(baseCommand);
-    const settingsArg = fs.existsSync(settingsPath) && !hasSettingsArg
-      ? ` --settings ${shellQuote(settingsPath)} --setting-sources user,project,local`
-      : "";
+    const settingsArg =
+      fs.existsSync(settingsPath) && !hasSettingsArg
+        ? ` --settings ${shellQuote(settingsPath)} --setting-sources user,project,local`
+        : "";
     return `${baseCommand}${settingsArg}`;
   }
 

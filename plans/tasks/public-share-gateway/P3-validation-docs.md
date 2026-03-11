@@ -1,29 +1,35 @@
 # P3: Validate public share flow and sync docs
 
 ## Status
+
 - Status: done
 - Owner: main
 - Last Updated: 2026-03-10 23:35
 
 ## Goal
+
 - Verify the new public share flow end to end and document the ngrok-based short-term exposure path.
 
 ## Parent / Depends On
+
 - Parent: `plans/tasks/current-tasks.md` Public Share Gateway (2026-03-10)
 - Dependencies: P1, P2
 
 ## Done When
+
 - Validation covers gateway bootstrap, public UI flow, and regression checks for existing daemon/web flows.
 - README and task tracker reflect the new public share gateway and ngrok usage.
 - Final review notes capture residual risks and any follow-up work.
 
 ## Checklist
+
 - [x] Run targeted validation for gateway/public UI behavior.
 - [x] Run required repo verification commands.
 - [x] Update README / relevant docs and task tracker with results.
 - [x] Record residual risks and close tracker entries.
 
 ## Progress Log
+
 - 2026-03-10 21:00: Created task with validation/docs scope.
 - 2026-03-10 22:05: Subagent review で public payload leak / recovering bootstrap / fail-fast / SSE close handling を指摘。P1/P2 実装へフィードバックして修正した。
 - 2026-03-10 22:20: Browser で public share route を手動確認し、message / pause / resume / retry / end と Meeting Room 類似 UI を確認した。
@@ -34,9 +40,11 @@
 - 2026-03-10 23:45: `docs/service-overview.md`, `AGENTS.md`, `current-daemon.md` に Browser UI と Public Share の FE / BE 責務差を明記した。
 
 ## Blockers
+
 - None
 
 ## Verification
+
 - 2026-03-10 21:45: `npm --prefix src/apps/desktop run smoke:public-share` ✅
 - 2026-03-10 22:18: `node e2e/public-share/api-smoke.mjs` ✅
 - 2026-03-10 22:28: `npm --prefix src/apps/desktop run smoke:public-share` ✅ (sanitization + restart recovery を追加後)
@@ -52,7 +60,9 @@
 - 2026-03-10 23:34: `npm --prefix src/apps/desktop run verify:final` ✅ package script 追加後の最終再確認
 
 ## Decision Log
+
 - 2026-03-10 21:00: Keep v1 focused on ngrok free operational guidance instead of provider abstraction.
 
 ## Next Action
+
 - None.

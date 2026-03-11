@@ -43,7 +43,11 @@ for (const directory of directories) {
   }
 
   const ok = exportSvg(drawioPath, svgPath);
-  results.push({ slug, status: ok ? "updated" : "failed", reason: ok ? "" : "draw.io export failed" });
+  results.push({
+    slug,
+    status: ok ? "updated" : "failed",
+    reason: ok ? "" : "draw.io export failed"
+  });
 }
 
 if (!skipIndex) {
@@ -77,23 +81,31 @@ function listArchitectureDirectories(rootDir, slug) {
 }
 
 function exportSvg(inputDrawioPath, outputSvgPath) {
-  const electronPath = path.join(repoRoot, "src", "apps", "desktop", "node_modules", ".bin", "electron");
-  const drawioAppPath = path.join(repoRoot, "src", "apps", "desktop", "node_modules", "@hhhtj", "draw.io");
+  const electronPath = path.join(
+    repoRoot,
+    "src",
+    "apps",
+    "desktop",
+    "node_modules",
+    ".bin",
+    "electron"
+  );
+  const drawioAppPath = path.join(
+    repoRoot,
+    "src",
+    "apps",
+    "desktop",
+    "node_modules",
+    "@hhhtj",
+    "draw.io"
+  );
   if (!fs.existsSync(electronPath) || !fs.existsSync(drawioAppPath)) {
     return false;
   }
 
   const result = spawnSync(
     electronPath,
-    [
-      drawioAppPath,
-      "--export",
-      "--format",
-      "svg",
-      "--output",
-      outputSvgPath,
-      inputDrawioPath
-    ],
+    [drawioAppPath, "--export", "--format", "svg", "--output", outputSvgPath, inputDrawioPath],
     {
       cwd: path.join(repoRoot, "src", "apps", "desktop"),
       encoding: "utf-8"

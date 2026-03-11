@@ -1,7 +1,11 @@
 import type { AddressInfo } from "node:net";
 import { serve } from "@hono/node-server";
 
-export async function startHttpServer(fetch: (request: Request) => Response | Promise<Response>, host: string, port: number) {
+export async function startHttpServer(
+  fetch: (request: Request) => Response | Promise<Response>,
+  host: string,
+  port: number
+) {
   return new Promise<ReturnType<typeof serve>>((resolve, reject) => {
     const handleError = (error: Error) => {
       server.off("error", handleError);

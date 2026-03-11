@@ -1,6 +1,7 @@
 # Hook Scripts
 
 ## Files
+
 - `enforce-broadcast.py`: PreToolUse hook to block directed `SendMessage`.
 - `approval-gate.py`: PreToolUse hook to block `SendMessage` / `Task` / `TeamCreate` while human approval is pending.
 - `team-event-relay.py`: PostToolUse hook to relay `TeamCreate`/`Task` events to chat.
@@ -43,6 +44,7 @@ For debugging, `ws-relay.py` also writes normalized resolution results to:
 - `.claude/meeting-room/ws-hook.log.jsonl`
 
 `stop-relay.py` wraps response text with markers:
+
 - `[[[MEETING_ROOM_RESPONSE_START]]]`
 - `[[[MEETING_ROOM_RESPONSE_END]]]`
 
@@ -62,6 +64,7 @@ Electron extracts only the marker-inside content before displaying it.
 ## Runtime Environment
 
 Electron now exports these env vars to Claude sessions:
+
 - `MEETING_ROOM_SETTINGS_FILE` (repo `.claude/settings.json`)
 - `MEETING_ROOM_HOOKS_DIR` (repo `src/packages/meeting-room-hooks/`)
 - `MEETING_ROOM_ACTIVE_FILE` (meeting active flag path)
@@ -70,6 +73,7 @@ Electron now exports these env vars to Claude sessions:
 - `MEETING_ROOM_STOP_DEBUG_LOG` (Stop hook debug JSONL path)
 
 Hook commands in settings first go through `src/packages/meeting-room-hooks/run-hook.sh`:
+
 - `MEETING_ROOM_HOOKS_DIR` があればそれを使う
 - なければ `CLAUDE_PROJECT_DIR` または `git rev-parse --show-toplevel` から repo root を解決する
 - `MEETING_ROOM_MEETING_ID` または `MEETING_ROOM_ACTIVE_FILE` が渡された Meeting Room セッションだけ hook を起動する

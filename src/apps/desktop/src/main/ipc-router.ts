@@ -17,7 +17,9 @@ export class MainIpcRouter {
     channel: C,
     handler: (...args: MainInvokeArgs<C>) => MaybePromise<MainInvokeResult<C>>
   ): void {
-    ipcMain.handle(channel, (_event, ...args: unknown[]) => handler(...(args as MainInvokeArgs<C>)));
+    ipcMain.handle(channel, (_event, ...args: unknown[]) =>
+      handler(...(args as MainInvokeArgs<C>))
+    );
   }
 
   send<C extends RendererEventChannel>(channel: C, ...args: RendererEventArgs<C>): void {

@@ -69,7 +69,10 @@ export function MeetingScreen({
 }: Props): JSX.Element {
   const [developerToolsVisible, setDeveloperToolsVisible] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const currentTab = useMemo(() => tabs.find((tab) => tab.id === currentTabId), [tabs, currentTabId]);
+  const currentTab = useMemo(
+    () => tabs.find((tab) => tab.id === currentTabId),
+    [tabs, currentTabId]
+  );
   const hasMcpError = runtimeEvents.some((event) => event.type === "mcp_error");
 
   useEffect(() => {
@@ -159,17 +162,33 @@ export function MeetingScreen({
       {developerToolsVisible ? (
         <section className="debug-tools">
           <div className="debug-toggle-row">
-            <button className="terminal-toggle" type="button" onClick={() => setShowDebugPanel((state) => !state)}>
-              {showDebugPanel ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />}
-              {" "}Debug
+            <button
+              className="terminal-toggle"
+              type="button"
+              onClick={() => setShowDebugPanel((state) => !state)}
+            >
+              {showDebugPanel ? (
+                <ChevronUp size={14} strokeWidth={1.5} />
+              ) : (
+                <ChevronDown size={14} strokeWidth={1.5} />
+              )}{" "}
+              Debug
             </button>
             {canOpenSessionDebugWindow ? (
-              <button className="terminal-toggle" type="button" onClick={() => void onOpenSessionDebugWindow()}>
+              <button
+                className="terminal-toggle"
+                type="button"
+                onClick={() => void onOpenSessionDebugWindow()}
+              >
                 別 Window
               </button>
             ) : null}
             {canOpenDevTools ? (
-              <button className="terminal-toggle" type="button" onClick={() => void onOpenDevTools()}>
+              <button
+                className="terminal-toggle"
+                type="button"
+                onClick={() => void onOpenDevTools()}
+              >
                 DevTools
               </button>
             ) : null}
@@ -180,7 +199,9 @@ export function MeetingScreen({
               <section className="debug-header">
                 <div>
                   <strong>Claude Debug</strong>
-                  <p className="subtle">Claude Code の実ターミナルと診断情報をまとめて表示しています。</p>
+                  <p className="subtle">
+                    Claude Code の実ターミナルと診断情報をまとめて表示しています。
+                  </p>
                 </div>
               </section>
 
@@ -197,11 +218,19 @@ export function MeetingScreen({
               <section className="health-row">
                 <div className={`health-card ${health.inputDeliveredAt ? "ok" : "warn"}`}>
                   <strong>Input 到達</strong>
-                  <p>{health.inputDeliveredAt ? `OK (${new Date(health.inputDeliveredAt).toLocaleTimeString("ja-JP")})` : "未確認"}</p>
+                  <p>
+                    {health.inputDeliveredAt
+                      ? `OK (${new Date(health.inputDeliveredAt).toLocaleTimeString("ja-JP")})`
+                      : "未確認"}
+                  </p>
                 </div>
                 <div className={`health-card ${health.lastAgentReplyAt ? "ok" : "warn"}`}>
                   <strong>Agent 返信</strong>
-                  <p>{health.lastAgentReplyAt ? `受信 (${new Date(health.lastAgentReplyAt).toLocaleTimeString("ja-JP")})` : "未受信"}</p>
+                  <p>
+                    {health.lastAgentReplyAt
+                      ? `受信 (${new Date(health.lastAgentReplyAt).toLocaleTimeString("ja-JP")})`
+                      : "未受信"}
+                  </p>
                 </div>
                 <div className={`health-card ${sessionDebug?.hasUsageLimit ? "warn" : "ok"}`}>
                   <strong>Usage Limit</strong>
@@ -218,8 +247,17 @@ export function MeetingScreen({
                   <p className="subtle">警告なし</p>
                 ) : (
                   runtimeEvents.map((event, idx) => (
-                    <div key={`${event.timestamp}_${idx}`} className={`runtime-event ${event.type}`}>
-                      <strong>{event.type === "usage_limit" ? "利用上限" : event.type === "mcp_error" ? "MCP Error" : "MCP Info"}</strong>
+                    <div
+                      key={`${event.timestamp}_${idx}`}
+                      className={`runtime-event ${event.type}`}
+                    >
+                      <strong>
+                        {event.type === "usage_limit"
+                          ? "利用上限"
+                          : event.type === "mcp_error"
+                            ? "MCP Error"
+                            : "MCP Info"}
+                      </strong>
                       <p>{event.message}</p>
                     </div>
                   ))

@@ -114,8 +114,10 @@ export class MeetingSessionStore {
     }
     const lines = collectDebugTail(session.sessionDebug.tail, chunk);
     session.sessionDebug.tail = lines.slice(-120);
-    session.sessionDebug.hasUsageLimit = session.sessionDebug.hasUsageLimit || isUsageLimitReached(chunk);
-    session.sessionDebug.hasMcpError = session.sessionDebug.hasMcpError || hasMcpFailureSignal(chunk);
+    session.sessionDebug.hasUsageLimit =
+      session.sessionDebug.hasUsageLimit || isUsageLimitReached(chunk);
+    session.sessionDebug.hasMcpError =
+      session.sessionDebug.hasMcpError || hasMcpFailureSignal(chunk);
     session.sessionDebug.lastUpdatedAt = new Date().toISOString();
   }
 
@@ -127,7 +129,9 @@ export class MeetingSessionStore {
         this.sessions.set(event.meetingId, {
           tab,
           messages: [],
-          agentStatuses: Object.fromEntries(tab.config.members.map((memberId) => [memberId, "active"])),
+          agentStatuses: Object.fromEntries(
+            tab.config.members.map((memberId) => [memberId, "active"])
+          ),
           runtimeEvents: [],
           health: {},
           sessionDebug: {
@@ -160,7 +164,9 @@ export class MeetingSessionStore {
         if (!session) return;
         session.approvalGate = {
           ...deepClone(event.payload.approvalGate),
-          bypassMode: Boolean(event.payload.approvalGate.bypassMode ?? session.tab.config.bypassMode)
+          bypassMode: Boolean(
+            event.payload.approvalGate.bypassMode ?? session.tab.config.bypassMode
+          )
         };
         if (session.tab.status !== "ended") {
           if (!session.approvalGate.bypassMode && event.payload.approvalGate.mode === "blocked") {

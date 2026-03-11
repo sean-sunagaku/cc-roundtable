@@ -27,7 +27,10 @@ function logStep(message) {
 function killPortListeners(port) {
   spawnSync(
     "bash",
-    ["-lc", `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`],
+    [
+      "-lc",
+      `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`
+    ],
     { cwd: rootDir, stdio: "ignore" }
   );
 }
@@ -48,7 +51,9 @@ async function waitFor(check, description, timeoutMs = 30_000, intervalMs = 500)
     await delay(intervalMs);
   }
 
-  throw new Error(`Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`);
+  throw new Error(
+    `Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`
+  );
 }
 
 async function gatewayJson(pathname, init = {}) {
@@ -131,7 +136,9 @@ async function main() {
     await startDaemon();
 
     logStep("bootstrapping public share session");
-    const sharePage = await fetch(`http://127.0.0.1:${gatewayPort}/share/${encodeURIComponent(shareId)}`);
+    const sharePage = await fetch(
+      `http://127.0.0.1:${gatewayPort}/share/${encodeURIComponent(shareId)}`
+    );
     if (!sharePage.ok) {
       throw new Error(`Public share page returned ${sharePage.status}`);
     }
@@ -159,7 +166,9 @@ async function main() {
     await startDaemon();
     const recovered = await gatewayJson(`/share-api/${encodeURIComponent(shareId)}/bootstrap`);
     if (recovered.session.tab.status !== "running") {
-      throw new Error(`Expected restarted daemon bootstrap to return running, got ${recovered.session.tab.status}`);
+      throw new Error(
+        `Expected restarted daemon bootstrap to return running, got ${recovered.session.tab.status}`
+      );
     }
 
     logStep("sending message via public share gateway");
@@ -183,11 +192,14 @@ async function main() {
     }
 
     logStep("verifying post-end message is rejected");
-    const postEndResponse = await fetch(`http://127.0.0.1:${gatewayPort}/share-api/${encodeURIComponent(shareId)}/message`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "after end" })
-    });
+    const postEndResponse = await fetch(
+      `http://127.0.0.1:${gatewayPort}/share-api/${encodeURIComponent(shareId)}/message`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "after end" })
+      }
+    );
     if (postEndResponse.status !== 409) {
       throw new Error(`Expected 409 after endMeeting, got ${postEndResponse.status}`);
     }

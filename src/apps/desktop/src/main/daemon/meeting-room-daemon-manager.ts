@@ -47,8 +47,12 @@ export class MeetingRoomDaemonManager {
   private streamAbortController: AbortController | null = null;
 
   constructor(options: MeetingRoomDaemonManagerOptions = {}) {
-    this.host = options.host ?? process.env.MEETING_ROOM_DAEMON_HOST ?? MEETING_ROOM_DAEMON_DEFAULT_HOST;
-    this.port = options.port ?? parsePort(process.env.MEETING_ROOM_DAEMON_PORT) ?? MEETING_ROOM_DAEMON_DEFAULT_PORT;
+    this.host =
+      options.host ?? process.env.MEETING_ROOM_DAEMON_HOST ?? MEETING_ROOM_DAEMON_DEFAULT_HOST;
+    this.port =
+      options.port ??
+      parsePort(process.env.MEETING_ROOM_DAEMON_PORT) ??
+      MEETING_ROOM_DAEMON_DEFAULT_PORT;
     this.cwd = options.cwd ?? path.resolve(__dirname, "../../../../../");
     this.entryFile = options.entryFile ?? path.resolve(this.cwd, "src/daemon/dist/index.js");
     this.token = options.token ?? process.env.MEETING_ROOM_DAEMON_TOKEN?.trim() ?? null;
@@ -102,14 +106,17 @@ export class MeetingRoomDaemonManager {
     if (!response.ok) {
       throw new Error(`List sessions request failed with ${response.status}`);
     }
-    const payload = await response.json() as { sessions: MeetingTabPayload[] };
+    const payload = (await response.json()) as { sessions: MeetingTabPayload[] };
     return payload.sessions;
   }
 
   async getSessionView(meetingId: string): Promise<MeetingSessionViewPayload | null> {
-    const response = await fetch(this.url(`${MEETING_ROOM_DAEMON_SESSIONS_PATH}/${encodeURIComponent(meetingId)}`), {
-      headers: this.headers()
-    });
+    const response = await fetch(
+      this.url(`${MEETING_ROOM_DAEMON_SESSIONS_PATH}/${encodeURIComponent(meetingId)}`),
+      {
+        headers: this.headers()
+      }
+    );
     if (response.status === 404) {
       return null;
     }

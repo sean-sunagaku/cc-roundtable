@@ -21,7 +21,10 @@ export class PublicShareClient {
   private shouldReconnect = false;
   private readonly connectionListeners = new Set<ConnectionListener>();
   private readonly frameListeners = new Set<FrameListener>();
-  private paths: Pick<MeetingRoomPublicShareBootstrapPayload, "eventsPath" | "messagePath" | "controlPath"> | null = null;
+  private paths: Pick<
+    MeetingRoomPublicShareBootstrapPayload,
+    "eventsPath" | "messagePath" | "controlPath"
+  > | null = null;
 
   constructor(shareId: string, baseUrl = window.location.origin) {
     this.shareId = shareId;
@@ -29,7 +32,9 @@ export class PublicShareClient {
   }
 
   async bootstrap(): Promise<MeetingRoomPublicShareBootstrapPayload> {
-    const payload = await this.request<MeetingRoomPublicShareBootstrapPayload>(`/share-api/${encodeURIComponent(this.shareId)}/bootstrap`);
+    const payload = await this.request<MeetingRoomPublicShareBootstrapPayload>(
+      `/share-api/${encodeURIComponent(this.shareId)}/bootstrap`
+    );
     this.paths = {
       eventsPath: payload.eventsPath,
       messagePath: payload.messagePath,
@@ -184,7 +189,8 @@ export class PublicShareClient {
     if (this.reconnectTimer !== null) {
       window.clearTimeout(this.reconnectTimer);
     }
-    const delay = RECONNECT_BACKOFF_MS[Math.min(this.reconnectAttempt, RECONNECT_BACKOFF_MS.length - 1)];
+    const delay =
+      RECONNECT_BACKOFF_MS[Math.min(this.reconnectAttempt, RECONNECT_BACKOFF_MS.length - 1)];
     this.reconnectAttempt += 1;
     this.notifyConnection("reconnecting", errorMessage);
     this.reconnectTimer = window.setTimeout(() => {

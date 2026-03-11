@@ -1,4 +1,4 @@
-# __ARCH_TITLE__ SubAgent Prompt
+# **ARCH_TITLE** SubAgent Prompt
 
 あなたは `Electron Main Monolith` 案を担当する SubAgent です。
 

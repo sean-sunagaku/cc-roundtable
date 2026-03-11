@@ -28,13 +28,13 @@ import type { EventFrameListener, PublicShareDemoConfig } from "../types";
 import { contentTypeFor, createId, resolvePublicShareFile } from "../utils";
 
 const HEARTBEAT_MS = 15_000;
-const FORWARDED_EVENT_TYPES = new Set<MeetingRoomDaemonEvent["type"]>([
-  "session.view.updated"
-]);
+const FORWARDED_EVENT_TYPES = new Set<MeetingRoomDaemonEvent["type"]>(["session.view.updated"]);
 const ALLOWED_ACTIONS: PublicShareControlAction[] = ["pause", "resume", "retryMcp", "endMeeting"];
 
 type PublicShareAppAdapter = {
-  handleCommand: (envelope: MeetingRoomDaemonCommandEnvelope) => Promise<MeetingRoomDaemonCommandAck>;
+  handleCommand: (
+    envelope: MeetingRoomDaemonCommandEnvelope
+  ) => Promise<MeetingRoomDaemonCommandAck>;
   listTabs: () => MeetingTabPayload[];
   getSessionView: (meetingId: string) => MeetingSessionViewPayload | null;
   subscribeToEventFrames: (listener: EventFrameListener) => () => void;
@@ -195,7 +195,10 @@ export function createPublicShareHttpApp({
   return web;
 }
 
-async function ensureBootstrappedSession(app: PublicShareAppAdapter, config: PublicShareDemoConfig) {
+async function ensureBootstrappedSession(
+  app: PublicShareAppAdapter,
+  config: PublicShareDemoConfig
+) {
   const current = getCurrentSessionView(app, config);
   if (current && !shouldRestartBootstrappedSession(current, config)) {
     return current;
@@ -240,7 +243,10 @@ function shouldRestartBootstrappedSession(
   if (Boolean(session.approvalGate.bypassMode) !== config.bypassMode) {
     return true;
   }
-  if (session.tab.config.projectDir !== config.projectDir || session.tab.config.topic !== config.topic) {
+  if (
+    session.tab.config.projectDir !== config.projectDir ||
+    session.tab.config.topic !== config.topic
+  ) {
     return true;
   }
 
@@ -341,7 +347,10 @@ function writeFrame(response: ServerResponse, frame: MeetingRoomPublicShareStrea
   }
 }
 
-function toControlCommand(meetingId: string, action: PublicShareControlAction): MeetingRoomDaemonCommand {
+function toControlCommand(
+  meetingId: string,
+  action: PublicShareControlAction
+): MeetingRoomDaemonCommand {
   switch (action) {
     case "pause":
       return { type: "pauseMeeting", meetingId };

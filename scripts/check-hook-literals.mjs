@@ -47,17 +47,29 @@ for (const [exportName, obj] of Object.entries(exports)) {
 // Values that are too generic to flag (would cause false positives)
 // or are used as Claude Code input keys (not our output contract)
 const IGNORE_VALUES = new Set([
-  "type", "id", "content", "timestamp", "status", "team",
-  "sender", "subagent", "mode", "reason", "open", "blocked",
-  "active", "completed",
+  "type",
+  "id",
+  "content",
+  "timestamp",
+  "status",
+  "team",
+  "sender",
+  "subagent",
+  "mode",
+  "reason",
+  "open",
+  "blocked",
+  "active",
+  "completed"
 ]);
 
 // ---------------------------------------------------------------------------
 // 2. Scan hooks for hardcoded literals
 // ---------------------------------------------------------------------------
 
-const hookFiles = readdirSync(hooksDir)
-  .filter(f => f.endsWith(".py") && f !== "contracts.py" && f !== "__pycache__");
+const hookFiles = readdirSync(hooksDir).filter(
+  (f) => f.endsWith(".py") && f !== "contracts.py" && f !== "__pycache__"
+);
 
 const violations = [];
 
@@ -84,7 +96,7 @@ for (const file of hookFiles) {
             value,
             exportName: info.exportName,
             key: info.key,
-            context: line.trim(),
+            context: line.trim()
           });
         }
       }

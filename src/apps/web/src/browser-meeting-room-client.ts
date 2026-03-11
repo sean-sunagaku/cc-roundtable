@@ -175,21 +175,28 @@ export class BrowserMeetingRoomClient implements MeetingRoomClient {
   }
 
   async listAgents(): Promise<AgentProfile[]> {
-    const payload = await this.request<MeetingRoomDaemonAgentsResponse>(MEETING_ROOM_DAEMON_AGENTS_PATH);
+    const payload = await this.request<MeetingRoomDaemonAgentsResponse>(
+      MEETING_ROOM_DAEMON_AGENTS_PATH
+    );
     return payload.agents.map(toAgentProfile);
   }
 
   async saveAgent(input: AgentProfileInput): Promise<AgentProfile> {
-    const payload = await this.request<{ agent: AgentProfilePayload }>(MEETING_ROOM_DAEMON_AGENTS_PATH, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input satisfies AgentProfileInputPayload)
-    });
+    const payload = await this.request<{ agent: AgentProfilePayload }>(
+      MEETING_ROOM_DAEMON_AGENTS_PATH,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input satisfies AgentProfileInputPayload)
+      }
+    );
     return toAgentProfile(payload.agent);
   }
 
   async listTabs(): Promise<MeetingTab[]> {
-    const payload = await this.request<{ sessions: MeetingTabPayload[] }>(MEETING_ROOM_DAEMON_SESSIONS_PATH);
+    const payload = await this.request<{ sessions: MeetingTabPayload[] }>(
+      MEETING_ROOM_DAEMON_SESSIONS_PATH
+    );
     return payload.sessions.map(toMeetingTab);
   }
 
@@ -351,7 +358,9 @@ export class BrowserMeetingRoomClient implements MeetingRoomClient {
     });
     const payload = (await response.json()) as MeetingRoomDaemonCommandAck | { error: string };
     if (!response.ok && response.status !== 409) {
-      throw new Error("error" in payload ? payload.error : `Command failed with ${response.status}`);
+      throw new Error(
+        "error" in payload ? payload.error : `Command failed with ${response.status}`
+      );
     }
     if ("accepted" in payload) {
       return payload;
@@ -433,7 +442,8 @@ export class BrowserMeetingRoomClient implements MeetingRoomClient {
     }
 
     this.notifyConnection("reconnecting", errorMessage);
-    const waitMs = RECONNECT_BACKOFF_MS[Math.min(this.reconnectAttempt, RECONNECT_BACKOFF_MS.length - 1)];
+    const waitMs =
+      RECONNECT_BACKOFF_MS[Math.min(this.reconnectAttempt, RECONNECT_BACKOFF_MS.length - 1)];
     this.reconnectAttempt += 1;
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;

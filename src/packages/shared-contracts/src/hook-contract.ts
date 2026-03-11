@@ -25,19 +25,19 @@ export const RELAY_PAYLOAD_FIELDS = {
   team: "team",
   meetingId: "meetingId",
   rawType: "rawType",
-  status: "status",
+  status: "status"
 } as const;
 
 /** Valid values for RelayPayload.type */
 export const RELAY_PAYLOAD_TYPES = {
   agentMessage: "agent_message",
-  agentStatus: "agent_status",
+  agentStatus: "agent_status"
 } as const;
 
 /** Valid values for RelayPayload.status / agent status */
 export const AGENT_STATUS_VALUES = {
   active: "active",
-  completed: "completed",
+  completed: "completed"
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ export const HOOK_ENV_VARS = {
   wsHost: "MEETING_ROOM_WS_HOST",
   wsPath: "MEETING_ROOM_WS_PATH",
   wsTimeout: "MEETING_ROOM_WS_TIMEOUT",
-  statusLog: "MEETING_ROOM_STATUS_LOG",
+  statusLog: "MEETING_ROOM_STATUS_LOG"
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ export const HOOK_ENV_VARS = {
 
 export const RESPONSE_MARKERS = {
   start: "[[[MEETING_ROOM_RESPONSE_START]]]",
-  end: "[[[MEETING_ROOM_RESPONSE_END]]]",
+  end: "[[[MEETING_ROOM_RESPONSE_END]]]"
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -79,10 +79,10 @@ export const RESPONSE_MARKERS = {
 export const APPROVAL_GATE_FIELDS = {
   mode: "mode",
   bypassMode: "bypassMode",
-  reason: "reason",
+  reason: "reason"
 } as const;
 
 export const APPROVAL_GATE_MODES = {
   open: "open",
-  blocked: "blocked",
+  blocked: "blocked"
 } as const;

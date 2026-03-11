@@ -7,8 +7,14 @@ interface Props {
 }
 
 const AGENT_COLORS = [
-  "#2E8A82", "#B8892A", "#7B6DAF", "#B06B78",
-  "#5A9472", "#B07A4E", "#5A7FA0", "#9A6B90",
+  "#2E8A82",
+  "#B8892A",
+  "#7B6DAF",
+  "#B06B78",
+  "#5A9472",
+  "#B07A4E",
+  "#5A7FA0",
+  "#9A6B90"
 ];
 
 const FOLD_THRESHOLD = 80;
@@ -36,9 +42,7 @@ export function MessageBubble({ message }: Props): JSX.Element {
   const isLong = lineCount > FOLD_THRESHOLD;
   const agentColor = message.source === "agent" ? hashColor(senderLabel) : undefined;
 
-  const style = agentColor
-    ? ({ "--agent-color": agentColor } as React.CSSProperties)
-    : undefined;
+  const style = agentColor ? ({ "--agent-color": agentColor } as React.CSSProperties) : undefined;
 
   return (
     <article className={`bubble ${roleClass} ${message.status}`} style={style}>
@@ -51,14 +55,8 @@ export function MessageBubble({ message }: Props): JSX.Element {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {isLong ? (
-        <button
-          type="button"
-          className="fold-toggle"
-          onClick={() => setFolded((v) => !v)}
-        >
-          {folded
-            ? `${FOLD_VISIBLE}/${lineCount} 行を表示中 — 全文を展開`
-            : "折りたたむ"}
+        <button type="button" className="fold-toggle" onClick={() => setFolded((v) => !v)}>
+          {folded ? `${FOLD_VISIBLE}/${lineCount} 行を表示中 — 全文を展開` : "折りたたむ"}
         </button>
       ) : null}
     </article>

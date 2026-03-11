@@ -1,5 +1,8 @@
 import type { ServerResponse } from "node:http";
-import type { MeetingRoomDaemonEvent, MeetingRoomDaemonStreamFrame } from "@contracts/meeting-room-daemon";
+import type {
+  MeetingRoomDaemonEvent,
+  MeetingRoomDaemonStreamFrame
+} from "@contracts/meeting-room-daemon";
 import type { EventFrameListener, SseClient } from "../types";
 
 export class DaemonEventStream {

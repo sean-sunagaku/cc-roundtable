@@ -47,7 +47,10 @@ export function readPublicShareDemoConfig(): PublicShareDemoConfig | null {
 }
 
 function normalizeShareId(value: string): string {
-  const normalized = value.replace(/[^a-zA-Z0-9_-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+  const normalized = value
+    .replace(/[^a-zA-Z0-9_-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
   if (!normalized) {
     throw new Error(`${PUBLIC_SHARE_ID_ENV} must contain at least one URL-safe character.`);
   }
@@ -84,5 +87,7 @@ function parseBoolean(value: string | undefined, defaultValue: boolean): boolean
   if (/^(0|false|no|off)$/i.test(normalized)) {
     return false;
   }
-  throw new Error(`${PUBLIC_SHARE_BYPASS_ENV} must be one of true/false/1/0/yes/no/on/off when set.`);
+  throw new Error(
+    `${PUBLIC_SHARE_BYPASS_ENV} must be one of true/false/1/0/yes/no/on/off when set.`
+  );
 }
