@@ -8,6 +8,15 @@
 - `ws-relay.py`: PostToolUse hook to relay `SendMessage` payloads over WebSocket.
 - `subagent-status-relay.py`: PostToolUse hook to relay `SubagentStop` status events.
 - `stop-relay.py`: Stop hook to relay the latest assistant response over WebSocket.
+- `hook_common.py`: meeting mode 判定、env/path 解決、stdin JSON 解析などの共通基盤。
+- `hook_transport.py`: WebSocket relay と JSONL fallback log の共通 transport。
+- `hook_text.py`: relay 用テキストフィルタの共通ロジック。
+
+## Local Tests
+
+```bash
+python3 -m unittest discover -s src/packages/meeting-room-hooks/tests
+```
 
 ## Quick Local Checks
 
