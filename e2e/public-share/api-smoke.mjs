@@ -34,7 +34,9 @@ function runShell(command) {
 }
 
 function killPortListeners(port) {
-  runShell(`pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`);
+  runShell(
+    `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`
+  );
 }
 
 async function waitFor(check, description, timeoutMs = 30_000, intervalMs = 500) {
@@ -53,7 +55,9 @@ async function waitFor(check, description, timeoutMs = 30_000, intervalMs = 500)
     await delay(intervalMs);
   }
 
-  throw new Error(`Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`);
+  throw new Error(
+    `Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`
+  );
 }
 
 async function fetchJson(url, init) {
@@ -131,11 +135,17 @@ async function main() {
     await startDaemon();
 
     logStep("bootstrap");
-    const bootstrap = await fetchJson(`http://127.0.0.1:${publicPort}/share-api/${shareId}/bootstrap`);
+    const bootstrap = await fetchJson(
+      `http://127.0.0.1:${publicPort}/share-api/${shareId}/bootstrap`
+    );
     if (!bootstrap.session || bootstrap.shareId !== shareId) {
       throw new Error("bootstrap payload is incomplete");
     }
-    if ("config" in bootstrap.session.tab || "sessionDebug" in bootstrap.session || "health" in bootstrap.session) {
+    if (
+      "config" in bootstrap.session.tab ||
+      "sessionDebug" in bootstrap.session ||
+      "health" in bootstrap.session
+    ) {
       throw new Error("bootstrap payload leaked internal daemon fields");
     }
 

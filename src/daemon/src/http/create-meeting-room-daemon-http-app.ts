@@ -37,7 +37,8 @@ export function createMeetingRoomDaemonHttpApp({
 }: CreateMeetingRoomDaemonHttpAppOptions): Hono<{ Bindings: HttpBindings }> {
   const web = new Hono<{ Bindings: HttpBindings }>();
 
-  const unauthorized = (c: Context<{ Bindings: HttpBindings }>) => c.json({ error: "Unauthorized" }, 401);
+  const unauthorized = (c: Context<{ Bindings: HttpBindings }>) =>
+    c.json({ error: "Unauthorized" }, 401);
 
   const healthPayload = (): MeetingRoomDaemonHealthResponse => ({
     status: "ok",
@@ -71,7 +72,9 @@ export function createMeetingRoomDaemonHttpApp({
 
   web.post(MEETING_ROOM_DAEMON_PICK_PROJECT_DIR_PATH, async (c) => {
     try {
-      const body = c.req.header("content-length") ? ((await c.req.json()) as { currentDir?: string }) : null;
+      const body = c.req.header("content-length")
+        ? ((await c.req.json()) as { currentDir?: string })
+        : null;
       return c.json({ projectDir: app.pickProjectDir(body?.currentDir) });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Project directory picker failed";

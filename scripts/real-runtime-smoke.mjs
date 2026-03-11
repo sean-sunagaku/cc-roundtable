@@ -18,7 +18,10 @@ const humanMessage =
 const projectDir = process.env.MEETING_ROOM_REAL_SMOKE_PROJECT_DIR?.trim() || rootDir;
 const keepStateRequested = process.env.MEETING_ROOM_REAL_SMOKE_KEEP_STATE === "1";
 const readyTimeoutMs = readIntEnv("MEETING_ROOM_REAL_SMOKE_READY_TIMEOUT_MS", 60_000);
-const initialReplyTimeoutMs = readIntEnv("MEETING_ROOM_REAL_SMOKE_INITIAL_REPLY_TIMEOUT_MS", 180_000);
+const initialReplyTimeoutMs = readIntEnv(
+  "MEETING_ROOM_REAL_SMOKE_INITIAL_REPLY_TIMEOUT_MS",
+  180_000
+);
 const humanReplyTimeoutMs = readIntEnv("MEETING_ROOM_REAL_SMOKE_HUMAN_REPLY_TIMEOUT_MS", 180_000);
 const pollIntervalMs = readIntEnv("MEETING_ROOM_REAL_SMOKE_POLL_INTERVAL_MS", 5_000);
 
@@ -335,7 +338,9 @@ async function runSmoke() {
     humanReplyTimeoutMs
   );
 
-  const finalAgentMessages = humanReplySession.messages.filter((message) => message.source === "agent");
+  const finalAgentMessages = humanReplySession.messages.filter(
+    (message) => message.source === "agent"
+  );
   const lastAgentMessage = finalAgentMessages.at(-1) ?? null;
   logStep(`agent replied after human message at ${humanReplySession.health.lastAgentReplyAt}`);
 

@@ -101,6 +101,8 @@ make public-share-ngrok
 make public-share-api
 make verify-web
 make verify
+make lint
+make format
 ```
 
 - `make public-share-smoke`
@@ -115,6 +117,10 @@ make verify
   - browser client 側の E2E
 - `make verify`
   - 最終確認一式
+- `make lint`
+  - TypeScript / React / Node script の静的チェック
+- `make format`
+  - Prettier で整形する
 
 Public Share だけまとめて軽く確認したい時はこれでも大丈夫です。
 
@@ -225,6 +231,17 @@ make verify-web
 
 - browser client を Chrome で開き、CDP 経由の DOM 操作で確認する
 - 新規会議開始、手動送信、一時停止 / 再開、daemon 再起動後の recovering、会議終了を確認する
+
+日常の品質チェックはこれです。
+
+```bash
+make lint
+make format-check
+```
+
+- `make lint` は ESLint で TypeScript / React / Node script を確認する
+- `make format-check` は Prettier で Markdown / JSON / TS / TSX / CSS / HTML の整形ズレを確認する
+- まとめて整形したい時は `make format`
 
 実 Claude runtime の smoke 確認はこれです。
 

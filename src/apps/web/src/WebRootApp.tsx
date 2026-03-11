@@ -102,7 +102,11 @@ export function WebRootApp(): JSX.Element {
     <div className="web-client-shell">
       {connectionError ? (
         <div className="web-connection-error" role="alert">
-          <strong>{isUnauthorized ? "パスワードが一致しませんでした。" : "daemon に接続できませんでした。"}</strong>
+          <strong>
+            {isUnauthorized
+              ? "パスワードが一致しませんでした。"
+              : "daemon に接続できませんでした。"}
+          </strong>
           <span>{connectionError}</span>
         </div>
       ) : null}

@@ -138,7 +138,7 @@ export class LocalMeetingRoomSupport {
       "- 理由: Plan タイプはこの会議フローで必要な SendMessage / shutdown_response を扱えず、不整合の原因になります。",
       "- もし誤って Plan タイプを起動した場合、そのまま進行せず、結果共有や shutdown 応答を待たずに破棄し、general-purpose タイプで起動し直してください。",
       "- Team 編成や再編成の際も同じです。常に broadcast 可能な general-purpose タイプだけで構成してください。",
-      "- 会議中の SendMessage は必ず type: \"broadcast\" のみを使ってください。directed は禁止です。",
+      '- 会議中の SendMessage は必ず type: "broadcast" のみを使ってください。directed は禁止です。',
       "- すべての重要な検討結果は、チャット欄に表示されるよう broadcast で共有してください。",
       "- 前提不足や未確定事項があっても AskUserQuestion は使わず、合理的な仮定を明示して議論を前進させてください。",
       "- user-liaison は不足前提を検出したら、ユーザーへの質問ではなく『仮定 / 不確実性 / 後で確認すべき論点』として broadcast で共有してください。",
@@ -365,7 +365,9 @@ export class LocalMeetingRoomSupport {
     }
   }
 
-  private normalizeAgentProfileInput(input: AgentProfileInputRecord): Omit<AgentProfileRecord, "source"> {
+  private normalizeAgentProfileInput(
+    input: AgentProfileInputRecord
+  ): Omit<AgentProfileRecord, "source"> {
     const name = input.name.trim();
     if (!name) {
       throw new Error("Agent name is required");

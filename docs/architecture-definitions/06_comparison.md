@@ -14,15 +14,15 @@
 
 ## 比較軸
 
-| 観点 | Electron Main Monolith | Local Daemon BFF | Event-Sourced State Machine | Hexagonal Plugin Architecture | Job Queue Supervisor |
-|---|---:|---:|---:|---:|---:|
-| 開発速度 | 5 | 4 | 2 | 3 | 1 |
-| 運用の単純さ | 4 | 3 | 2 | 3 | 2 |
-| 非同期信頼性 | 2 | 4 | 5 | 3 | 4 |
-| テストしやすさ | 2 | 5 | 4 | 5 | 3 |
-| 長期保守性 | 2 | 5 | 4 | 5 | 3 |
-| ランタイム柔軟性 | 2 | 5 | 4 | 5 | 4 |
-| 現状の cc-roundtable との適合 | 3 | 5 | 3 | 4 | 2 |
+| 観点                          | Electron Main Monolith | Local Daemon BFF | Event-Sourced State Machine | Hexagonal Plugin Architecture | Job Queue Supervisor |
+| ----------------------------- | ---------------------: | ---------------: | --------------------------: | ----------------------------: | -------------------: |
+| 開発速度                      |                      5 |                4 |                           2 |                             3 |                    1 |
+| 運用の単純さ                  |                      4 |                3 |                           2 |                             3 |                    2 |
+| 非同期信頼性                  |                      2 |                4 |                           5 |                             3 |                    4 |
+| テストしやすさ                |                      2 |                5 |                           4 |                             5 |                    3 |
+| 長期保守性                    |                      2 |                5 |                           4 |                             5 |                    3 |
+| ランタイム柔軟性              |                      2 |                5 |                           4 |                             5 |                    4 |
+| 現状の cc-roundtable との適合 |                      3 |                5 |                           3 |                             4 |                    2 |
 
 ## 短評
 

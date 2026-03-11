@@ -15,11 +15,15 @@ export class HooksRelayReceiver {
 
   start(onPayload: (payload: RelayPayload) => void): void {
     if (this.server) return;
-    const wsModule = requireFromRepo(path.resolve(resolveRepoRoot(), "src/apps/desktop/node_modules/ws")) as {
+    const wsModule = requireFromRepo(
+      path.resolve(resolveRepoRoot(), "src/apps/desktop/node_modules/ws")
+    ) as {
       WebSocketServer: new (options: { port: number }) => {
         on(
           event: "connection",
-          handler: (socket: { on(event: "message", handler: (buffer: Buffer) => void): void }) => void
+          handler: (socket: {
+            on(event: "message", handler: (buffer: Buffer) => void): void;
+          }) => void
         ): void;
         close(cb?: () => void): void;
       };
@@ -30,7 +34,11 @@ export class HooksRelayReceiver {
       socket.on("message", (buffer) => {
         try {
           const payload = JSON.parse(buffer.toString()) as RelayPayload;
-          if (!payload || (payload.type !== RELAY_PAYLOAD_TYPES.agentMessage && payload.type !== RELAY_PAYLOAD_TYPES.agentStatus)) {
+          if (
+            !payload ||
+            (payload.type !== RELAY_PAYLOAD_TYPES.agentMessage &&
+              payload.type !== RELAY_PAYLOAD_TYPES.agentStatus)
+          ) {
             return;
           }
           if (payload.type === RELAY_PAYLOAD_TYPES.agentMessage) {

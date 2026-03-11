@@ -31,6 +31,7 @@ Claude 系エージェント向けの入口です。正本は `AGENTS.md` に寄
 ```bash
 make install
 make dev
+make lint
 make daemon
 make typecheck
 make verify

@@ -17,7 +17,6 @@ import type {
   MeetingRoomDaemonCommandEnvelope,
   MeetingRoomDaemonEvent,
   MeetingRoomDaemonMetaPayload,
-  MeetingRoomDaemonStreamFrame,
   MeetingSessionViewPayload,
   MeetingStartedEvent,
   MeetingTabPayload,
@@ -173,33 +172,63 @@ export class MeetingRoomDaemonApp {
     return this.eventStream.subscribe(listener);
   }
 
-  async handleCommand(envelope: MeetingRoomDaemonCommandEnvelope): Promise<MeetingRoomDaemonCommandAck> {
+  async handleCommand(
+    envelope: MeetingRoomDaemonCommandEnvelope
+  ): Promise<MeetingRoomDaemonCommandAck> {
     const { commandId, command } = envelope;
     switch (command.type) {
       case "startMeeting":
         return this.ack(commandId, this.startMeeting(command), command.meetingId);
       case "sendHumanMessage":
-        return this.ack(commandId, this.sendHumanMessage(command.meetingId, command.message), command.meetingId);
+        return this.ack(
+          commandId,
+          this.sendHumanMessage(command.meetingId, command.message),
+          command.meetingId
+        );
       case "approveNextStep":
         return this.ack(commandId, this.approveNextStep(command.meetingId), command.meetingId);
       case "pauseMeeting":
-        return this.ack(commandId, this.sendControlPrompt(command.meetingId, "pause"), command.meetingId);
+        return this.ack(
+          commandId,
+          this.sendControlPrompt(command.meetingId, "pause"),
+          command.meetingId
+        );
       case "resumeMeeting":
-        return this.ack(commandId, this.sendControlPrompt(command.meetingId, "resume"), command.meetingId);
+        return this.ack(
+          commandId,
+          this.sendControlPrompt(command.meetingId, "resume"),
+          command.meetingId
+        );
       case "endMeeting":
-        return this.ack(commandId, this.endMeeting(command.meetingId, "command"), command.meetingId);
+        return this.ack(
+          commandId,
+          this.endMeeting(command.meetingId, "command"),
+          command.meetingId
+        );
       case "retryMcp":
         return this.ack(commandId, this.writeRaw(command.meetingId, "/mcp"), command.meetingId);
       case "writeTerminal":
-        return this.ack(commandId, this.writeRaw(command.meetingId, command.data), command.meetingId);
+        return this.ack(
+          commandId,
+          this.writeRaw(command.meetingId, command.data),
+          command.meetingId
+        );
       case "resizeTerminal":
-        return this.ack(commandId, this.resizeTerminal(command.meetingId, command.cols, command.rows), command.meetingId);
+        return this.ack(
+          commandId,
+          this.resizeTerminal(command.meetingId, command.cols, command.rows),
+          command.meetingId
+        );
       default:
         return this.ack(commandId, false);
     }
   }
 
-  private ack(commandId: string, accepted: boolean, meetingId?: string): MeetingRoomDaemonCommandAck {
+  private ack(
+    commandId: string,
+    accepted: boolean,
+    meetingId?: string
+  ): MeetingRoomDaemonCommandAck {
     return {
       commandId,
       accepted,
@@ -208,7 +237,9 @@ export class MeetingRoomDaemonApp {
     };
   }
 
-  private startMeeting(command: Extract<MeetingRoomDaemonCommand, { type: "startMeeting" }>): boolean {
+  private startMeeting(
+    command: Extract<MeetingRoomDaemonCommand, { type: "startMeeting" }>
+  ): boolean {
     if (this.sessions.isSessionOpen(command.meetingId)) {
       this.raiseRuntimeError(command.meetingId, "Meeting is already running.");
       return false;
@@ -224,13 +255,15 @@ export class MeetingRoomDaemonApp {
       meetingId: command.meetingId,
       payload: { tab }
     });
-    const initPrompt = command.initPrompt?.trim() || this.support.buildInitPrompt({
-      id: command.meetingId,
-      topic: command.topic,
-      projectDir: command.projectDir,
-      members: [...command.members],
-      bypassMode: command.bypassMode
-    });
+    const initPrompt =
+      command.initPrompt?.trim() ||
+      this.support.buildInitPrompt({
+        id: command.meetingId,
+        topic: command.topic,
+        projectDir: command.projectDir,
+        members: [...command.members],
+        bypassMode: command.bypassMode
+      });
 
     this.sessions.append({
       kind: "InitPromptQueued",
@@ -484,7 +517,7 @@ export class MeetingRoomDaemonApp {
       return;
     }
 
-    const cleaned = stripAnsi(data).replace(/\u0007/g, "");
+    const cleaned = stripAnsi(data).split("\u0007").join("");
     if (this.runtimes.hasPendingInitPrompt(meetingId) && hasClaudeReadySignal(cleaned)) {
       this.sessions.append({
         kind: "ClaudeReadyDetected",
@@ -501,13 +534,29 @@ export class MeetingRoomDaemonApp {
     }
 
     if (isUsageLimitReached(cleaned)) {
-      this.pushRuntimeEvent(meetingId, "usage_limit", "Claude利用上限に到達しています。", "warning");
+      this.pushRuntimeEvent(
+        meetingId,
+        "usage_limit",
+        "Claude利用上限に到達しています。",
+        "warning"
+      );
     }
     if (hasMcpFailureSignal(cleaned)) {
-      this.pushRuntimeEvent(meetingId, "mcp_error", "MCP server failed を検出しました。", "error", true);
+      this.pushRuntimeEvent(
+        meetingId,
+        "mcp_error",
+        "MCP server failed を検出しました。",
+        "error",
+        true
+      );
     }
     if (/\/mcp/i.test(cleaned) && /(connected|running|available|ok)/i.test(cleaned)) {
-      this.pushRuntimeEvent(meetingId, "mcp_info", "MCP接続が回復した可能性があります。", "warning");
+      this.pushRuntimeEvent(
+        meetingId,
+        "mcp_info",
+        "MCP接続が回復した可能性があります。",
+        "warning"
+      );
     }
   }
 
@@ -606,7 +655,9 @@ export class MeetingRoomDaemonApp {
     this.eventStream.publish(event);
   }
 
-  private createTab(command: Extract<MeetingRoomDaemonCommand, { type: "startMeeting" }>): MeetingTabPayload {
+  private createTab(
+    command: Extract<MeetingRoomDaemonCommand, { type: "startMeeting" }>
+  ): MeetingTabPayload {
     const config: MeetingConfigPayload = {
       id: command.meetingId,
       topic: command.topic,
@@ -683,11 +734,10 @@ export class MeetingRoomDaemonApp {
   }
 
   private toPromptMessageLine(message: ChatMessagePayload): string {
-    const speaker = message.source === "human"
-      ? "You"
-      : message.subagent?.trim() || message.sender;
+    const speaker = message.source === "human" ? "You" : message.subagent?.trim() || message.sender;
     const compactContent = message.content.replace(/\s+/g, " ").trim();
-    const preview = compactContent.length > 240 ? `${compactContent.slice(0, 237)}...` : compactContent;
+    const preview =
+      compactContent.length > 240 ? `${compactContent.slice(0, 237)}...` : compactContent;
     return `- ${speaker}: ${preview || "(empty)"}`;
   }
 
@@ -725,12 +775,21 @@ export class MeetingRoomDaemonApp {
       return runtimeMeetingIds[0];
     }
 
-    const liveSessions = this.sessions.listMeetingIdsByStatus(["running", "paused", "awaiting_review"]);
+    const liveSessions = this.sessions.listMeetingIdsByStatus([
+      "running",
+      "paused",
+      "awaiting_review"
+    ]);
     if (liveSessions.length === 1) {
       return liveSessions[0];
     }
 
-    const recoverableSessions = this.sessions.listMeetingIdsByStatus(["running", "paused", "awaiting_review", "recovering"]);
+    const recoverableSessions = this.sessions.listMeetingIdsByStatus([
+      "running",
+      "paused",
+      "awaiting_review",
+      "recovering"
+    ]);
     if (recoverableSessions.length === 1) {
       return recoverableSessions[0];
     }
@@ -749,7 +808,11 @@ export class MeetingRoomDaemonApp {
     }
   }
 
-  private updateApprovalGate(meetingId: string, mode: ApprovalGatePayload["mode"], reason?: string): void {
+  private updateApprovalGate(
+    meetingId: string,
+    mode: ApprovalGatePayload["mode"],
+    reason?: string
+  ): void {
     const current = this.sessions.getApprovalGate(meetingId);
     const bypassMode = current?.bypassMode ?? false;
     if (current?.mode === mode && current.reason === reason && current.bypassMode === bypassMode) {
@@ -774,7 +837,11 @@ export class MeetingRoomDaemonApp {
   private writeApprovalGate(meetingId: string, approvalGate: ApprovalGatePayload): void {
     const filePath = path.resolve(this.approvalDir, `${meetingId}.json`);
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, `${JSON.stringify({ meetingId, ...approvalGate }, null, 2)}\n`, "utf-8");
+    fs.writeFileSync(
+      filePath,
+      `${JSON.stringify({ meetingId, ...approvalGate }, null, 2)}\n`,
+      "utf-8"
+    );
   }
 
   private clearApprovalGate(meetingId: string): void {

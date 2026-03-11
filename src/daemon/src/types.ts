@@ -12,7 +12,7 @@ import type {
 import type { RELAY_PAYLOAD_TYPES } from "@contracts/hook-contract";
 
 export type RelayPayload = {
-  type: typeof RELAY_PAYLOAD_TYPES[keyof typeof RELAY_PAYLOAD_TYPES];
+  type: (typeof RELAY_PAYLOAD_TYPES)[keyof typeof RELAY_PAYLOAD_TYPES];
   id: string;
   sender: string;
   subagent?: string;
@@ -29,16 +29,56 @@ export type DurableEvent =
   | { kind: "InitPromptQueued"; at: string; meetingId: string; payload: { prompt: string } }
   | { kind: "ClaudeReadyDetected"; at: string; meetingId: string }
   | { kind: "InitPromptSent"; at: string; meetingId: string }
-  | { kind: "ApprovalGateUpdated"; at: string; meetingId: string; payload: { approvalGate: ApprovalGatePayload } }
-  | { kind: "HumanMessageSubmitted"; at: string; meetingId: string; payload: { message: ChatMessagePayload } }
-  | { kind: "AgentMessageReceived"; at: string; meetingId: string; payload: { message: ChatMessagePayload } }
-  | { kind: "AgentStatusChanged"; at: string; meetingId: string; payload: { sender: string; status: "active" | "completed" } }
-  | { kind: "RuntimeWarningRaised"; at: string; meetingId: string; payload: { runtimeEvent: RuntimeEventPayload } }
-  | { kind: "RuntimeErrorRaised"; at: string; meetingId: string; payload: { runtimeEvent: RuntimeEventPayload } }
-  | { kind: "McpFailureDetected"; at: string; meetingId: string; payload: { runtimeEvent: RuntimeEventPayload } }
+  | {
+      kind: "ApprovalGateUpdated";
+      at: string;
+      meetingId: string;
+      payload: { approvalGate: ApprovalGatePayload };
+    }
+  | {
+      kind: "HumanMessageSubmitted";
+      at: string;
+      meetingId: string;
+      payload: { message: ChatMessagePayload };
+    }
+  | {
+      kind: "AgentMessageReceived";
+      at: string;
+      meetingId: string;
+      payload: { message: ChatMessagePayload };
+    }
+  | {
+      kind: "AgentStatusChanged";
+      at: string;
+      meetingId: string;
+      payload: { sender: string; status: "active" | "completed" };
+    }
+  | {
+      kind: "RuntimeWarningRaised";
+      at: string;
+      meetingId: string;
+      payload: { runtimeEvent: RuntimeEventPayload };
+    }
+  | {
+      kind: "RuntimeErrorRaised";
+      at: string;
+      meetingId: string;
+      payload: { runtimeEvent: RuntimeEventPayload };
+    }
+  | {
+      kind: "McpFailureDetected";
+      at: string;
+      meetingId: string;
+      payload: { runtimeEvent: RuntimeEventPayload };
+    }
   | { kind: "MeetingPaused"; at: string; meetingId: string }
   | { kind: "MeetingResumed"; at: string; meetingId: string }
-  | { kind: "MeetingEnded"; at: string; meetingId: string; payload: { reason: "command" | "runtime_exit" } };
+  | {
+      kind: "MeetingEnded";
+      at: string;
+      meetingId: string;
+      payload: { reason: "command" | "runtime_exit" };
+    };
 
 export type PtyLike = {
   write(data: string): void;
@@ -102,7 +142,9 @@ export interface MeetingRoomDaemonServerHandle {
 }
 
 export interface InternalCommandDispatcher {
-  handleCommand: (envelope: MeetingRoomDaemonCommandEnvelope) => Promise<MeetingRoomDaemonCommandAck>;
+  handleCommand: (
+    envelope: MeetingRoomDaemonCommandEnvelope
+  ) => Promise<MeetingRoomDaemonCommandAck>;
   isAuthorized: (request: IncomingMessage) => boolean;
   listTabs: () => MeetingTabPayload[];
   getSessionView: (meetingId: string) => unknown;
@@ -111,5 +153,13 @@ export interface InternalCommandDispatcher {
 
 export type PublicRelayCommand = Extract<
   MeetingRoomDaemonCommand,
-  { type: "startMeeting" | "sendHumanMessage" | "pauseMeeting" | "resumeMeeting" | "retryMcp" | "endMeeting" }
+  {
+    type:
+      | "startMeeting"
+      | "sendHumanMessage"
+      | "pauseMeeting"
+      | "resumeMeeting"
+      | "retryMcp"
+      | "endMeeting";
+  }
 >;

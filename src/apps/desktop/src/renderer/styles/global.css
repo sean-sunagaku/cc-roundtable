@@ -7,62 +7,62 @@
   color-scheme: light;
 
   /* ── Surface ── */
-  --color-surface-base: #F7F8FA;
-  --color-surface-raised: #FFFFFF;
-  --color-surface-overlay: #F0F2F5;
-  --color-surface-hover: #E8EBF0;
-  --color-surface-active: #DDE1E8;
-  --color-surface-border: #D0D5DD;
+  --color-surface-base: #f7f8fa;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #f0f2f5;
+  --color-surface-hover: #e8ebf0;
+  --color-surface-active: #dde1e8;
+  --color-surface-border: #d0d5dd;
 
   /* ── Text ── */
-  --color-text-primary: #1A2332;
-  --color-text-secondary: #4A5568;
-  --color-text-muted: #8494A7;
+  --color-text-primary: #1a2332;
+  --color-text-secondary: #4a5568;
+  --color-text-muted: #8494a7;
 
   /* ── Accent Cool ── */
-  --color-accent-cool: #3D9B92;
-  --color-accent-cool-vivid: #2A877E;
-  --color-accent-cool-muted: #5BB8AF;
-  --color-accent-cool-subtle: #E8F5F3;
+  --color-accent-cool: #3d9b92;
+  --color-accent-cool-vivid: #2a877e;
+  --color-accent-cool-muted: #5bb8af;
+  --color-accent-cool-subtle: #e8f5f3;
 
   /* ── Accent Warm ── */
-  --color-accent-warm: #C49A35;
-  --color-accent-warm-vivid: #A8832B;
-  --color-accent-warm-muted: #D4B05A;
-  --color-accent-warm-subtle: #FBF5E6;
+  --color-accent-warm: #c49a35;
+  --color-accent-warm-vivid: #a8832b;
+  --color-accent-warm-muted: #d4b05a;
+  --color-accent-warm-subtle: #fbf5e6;
 
   /* ── Semantic ── */
-  --color-semantic-success: #2E9E6A;
-  --color-semantic-warning: #C49A35;
-  --color-semantic-error: #D05050;
-  --color-semantic-info: #3D9B92;
+  --color-semantic-success: #2e9e6a;
+  --color-semantic-warning: #c49a35;
+  --color-semantic-error: #d05050;
+  --color-semantic-info: #3d9b92;
 
   /* ── Agent Identity (8) ── */
-  --color-agent-1: #2E8A82;
-  --color-agent-2: #B8892A;
-  --color-agent-3: #7B6DAF;
-  --color-agent-4: #B06B78;
-  --color-agent-5: #5A9472;
-  --color-agent-6: #B07A4E;
-  --color-agent-7: #5A7FA0;
-  --color-agent-8: #9A6B90;
+  --color-agent-1: #2e8a82;
+  --color-agent-2: #b8892a;
+  --color-agent-3: #7b6daf;
+  --color-agent-4: #b06b78;
+  --color-agent-5: #5a9472;
+  --color-agent-6: #b07a4e;
+  --color-agent-7: #5a7fa0;
+  --color-agent-8: #9a6b90;
 
   /* ── User ── */
-  --color-user-accent: #B8892A;
-  --color-user-message-bg: #FBF5E6;
+  --color-user-accent: #b8892a;
+  --color-user-message-bg: #fbf5e6;
 
   /* ── Font Families ── */
-  --font-display: 'General Sans', 'BIZ UDPGothic', system-ui, sans-serif;
-  --font-body: 'Switzer', 'BIZ UDPGothic', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  --font-display: "General Sans", "BIZ UDPGothic", system-ui, sans-serif;
+  --font-body: "Switzer", "BIZ UDPGothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Menlo", "Consolas", monospace;
 
   /* ── Type Scale (Minor Third 1.200) ── */
-  --type-caption: 0.6875rem;   /* 11px */
-  --type-small: 0.75rem;       /* 12px */
-  --type-body: 0.875rem;       /* 14px */
-  --type-sub: 1.0rem;          /* 16px */
-  --type-heading: 1.25rem;     /* 20px */
-  --type-display: 1.5rem;      /* 24px */
+  --type-caption: 0.6875rem; /* 11px */
+  --type-small: 0.75rem; /* 12px */
+  --type-body: 0.875rem; /* 14px */
+  --type-sub: 1rem; /* 16px */
+  --type-heading: 1.25rem; /* 20px */
+  --type-display: 1.5rem; /* 24px */
 
   /* ── Spacing (base 8px — roomier) ── */
   --space-2xs: 8px;
@@ -84,7 +84,7 @@
   /* ── Elevation (shadows) ── */
   --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
   --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
-  --shadow-3: 0 8px 32px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-3: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
 
   /* ── Motion ── */
   --duration-instant: 80ms;
@@ -96,14 +96,16 @@
   --icon-stroke: 1.5px;
 
   /* ── Glassmorphism (light) ── */
-  --glass-bg: rgba(255, 255, 255, 0.80);
+  --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-blur: blur(16px);
   --glass-border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -132,7 +134,9 @@ body {
   flex-direction: column;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--font-display);
   margin: 0 0 var(--space-2xs);
   letter-spacing: 0.02em;
@@ -176,7 +180,6 @@ h3 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
-
 
 /* ===================================================================
    Setup Screen
@@ -265,8 +268,9 @@ select {
   padding: var(--space-xs) var(--space-s);
   font-family: var(--font-body);
   font-size: var(--type-body);
-  transition: border-color var(--duration-fast) ease,
-              box-shadow var(--duration-fast) ease;
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
 }
 
 input:focus,
@@ -287,9 +291,10 @@ button {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: var(--type-body);
-  transition: background var(--duration-instant) ease-out,
-              border-color var(--duration-instant) ease-out,
-              box-shadow var(--duration-instant) ease-out;
+  transition:
+    background var(--duration-instant) ease-out,
+    border-color var(--duration-instant) ease-out,
+    box-shadow var(--duration-instant) ease-out;
 }
 
 button:hover:not(:disabled) {
@@ -310,7 +315,7 @@ button:disabled {
 .setup-card > button[type="submit"] {
   background: var(--color-accent-cool);
   border-color: var(--color-accent-cool-vivid);
-  color: #FFFFFF;
+  color: #ffffff;
   padding: var(--space-s) var(--space-m);
   font-size: var(--type-sub);
 }
@@ -318,7 +323,7 @@ button:disabled {
 .setup-card > button[type="submit"]:hover:not(:disabled) {
   background: var(--color-accent-cool-vivid);
   border-color: var(--color-accent-cool-vivid);
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
 .danger {
@@ -395,9 +400,10 @@ button:disabled {
     linear-gradient(180deg, rgba(61, 155, 146, 0.04), rgba(61, 155, 146, 0)),
     var(--color-surface-base);
   cursor: pointer;
-  transition: transform var(--duration-fast) ease,
-              border-color var(--duration-fast) ease,
-              box-shadow var(--duration-fast) ease;
+  transition:
+    transform var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
 }
 
 .agent-card:hover {
@@ -408,7 +414,9 @@ button:disabled {
 
 .agent-card.selected {
   border-color: var(--color-accent-cool);
-  box-shadow: 0 0 0 1px rgba(61, 155, 146, 0.18), var(--shadow-2);
+  box-shadow:
+    0 0 0 1px rgba(61, 155, 146, 0.18),
+    var(--shadow-2);
   background:
     linear-gradient(180deg, rgba(61, 155, 146, 0.12), rgba(61, 155, 146, 0.02)),
     var(--color-surface-raised);
@@ -524,7 +532,7 @@ button:disabled {
 
 .mode-pill.bypass {
   border-color: rgba(196, 154, 53, 0.45);
-  background: rgba(196, 154, 53, 0.10);
+  background: rgba(196, 154, 53, 0.1);
   color: var(--color-accent-warm-vivid);
 }
 
@@ -533,7 +541,6 @@ button:disabled {
   color: var(--color-semantic-error);
   font-size: var(--type-small);
 }
-
 
 /* ===================================================================
    Meeting Screen — Full-height vertical flex
@@ -583,12 +590,12 @@ button:disabled {
 }
 
 .connection.ok {
-  background: rgba(46, 158, 106, 0.10);
+  background: rgba(46, 158, 106, 0.1);
   color: var(--color-semantic-success);
 }
 
 .connection.ng {
-  background: rgba(196, 154, 53, 0.10);
+  background: rgba(196, 154, 53, 0.1);
   color: var(--color-semantic-warning);
 }
 
@@ -632,8 +639,9 @@ button:disabled {
   border-radius: var(--radius-full);
   padding: 4px var(--space-xs);
   border: 1px solid var(--color-surface-border);
-  transition: border-color var(--duration-fast) ease,
-              color var(--duration-fast) ease;
+  transition:
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 .agent-status.completed {
@@ -654,7 +662,7 @@ button:disabled {
   padding: var(--space-s) var(--space-m);
   border-radius: var(--radius-m);
   border: 1px solid rgba(196, 154, 53, 0.45);
-  background: linear-gradient(180deg, rgba(196, 154, 53, 0.10), rgba(196, 154, 53, 0.04));
+  background: linear-gradient(180deg, rgba(196, 154, 53, 0.1), rgba(196, 154, 53, 0.04));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -682,8 +690,13 @@ button:disabled {
 }
 
 @keyframes agent-active-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* ── Debug tools area ── */
@@ -813,7 +826,6 @@ button:disabled {
   margin-top: 0;
 }
 
-
 /* ===================================================================
    Chat View — flex-grow, auto-scroll ready
    =================================================================== */
@@ -851,7 +863,6 @@ button:disabled {
   margin: 0;
   font-size: var(--type-body);
 }
-
 
 /* ===================================================================
    Message Bubbles — 3px left border with agent color
@@ -954,8 +965,8 @@ button:disabled {
 
 .markdown pre {
   padding: var(--space-s);
-  background: #1A2332;
-  color: #D0D8E4;
+  background: #1a2332;
+  color: #d0d8e4;
   border-radius: var(--radius-s);
   overflow-x: auto;
   border: 1px solid var(--color-surface-border);
@@ -975,7 +986,7 @@ button:disabled {
 }
 
 .bubble-body.folded::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -1007,7 +1018,6 @@ button:disabled {
   background: none !important;
 }
 
-
 /* ===================================================================
    Input Bar
    =================================================================== */
@@ -1032,16 +1042,15 @@ button:disabled {
   align-self: end;
   background: var(--color-accent-cool);
   border-color: var(--color-accent-cool-vivid);
-  color: #FFFFFF;
+  color: #ffffff;
   padding: var(--space-xs) var(--space-l);
 }
 
 .input-bar button:hover:not(:disabled) {
   background: var(--color-accent-cool-vivid);
   border-color: var(--color-accent-cool-vivid);
-  color: #FFFFFF;
+  color: #ffffff;
 }
-
 
 /* ===================================================================
    Terminal
@@ -1066,7 +1075,6 @@ button:disabled {
   margin-top: 0;
   height: 340px;
 }
-
 
 /* ===================================================================
    Three.js Observatory Background (SetupScreen)

@@ -180,7 +180,11 @@ export function SetupScreen({
                     }}
                     required
                   />
-                  <button type="button" onClick={() => void pickProjectDir()} disabled={pickingProjectDir}>
+                  <button
+                    type="button"
+                    onClick={() => void pickProjectDir()}
+                    disabled={pickingProjectDir}
+                  >
                     {pickingProjectDir ? "選択中..." : "ディレクトリ選択"}
                   </button>
                 </div>
@@ -188,7 +192,8 @@ export function SetupScreen({
             </div>
             {projectDirLoadError ? (
               <p className="error-text">
-                既定の project directory を読み込めませんでした。必要なら手入力し、`再読み込み` も試してください。
+                既定の project directory を読み込めませんでした。必要なら手入力し、`再読み込み`
+                も試してください。
               </p>
             ) : null}
             {projectDirPickerError ? <p className="error-text">{projectDirPickerError}</p> : null}
@@ -198,7 +203,10 @@ export function SetupScreen({
             <div className="setup-inline">
               <div>
                 <strong>進行モード</strong>
-                <p className="setup-helper">デフォルトは Bypass Mode です。承認付きで進めたい場合だけ設定を開いて切り替えます。</p>
+                <p className="setup-helper">
+                  デフォルトは Bypass Mode
+                  です。承認付きで進めたい場合だけ設定を開いて切り替えます。
+                </p>
               </div>
               <div className="setup-toggle-actions">
                 <span className={`mode-pill${bypassMode ? " bypass" : ""}`}>
@@ -237,13 +245,22 @@ export function SetupScreen({
             <div className="setup-inline">
               <div>
                 <strong>参加 Agent</strong>
-                <p className="setup-helper">サンプル Sub Agent を選択し、必要なら新規追加できます。</p>
+                <p className="setup-helper">
+                  サンプル Sub Agent を選択し、必要なら新規追加できます。
+                </p>
                 {agentLoadError ? (
-                  <p className="error-text">Agent 定義の読み込みに失敗しました。daemon との接続先を確認して `再読み込み` を試してください。</p>
+                  <p className="error-text">
+                    Agent 定義の読み込みに失敗しました。daemon との接続先を確認して `再読み込み`
+                    を試してください。
+                  </p>
                 ) : null}
               </div>
               <div className="setup-actions">
-                <button type="button" onClick={() => void reloadAgents()} disabled={refreshingAgents}>
+                <button
+                  type="button"
+                  onClick={() => void reloadAgents()}
+                  disabled={refreshingAgents}
+                >
                   {refreshingAgents ? "読み込み中..." : "再読み込み"}
                 </button>
                 <button
@@ -278,10 +295,14 @@ export function SetupScreen({
                           <strong>{agent.id}</strong>
                           <span className="agent-card-name">{agent.name}</span>
                         </div>
-                        {agent.enabledByDefault ? <span className="agent-card-badge">既定</span> : null}
+                        {agent.enabledByDefault ? (
+                          <span className="agent-card-badge">既定</span>
+                        ) : null}
                       </div>
                       <p className="agent-card-description">{agent.description}</p>
-                      <span className="agent-card-state">{selected ? "選択中" : "クリックで追加"}</span>
+                      <span className="agent-card-state">
+                        {selected ? "選択中" : "クリックで追加"}
+                      </span>
                     </label>
                   );
                 })}

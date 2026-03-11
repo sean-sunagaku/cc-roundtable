@@ -32,19 +32,19 @@ Meeting Room は、ローカルのコードベースを題材に複数 Agent で
 
 実装詳細が必要になったら次を読むと早いです。
 
-| 関心 | 最初に見るファイル |
-|------|--------------------|
-| Electron から daemon をどう叩いているか | `src/apps/desktop/src/main/index.ts`, `src/apps/desktop/src/main/daemon/meeting-room-daemon-manager.ts` |
-| 会議開始、初回プロンプト、Agent 構成 | `src/apps/desktop/src/main/meeting.ts` |
-| daemon 側の API とライフサイクル | `src/daemon/src/http/start-meeting-room-daemon-server.ts`, `src/daemon/src/app/meeting-room-daemon-app.ts` |
-| Claude runtime / PTY / ready 検出 | `src/daemon/src/runtime/meeting-runtime-manager.ts`, `src/apps/desktop/src/main/pty-manager.ts` |
-| 会話・状態の永続化と復元 | `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/` |
-| ブラウザ UI | `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/browser-meeting-room-client.ts`, `src/apps/web/src/index.html` |
-| Public share gateway / UI | `src/daemon/src/public-share/create-public-share-http-app.ts`, `src/apps/web/src/PublicShareApp.tsx`, `src/apps/web/src/public-share-client.ts` |
-| Electron renderer UI | `src/apps/desktop/src/renderer/screens/SetupScreen.tsx`, `src/apps/desktop/src/renderer/screens/MeetingScreen.tsx` |
-| 契約型 / API surface | `src/packages/shared-contracts/src/meeting-room-daemon.ts`, `src/apps/desktop/src/shared/types.ts` |
-| Hook relay の挙動 | `.claude/settings.json`, `src/packages/meeting-room-hooks/README.md`, `src/packages/meeting-room-hooks/*.py` |
-| GUI 最終検証 | `e2e/gui/final-verification.mjs` |
+| 関心                                    | 最初に見るファイル                                                                                                                              |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Electron から daemon をどう叩いているか | `src/apps/desktop/src/main/index.ts`, `src/apps/desktop/src/main/daemon/meeting-room-daemon-manager.ts`                                         |
+| 会議開始、初回プロンプト、Agent 構成    | `src/apps/desktop/src/main/meeting.ts`                                                                                                          |
+| daemon 側の API とライフサイクル        | `src/daemon/src/http/start-meeting-room-daemon-server.ts`, `src/daemon/src/app/meeting-room-daemon-app.ts`                                      |
+| Claude runtime / PTY / ready 検出       | `src/daemon/src/runtime/meeting-runtime-manager.ts`, `src/apps/desktop/src/main/pty-manager.ts`                                                 |
+| 会話・状態の永続化と復元                | `src/daemon/src/sessions/meeting-session-store.ts`, `src/daemon/src/events/`                                                                    |
+| ブラウザ UI                             | `src/apps/web/src/WebRootApp.tsx`, `src/apps/web/src/browser-meeting-room-client.ts`, `src/apps/web/src/index.html`                             |
+| Public share gateway / UI               | `src/daemon/src/public-share/create-public-share-http-app.ts`, `src/apps/web/src/PublicShareApp.tsx`, `src/apps/web/src/public-share-client.ts` |
+| Electron renderer UI                    | `src/apps/desktop/src/renderer/screens/SetupScreen.tsx`, `src/apps/desktop/src/renderer/screens/MeetingScreen.tsx`                              |
+| 契約型 / API surface                    | `src/packages/shared-contracts/src/meeting-room-daemon.ts`, `src/apps/desktop/src/shared/types.ts`                                              |
+| Hook relay の挙動                       | `.claude/settings.json`, `src/packages/meeting-room-hooks/README.md`, `src/packages/meeting-room-hooks/*.py`                                    |
+| GUI 最終検証                            | `e2e/gui/final-verification.mjs`                                                                                                                |
 
 ## 現在の構成
 
@@ -174,10 +174,10 @@ private submitPrompt(meetingId: string, prompt: string): boolean {
 
 ```typescript
 // meeting.ts - flushPendingInitPrompt
-const ok = this.ptyManager.write(meetingId, pending);  // content 即送信
+const ok = this.ptyManager.write(meetingId, pending); // content 即送信
 // ...
 setTimeout(() => {
-  this.ptyManager.write(meetingId, "\r");  // Enter は 600ms 遅延
+  this.ptyManager.write(meetingId, "\r"); // Enter は 600ms 遅延
 }, 600);
 ```
 
@@ -201,6 +201,7 @@ cd src/apps/desktop
 ```
 
 **補足**:
+
 - 出力された SVG は `foreignObject` を含むが、公式 export は `<switch>` 内に `<text>` フォールバックも入るため、汎用変換より壊れにくい。
 - XML 妥当性は `xmllint --noout docs/*.svg` で確認できる。
 - `@markdown-viewer/drawio2svg` のような非公式変換は、このプロジェクトでは再現度不足だったため採用しない。
@@ -227,6 +228,7 @@ cd src/apps/desktop
 ```
 
 **運用ルール**:
+
 - 新しい案ディレクトリを追加する時も同じ構成にする。
 - 直下に `md/svg` 以外を増やさない。
 - `.drawio` を更新したら、対応する `.svg` を公式 export で再生成する。
@@ -246,11 +248,15 @@ npm --prefix src/apps/desktop run e2e:web
 ```
 
 **内容**:
+
+- `lint`
+- `format:check`
 - `typecheck`
 - `build`
 - `e2e/gui/final-verification.mjs` による GUI E2E
 
 **E2E の確認範囲**:
+
 - Setup 画面まで戻せること
 - 新規会議を開始できること
 - 手動送信が通ること
@@ -259,6 +265,7 @@ npm --prefix src/apps/desktop run e2e:web
 - 会議終了後に Setup 画面へ戻り、`/api/sessions` が空になること
 
 **運用ルール**:
+
 - エージェントは、実装完了を報告する前にこのコマンドを実行する。
 - 実行できなかった場合は、未実行のまま完了扱いにせず、ブロッカーを明示する。
 - GUI 上でノイズや不要文言が見えた場合は、そのままにせずフィルタや表示制御まで修正する。
@@ -267,13 +274,13 @@ npm --prefix src/apps/desktop run e2e:web
 
 ## 関連ファイル
 
-| 責務 | ファイル |
-|------|----------|
-| PTY 管理・claude 起動・--settings 付与 | `src/apps/desktop/src/main/pty-manager.ts` |
-| 会議ライフサイクル・submitPrompt | `src/apps/desktop/src/main/meeting.ts` |
-| ready 検出・flush トリガー | `src/apps/desktop/src/main/index.ts` (`ptyManager.on("data")`) |
-| Hook 設定 | `.claude/settings.json` |
-| draw.io 公式 export 用依存 | `src/apps/desktop/package.json` (`@hhhtj/draw.io`) |
-| 元図 | `docs/architecture.drawio`, `docs/current-architecture-overview.drawio` |
-| 生成 SVG | `docs/architecture.svg`, `docs/current-architecture-overview.svg` |
-| rearchitecture 文書群 | `docs/rearchitecture/content_rearchitecture_2026-03-06/` |
+| 責務                                   | ファイル                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| PTY 管理・claude 起動・--settings 付与 | `src/apps/desktop/src/main/pty-manager.ts`                              |
+| 会議ライフサイクル・submitPrompt       | `src/apps/desktop/src/main/meeting.ts`                                  |
+| ready 検出・flush トリガー             | `src/apps/desktop/src/main/index.ts` (`ptyManager.on("data")`)          |
+| Hook 設定                              | `.claude/settings.json`                                                 |
+| draw.io 公式 export 用依存             | `src/apps/desktop/package.json` (`@hhhtj/draw.io`)                      |
+| 元図                                   | `docs/architecture.drawio`, `docs/current-architecture-overview.drawio` |
+| 生成 SVG                               | `docs/architecture.svg`, `docs/current-architecture-overview.svg`       |
+| rearchitecture 文書群                  | `docs/rearchitecture/content_rearchitecture_2026-03-06/`                |

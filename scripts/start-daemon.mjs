@@ -15,7 +15,9 @@ let esbuild;
 try {
   esbuild = require(path.join(electronNodeModules, "esbuild"));
 } catch (error) {
-  console.error("esbuild が見つかりません。先に `npm --prefix src/apps/desktop install` を実行してください。");
+  console.error(
+    "esbuild が見つかりません。先に `npm --prefix src/apps/desktop install` を実行してください。"
+  );
   process.exit(error instanceof Error ? 1 : 1);
 }
 
@@ -95,7 +97,9 @@ function spawnDaemon() {
   log(`daemon listening target: http://${host}:${port}`);
   log(`browser UI: http://${host}:${port}/web/index.html`);
   if (publicShareId) {
-    log(`public share gateway: http://${publicShareHost}:${publicSharePort}/share/${publicShareId}`);
+    log(
+      `public share gateway: http://${publicShareHost}:${publicSharePort}/share/${publicShareId}`
+    );
   }
 }
 

@@ -33,7 +33,8 @@ const members = normalizeMembers(
 const bypassMode = normalizeBypassMode(
   options.bypassMode ?? process.env.MEETING_ROOM_PUBLIC_DEMO_BYPASS_MODE ?? "1"
 );
-const daemonToken = process.env.MEETING_ROOM_DAEMON_TOKEN?.trim() || crypto.randomBytes(16).toString("hex");
+const daemonToken =
+  process.env.MEETING_ROOM_DAEMON_TOKEN?.trim() || crypto.randomBytes(16).toString("hex");
 const ngrokApiUrl = process.env.NGROK_API_URL?.trim() || "http://127.0.0.1:4040/api/tunnels";
 
 let daemonProcess = null;
@@ -176,26 +177,32 @@ async function waitFor(check, description, timeoutMs = 60_000, intervalMs = 750)
     }
     await delay(intervalMs);
   }
-  throw new Error(`Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`);
+  throw new Error(
+    `Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`
+  );
 }
 
 function spawnDaemon() {
-  const child = spawn(process.execPath, ["scripts/start-daemon.mjs", ...(watch ? ["--watch"] : [])], {
-    cwd: rootDir,
-    env: {
-      ...process.env,
-      MEETING_ROOM_DAEMON_PORT: daemonPort,
-      MEETING_ROOM_PUBLIC_GATEWAY_PORT: gatewayPort,
-      MEETING_ROOM_WS_PORT: wsPort,
-      MEETING_ROOM_DAEMON_TOKEN: daemonToken,
-      MEETING_ROOM_PUBLIC_SHARE_ID: shareId,
-      MEETING_ROOM_PUBLIC_DEMO_PROJECT_DIR: projectDir,
-      MEETING_ROOM_PUBLIC_DEMO_TOPIC: topic,
-      MEETING_ROOM_PUBLIC_DEMO_MEMBERS: members,
-      MEETING_ROOM_PUBLIC_DEMO_BYPASS_MODE: bypassMode
-    },
-    stdio: "inherit"
-  });
+  const child = spawn(
+    process.execPath,
+    ["scripts/start-daemon.mjs", ...(watch ? ["--watch"] : [])],
+    {
+      cwd: rootDir,
+      env: {
+        ...process.env,
+        MEETING_ROOM_DAEMON_PORT: daemonPort,
+        MEETING_ROOM_PUBLIC_GATEWAY_PORT: gatewayPort,
+        MEETING_ROOM_WS_PORT: wsPort,
+        MEETING_ROOM_DAEMON_TOKEN: daemonToken,
+        MEETING_ROOM_PUBLIC_SHARE_ID: shareId,
+        MEETING_ROOM_PUBLIC_DEMO_PROJECT_DIR: projectDir,
+        MEETING_ROOM_PUBLIC_DEMO_TOPIC: topic,
+        MEETING_ROOM_PUBLIC_DEMO_MEMBERS: members,
+        MEETING_ROOM_PUBLIC_DEMO_BYPASS_MODE: bypassMode
+      },
+      stdio: "inherit"
+    }
+  );
   daemonProcess = child;
   child.once("exit", (code, signal) => {
     if (daemonProcess === child) {
@@ -212,11 +219,15 @@ function spawnNgrok() {
   if (!commandExists("ngrok")) {
     throw new Error("`ngrok` command が見つかりません。先に ngrok をインストールしてください。");
   }
-  const child = spawn("ngrok", ["http", gatewayPort, "--log", "stdout", "--log-format", "logfmt", "--log-level", "warn"], {
-    cwd: rootDir,
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"]
-  });
+  const child = spawn(
+    "ngrok",
+    ["http", gatewayPort, "--log", "stdout", "--log-format", "logfmt", "--log-level", "warn"],
+    {
+      cwd: rootDir,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
   ngrokProcess = child;
   child.stdout?.on("data", (chunk) => {
     const line = chunk.toString().trim();
@@ -302,7 +313,9 @@ async function main() {
   log(`members: ${members}`);
   log(`gateway: http://127.0.0.1:${gatewayPort}/share/${shareId}`);
   if (!process.env.MEETING_ROOM_DAEMON_TOKEN?.trim()) {
-    log("MEETING_ROOM_DAEMON_TOKEN は未指定だったので、この起動専用のランダム token を生成しました。");
+    log(
+      "MEETING_ROOM_DAEMON_TOKEN は未指定だったので、この起動専用のランダム token を生成しました。"
+    );
   }
 
   spawnDaemon();
@@ -315,7 +328,9 @@ async function main() {
     spawnNgrok();
     await printNgrokUrl();
   } else {
-    log(`ngrok は起動していません。外部公開する時は別 terminal で \`ngrok http ${gatewayPort}\` を実行してください。`);
+    log(
+      `ngrok は起動していません。外部公開する時は別 terminal で \`ngrok http ${gatewayPort}\` を実行してください。`
+    );
   }
 }
 

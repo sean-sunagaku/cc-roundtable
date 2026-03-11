@@ -52,7 +52,9 @@ const drawioTemplatePath = path.join(templateRoot, "source", "architecture-templ
 const promptTemplatePath = path.join(templateRoot, "subagents", `${kind}.md`);
 
 if (!fs.existsSync(markdownTemplatePath) || !fs.existsSync(drawioTemplatePath)) {
-  console.error("テンプレートが見つかりません。docs/architecture-definitions/templates を確認してください。");
+  console.error(
+    "テンプレートが見つかりません。docs/architecture-definitions/templates を確認してください。"
+  );
   process.exit(1);
 }
 
@@ -64,10 +66,10 @@ if (fs.existsSync(outputDir)) {
 fs.mkdirSync(sourceDir, { recursive: true });
 
 const replacements = {
-  "__ARCH_SLUG__": slug,
-  "__ARCH_TITLE__": title,
-  "__ARCH_KIND__": kind,
-  "__CREATED_AT__": createdAt,
+  __ARCH_SLUG__: slug,
+  __ARCH_TITLE__: title,
+  __ARCH_KIND__: kind,
+  __CREATED_AT__: createdAt
 };
 
 writeFromTemplate(markdownTemplatePath, markdownPath, replacements);
@@ -113,7 +115,9 @@ console.log(`- ${path.relative(repoRoot, svgPath)}`);
 console.log(`- ${path.relative(repoRoot, drawioPath)}`);
 console.log(`- ${path.relative(repoRoot, promptPath)}`);
 if (!svgExported) {
-  console.log("SVG はプレースホルダーです。draw.io desktop export が利用可能な環境で再生成してください。");
+  console.log(
+    "SVG はプレースホルダーです。draw.io desktop export が利用可能な環境で再生成してください。"
+  );
 }
 
 function normalizeSlug(value) {
@@ -134,23 +138,31 @@ function writeFromTemplate(templatePath, outputPath, replacementsMap) {
 }
 
 function exportSvg(inputDrawioPath, outputSvgPath) {
-  const electronPath = path.join(repoRoot, "src", "apps", "desktop", "node_modules", ".bin", "electron");
-  const drawioAppPath = path.join(repoRoot, "src", "apps", "desktop", "node_modules", "@hhhtj", "draw.io");
+  const electronPath = path.join(
+    repoRoot,
+    "src",
+    "apps",
+    "desktop",
+    "node_modules",
+    ".bin",
+    "electron"
+  );
+  const drawioAppPath = path.join(
+    repoRoot,
+    "src",
+    "apps",
+    "desktop",
+    "node_modules",
+    "@hhhtj",
+    "draw.io"
+  );
   if (!fs.existsSync(electronPath) || !fs.existsSync(drawioAppPath)) {
     return false;
   }
 
   const result = spawnSync(
     electronPath,
-    [
-      drawioAppPath,
-      "--export",
-      "--format",
-      "svg",
-      "--output",
-      outputSvgPath,
-      inputDrawioPath
-    ],
+    [drawioAppPath, "--export", "--format", "svg", "--output", outputSvgPath, inputDrawioPath],
     {
       cwd: path.join(repoRoot, "src", "apps", "desktop"),
       encoding: "utf-8"

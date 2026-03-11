@@ -48,7 +48,9 @@ function runCommand(command, args, options = {}) {
         `Command failed: ${command} ${args.join(" ")}`,
         stdout ? `stdout:\n${stdout}` : "",
         stderr ? `stderr:\n${stderr}` : ""
-      ].filter(Boolean).join("\n\n")
+      ]
+        .filter(Boolean)
+        .join("\n\n")
     );
   }
 
@@ -58,7 +60,10 @@ function runCommand(command, args, options = {}) {
 function killPortListeners(port) {
   spawnSync(
     "bash",
-    ["-lc", `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`],
+    [
+      "-lc",
+      `pids=$(lsof -nP -iTCP:${port} -sTCP:LISTEN -t 2>/dev/null || true); if [ -n "$pids" ]; then kill -KILL $pids 2>/dev/null || true; fi`
+    ],
     { cwd: rootDir, stdio: "ignore" }
   );
 }
@@ -87,7 +92,9 @@ async function waitFor(check, description, timeoutMs = 30_000, intervalMs = 500)
     await delay(intervalMs);
   }
 
-  throw new Error(`Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`);
+  throw new Error(
+    `Timed out while waiting for ${description}${lastError ? `: ${String(lastError)}` : ""}`
+  );
 }
 
 async function daemonJson(pathname) {
@@ -165,14 +172,19 @@ async function stopDaemon() {
 
   child.kill("SIGINT");
   await new Promise((resolve) => child.once("exit", resolve));
-  await waitFor(async () => {
-    try {
-      await daemonJson("/health");
-      return false;
-    } catch {
-      return true;
-    }
-  }, "daemon shutdown", 10_000, 500);
+  await waitFor(
+    async () => {
+      try {
+        await daemonJson("/health");
+        return false;
+      } catch {
+        return true;
+      }
+    },
+    "daemon shutdown",
+    10_000,
+    500
+  );
 }
 
 async function launchChrome() {
@@ -191,14 +203,21 @@ async function launchChrome() {
     webUrl
   ]);
 
-  const target = await waitFor(async () => {
-    const response = await fetch(`http://127.0.0.1:${chromePort}/json/list`);
-    if (!response.ok) {
-      return null;
-    }
-    const pages = await response.json();
-    return pages.find((page) => page.type === "page" && String(page.url).startsWith(webUrl)) ?? null;
-  }, "Chrome target page", 30_000, 750);
+  const target = await waitFor(
+    async () => {
+      const response = await fetch(`http://127.0.0.1:${chromePort}/json/list`);
+      if (!response.ok) {
+        return null;
+      }
+      const pages = await response.json();
+      return (
+        pages.find((page) => page.type === "page" && String(page.url).startsWith(webUrl)) ?? null
+      );
+    },
+    "Chrome target page",
+    30_000,
+    750
+  );
 
   cdpClient = new CdpClient(target.webSocketDebuggerUrl);
   await cdpClient.connect();
@@ -247,9 +266,14 @@ function json(value) {
 }
 
 async function waitForDom(predicateExpression, description, timeoutMs = 30_000, intervalMs = 500) {
-  return waitFor(async () => {
-    return await evaluate(predicateExpression);
-  }, description, timeoutMs, intervalMs);
+  return waitFor(
+    async () => {
+      return await evaluate(predicateExpression);
+    },
+    description,
+    timeoutMs,
+    intervalMs
+  );
 }
 
 async function domAction(actionExpression, description) {
@@ -334,7 +358,7 @@ async function openWebClient() {
   );
 }
 
-async function addAgentFromSetup() {
+async function _addAgentFromSetup() {
   const agentName = `web-reviewer-${runId}`;
   const agentDescription = "Web parity の画面確認と E2E の補助を担当する。";
   const agentId = `web_reviewer_${runId}`;
@@ -351,19 +375,31 @@ async function addAgentFromSetup() {
   await domAction(fillByLabelExpression("Agent ID（任意）", agentId), "fill agent id");
   await domAction(fillByLabelExpression("役割説明", agentDescription), "fill agent description");
   await waitForDom(fieldValueByLabelExpression("Agent名"), "agent name field value", 5_000, 250);
-  await waitForDom(fieldValueByLabelExpression("Agent ID（任意）"), "agent id field value", 5_000, 250);
+  await waitForDom(
+    fieldValueByLabelExpression("Agent ID（任意）"),
+    "agent id field value",
+    5_000,
+    250
+  );
   await domAction(buttonClickExpression("Agent を保存"), "save agent");
 
   await delay(500);
-  const pageError = await evaluate(`(() => document.querySelector(".error-text")?.textContent?.trim() || "")()`);
+  const pageError = await evaluate(
+    `(() => document.querySelector(".error-text")?.textContent?.trim() || "")()`
+  );
   if (pageError) {
     throw new Error(`Agent save validation failed: ${pageError}`);
   }
 
-  await waitFor(async () => {
-    const payload = await daemonJson("/api/agents");
-    return payload.agents.some((agent) => agent.id === agentId) ? payload : null;
-  }, "saved agent in daemon", 20_000, 750);
+  await waitFor(
+    async () => {
+      const payload = await daemonJson("/api/agents");
+      return payload.agents.some((agent) => agent.id === agentId) ? payload : null;
+    },
+    "saved agent in daemon",
+    20_000,
+    750
+  );
 }
 
 async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true } = {}) {
@@ -393,17 +429,34 @@ async function startMeetingFromSetup({ meetingTopic = topic, bypassMode = true }
     750
   );
 
-  return waitFor(() => currentMeetingIdByTitle(meetingTopic), "daemon session creation", 30_000, 750);
+  return waitFor(
+    () => currentMeetingIdByTitle(meetingTopic),
+    "daemon session creation",
+    30_000,
+    750
+  );
 }
 
 async function sendHumanMessageAndVerify(meetingId) {
-  await domAction(fillByPlaceholderExpression("メッセージを入力...", humanMessage), "fill human message");
+  await domAction(
+    fillByPlaceholderExpression("メッセージを入力...", humanMessage),
+    "fill human message"
+  );
   await domAction(buttonClickExpression("送信"), "send human message");
 
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.messages.some((message) => message.source === "human" && message.content === humanMessage) ? view : null;
-  }, "human message persistence", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.messages.some(
+        (message) => message.source === "human" && message.content === humanMessage
+      )
+        ? view
+        : null;
+    },
+    "human message persistence",
+    30_000,
+    750
+  );
 }
 
 function isRenderableAgentMessage(message) {
@@ -421,7 +474,9 @@ function isRenderableAgentMessage(message) {
 }
 
 function normalizeText(value) {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function buildExpectedAgentEntries(messages) {
@@ -434,16 +489,21 @@ function buildExpectedAgentEntries(messages) {
 }
 
 async function verifyAgentConversation(meetingId, label) {
-  const view = await waitFor(async () => {
-    const current = await currentMeetingView(meetingId);
-    if (!current.health?.lastAgentReplyAt) {
-      return null;
-    }
-    if (current.sessionDebug?.tail?.some((line) => /AskUserQuestion/i.test(String(line)))) {
-      throw new Error(`AskUserQuestion detected during ${label} flow`);
-    }
-    return current.messages.some((message) => isRenderableAgentMessage(message)) ? current : null;
-  }, `${label} agent message in daemon session`, 120_000, 1_000);
+  const view = await waitFor(
+    async () => {
+      const current = await currentMeetingView(meetingId);
+      if (!current.health?.lastAgentReplyAt) {
+        return null;
+      }
+      if (current.sessionDebug?.tail?.some((line) => /AskUserQuestion/i.test(String(line)))) {
+        throw new Error(`AskUserQuestion detected during ${label} flow`);
+      }
+      return current.messages.some((message) => isRenderableAgentMessage(message)) ? current : null;
+    },
+    `${label} agent message in daemon session`,
+    120_000,
+    1_000
+  );
 
   const expectedEntries = buildExpectedAgentEntries(view.messages);
   if (expectedEntries.length === 0) {
@@ -484,16 +544,26 @@ async function verifyAgentConversation(meetingId, label) {
 
 async function verifyPauseAndResume(meetingId) {
   await domAction(buttonClickExpression("一時停止"), "pause meeting");
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.status === "paused" ? view : null;
-  }, "paused status", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.status === "paused" ? view : null;
+    },
+    "paused status",
+    30_000,
+    750
+  );
 
   await domAction(buttonClickExpression("再開"), "resume meeting");
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.status === "running" ? view : null;
-  }, "running status after resume", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.status === "running" ? view : null;
+    },
+    "running status after resume",
+    30_000,
+    750
+  );
 }
 
 async function verifyRecovery(meetingId) {
@@ -504,10 +574,15 @@ async function verifyRecovery(meetingId) {
   logStep("restarting daemon for recovery check");
   await startDaemon();
 
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.status === "recovering" ? view : null;
-  }, "recovering status after daemon restart", 60_000, 1_000);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.status === "recovering" ? view : null;
+    },
+    "recovering status after daemon restart",
+    60_000,
+    1_000
+  );
 
   await waitForDom(
     `(() => [...document.querySelectorAll("button")].some((node) => node.textContent?.includes("会議終了")))()`,
@@ -530,26 +605,43 @@ async function endMeetingAndVerifyCleared() {
     750
   );
 
-  await waitFor(async () => {
-    const payload = await daemonJson("/api/sessions");
-    return payload.sessions.length === 0 ? payload : null;
-  }, "empty session list after end", 30_000, 750);
+  await waitFor(
+    async () => {
+      const payload = await daemonJson("/api/sessions");
+      return payload.sessions.length === 0 ? payload : null;
+    },
+    "empty session list after end",
+    30_000,
+    750
+  );
 
-  await waitFor(() => {
-    if (!fs.existsSync(summariesDir)) {
-      return null;
-    }
-    const summaries = fs.readdirSync(summariesDir).filter((name) => name.endsWith(".md"));
-    return summaries.length > 0 ? summaries : null;
-  }, "saved meeting summary", 10_000, 500);
+  await waitFor(
+    () => {
+      if (!fs.existsSync(summariesDir)) {
+        return null;
+      }
+      const summaries = fs.readdirSync(summariesDir).filter((name) => name.endsWith(".md"));
+      return summaries.length > 0 ? summaries : null;
+    },
+    "saved meeting summary",
+    10_000,
+    500
+  );
 }
 
 async function verifyBypassConversation() {
   const meetingId = await startMeetingFromSetup({ meetingTopic: bypassTopic, bypassMode: true });
-  await waitFor(async () => {
-    const view = await currentMeetingView(meetingId);
-    return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true ? view : null;
-  }, "bypass mode session config", 30_000, 750);
+  await waitFor(
+    async () => {
+      const view = await currentMeetingView(meetingId);
+      return view.tab.config?.bypassMode === true && view.approvalGate?.bypassMode === true
+        ? view
+        : null;
+    },
+    "bypass mode session config",
+    30_000,
+    750
+  );
 
   await sendHumanMessageAndVerify(meetingId);
   await verifyAgentConversation(meetingId, "bypass");
@@ -675,7 +767,9 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`[web-e2e] FAILED: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+  console.error(
+    `[web-e2e] FAILED: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`
+  );
   void stopChrome()
     .catch(() => undefined)
     .finally(() => {
